@@ -33,7 +33,7 @@
 		1DDB9DE42FA8EE3800AFC25E /* Exceptions for "paws-n-parcels" folder in "paws-n-parcels" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				App/Info.plist,
 			);
 			target = 1DDB9DB82FA8EE3800AFC25E /* paws-n-parcels */;
 		};
