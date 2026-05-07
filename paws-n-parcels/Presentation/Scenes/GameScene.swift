@@ -161,6 +161,110 @@ class GameScene: SKScene {
         self.physicsBody = SKPhysicsBody(edgeLoopFrom: boundaryRect)
         self.physicsBody?.friction = 0.0
     }
+    
+    // MARK: - Setup character & ECS
+    func setupPlayer() {
+        
+        // draw character visual
+        let playerNode = SKShapeNode(circleOfRadius: 25)
+        playerNode.fillColor = .systemYellow
+        playerNode.strokeColor = .white
+        playerNode.lineWidth = 3
+        playerNode.zPosition = 5
+        playerNode.position = CGPoint(x: 0, y: 0)
+        addChild(playerNode)
+        
+        // insert visual into entity
+        playerEntity = PlayerEntity(node: playerNode)
+        movementSystem.addComponent(foundIn: playerEntity)
+    }
+    
+    // MARK: - Setup camera & joystick
+    func setupCameraAndJoystick() {
+        
+        // camera
+        self.camera = cameraNode
+        addChild(cameraNode)
+        
+        // joystick base
+        joystickBase = SKShapeNode(circleOfRadius: 50)
+        joystickBase.fillColor = UIColor.black.withAlphaComponent(0.2)
+        joystickBase.strokeColor = .clear
+        joystickBase.position = CGPoint(x: 0, y: -250) // bottom of screen
+        joystickBase.zPosition = 100 // bring to front
+        cameraNode.addChild(joystickBase)
+        
+        // joystick knob
+        joystickKnob = SKShapeNode(circleOfRadius: 25)
+        joystickKnob.fillColor = .white
+        joystickKnob.strokeColor = .clear
+        joystickKnob.zPosition = 101
+        joystickBase.addChild(joystickKnob)
+    }
+    
+    // MARK: - Touch Input
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: cameraNode)
+        
+        if joystickBase.contains(location) {
+            isJoystickActive = true
+        }
+    }
+    
+    // MARK: - Joystick Logic
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard isJoystickActive, let touch = touches.first else { return }
+        let location = touch.location(in: joystickBase)
+        
+        // set knob bounds
+        let maxRadius: CGFloat = 50.0
+        let distance = sqrt(location.x * location.x + location.y * location.y)
+        
+        var newPosition = location
+        if distance > maxRadius {
+            let ratio: CGFloat = maxRadius / distance
+            newPosition.x *= ratio
+            newPosition.y *= ratio
+        }
+        joystickKnob.position = newPosition
+        
+        let velocityX = newPosition.x / maxRadius
+        let velocityY = newPosition.y / maxRadius
+    
+        if let movement = playerEntity.component(ofType: MovementComponent.self) {
+            movement.velocity = CGPoint(x: velocityX, y: velocityY)
+        }
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        // reset joystick on release
+        isJoystickActive = false
+        let resetAction = SKAction.move(to: .zero, duration: 0.1)
+        resetAction.timingMode = .easeOut
+        joystickKnob.run(resetAction)
+        
+        // stop gameplay kit movement
+        if let movement = playerEntity.component(ofType: MovementComponent.self) {
+            movement.velocity = .zero
+        }
+    }
+    
+    // MARK: - Update Loop
+    override func update(_ currentTime: TimeInterval) {
+        if previousTime == 0 {
+            previousTime = currentTime
+        }
+        let deltaTime = currentTime - previousTime
+        previousTime = currentTime
+        
+        movementSystem.update(deltaTime: deltaTime)
+        
+        if let renderNode = playerEntity.component(ofType: RenderComponent.self)?.node {
+            cameraNode.position = renderNode.position
+        }
+    }
 }
 
 #Preview {
