@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 
+@Model
 final class AnimalFriendRelationship {
     var id: UUID = UUID()
     var friendshipPoints: Int = 0
