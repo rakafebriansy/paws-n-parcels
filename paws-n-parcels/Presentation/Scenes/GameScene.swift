@@ -8,82 +8,59 @@
 import SpriteKit
 import GameplayKit
 import SwiftData
+import SwiftUI
 
 class GameScene: SKScene {
     
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
-    
     override func didMove(to view: SKView) {
+        self.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        setupMap()
+    }
+    
+    func setupMap() {
+        let ground = SKShapeNode(rectOf: CGSize(width: 2000, height: 2000), cornerRadius: 50)
+        ground.fillColor = .systemGreen
+        ground.strokeColor = .clear
+        ground.zPosition = -10
+        ground.position = CGPoint(x: 0, y: 0)
+        addChild(ground)
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
+        let homeA = CGPoint(x: -80, y: 70)
+        let homeB = CGPoint(x: 100, y: -10)
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
+        let roadPath = CGMutablePath()
+        roadPath.move(to: homeA)
+        roadPath.addLine(to: homeB)
         
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
-            
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
-        }
-    }
-    
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-    }
-    
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
+        let road = SKShapeNode(path: roadPath)
+        road.strokeColor = .systemGray
+        road.lineWidth = 40
+        road.lineCap = .round
+        road.lineJoin = .round
+        road.zPosition = -5
+        addChild(road)
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
+        drawHome(at: homeA, color: .systemOrange)
+        drawHome(at: homeB, color: .systemBlue)
     }
     
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
+    func drawHome(at point: CGPoint, color: UIColor) {
+        let home = SKShapeNode(rectOf: CGSize(width: 50, height: 50), cornerRadius: 10)
+        home.position = point
+        home.fillColor = color
+        home.strokeColor = .white
+        home.lineWidth = 3
+        home.zPosition = 1
+        addChild(home)
     }
-    
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
-    }
+}
+
+#Preview {
+    SpriteView(scene: {
+        let scene = GameScene()
+        scene.size = CGSize(width: 375, height: 812)
+        scene.scaleMode = .aspectFill
+        return scene
+    }())
+    .ignoresSafeArea()
 }
