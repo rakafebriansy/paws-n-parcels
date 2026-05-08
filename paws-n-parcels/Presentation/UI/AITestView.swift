@@ -5,19 +5,19 @@
 //  Created by Felicia Joshlyn Purnomo on 07/05/26.
 //
 
-import SwiftUI
 import FoundationModels
+import SwiftUI
 
 struct AITestView: View {
     @State private var generatedLetters: [PackageLetter] = []
     @State private var isLoading = false
-    @State private var statusMessage = "Press the button to generate 5 letters"
+    @State private var statusMessage = "Press the button to generate a letter"
 
     var body: some View {
         NavigationView {
             VStack {
                 if isLoading {
-                    ProgressView("Somi is writing...")
+                    ProgressView("Letter is writing...")
                         .padding()
                 }
 
@@ -36,7 +36,7 @@ struct AITestView: View {
                 }
 
                 Button(action: testGeneration) {
-                    Text("Generate Batch (5 Letters)")
+                    Text("Generate Letter")
                         .bold()
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -46,7 +46,7 @@ struct AITestView: View {
                 }
                 .padding()
                 .disabled(isLoading)
-                
+
                 Text(statusMessage)
                     .font(.footnote)
                     .foregroundColor(.gray)
@@ -58,36 +58,35 @@ struct AITestView: View {
 
     func testGeneration() {
         isLoading = true
-        statusMessage = "Connecting..."
-        
+        statusMessage = "Generating Letters..."
+
+        // 1. Define your test cases in an array
+        let scenarios = [
+            (from: "Gab",   to: "Somi",  level: 0),
+            (from: "Somi",  to: "Josan", level: 1),
+            (from: "Raka",  to: "Josan", level: 2),
+            (from: "Jenni", to: "Raka",  level: 3),
+            (from: "Raka",  to: "Feli",  level: 4)
+        ]
+
         Task {
-            do {
-                let batch = await AIService.shared.generateBatch(
-                    item: "Shiny Ribbon",
-                    from: "Somi",
-                    to: "Player",
-                    level: 2
-                )
-                
-                DispatchQueue.main.async {
-                    if batch.isEmpty {
-                        self.statusMessage = "Batch is empty. Check Xcode Console!"
-                    } else {
-                        self.generatedLetters = batch
-                        self.statusMessage = "Success!"
+            // 2. Loop through the scenarios
+            for scene in scenarios {
+                if let letter = await AIService.shared.generateSingleLetter(
+                    from: scene.from,
+                    to: scene.to,
+                    level: scene.level
+                ) {
+                    DispatchQueue.main.async {
+                        self.generatedLetters.append(letter)
                     }
-                    self.isLoading = false
                 }
-            } catch let error as LanguageModelSession.GenerationError {
-                // This is the "Magic" part that tells you WHY it failed
-                DispatchQueue.main.async {
-                    self.statusMessage = "Error: \(error)"
-                    self.isLoading = false
-                    print("--- AI ERROR DEBUG ---")
-                    print("Code: \(error)")
-                }
-            } catch {
-                print("Unknown Error: \(error)")
+            }
+
+            // 3. This MUST be inside the Task to wait for the loop to finish!
+            DispatchQueue.main.async {
+                self.statusMessage = "Finished! Generated \(scenarios.count) unique letters."
+                self.isLoading = false
             }
         }
     }

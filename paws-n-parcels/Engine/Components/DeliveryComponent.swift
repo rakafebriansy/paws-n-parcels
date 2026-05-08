@@ -17,22 +17,19 @@ class DeliveryComponent: GKComponent {
         guard !letterBuffer.isEmpty else { return nil }
         
         let letter = letterBuffer.removeFirst()
-        
-        // REFILL TRIGGER: If we hit 5 left, start generating 5 more in the background
-        if letterBuffer.count <= 5 && !isRefilling {
-            refillBuffer(item: item, from: from, to: to, level: level)
-        }
-        
+
         return letter
     }
     
     private func refillBuffer(item: String, from: String, to: String, level: Int) {
         isRefilling = true
-        Task {
-            let newLetters = await AIService.shared.generateBatch(item: item, from: from, to: to, level: level)
-            self.letterBuffer.append(contentsOf: newLetters)
-            self.isRefilling = false
-            print("Buffer refilled. Current count: \(self.letterBuffer.count)")
+        Task { [weak self] in
+            let newLetter = await AIService.shared.generateSingleLetter(from: from, to: to, level: level)
+            if let letter = newLetter {
+                self?.letterBuffer.append(letter)
+            }
+            self?.isRefilling = false
+            print("Buffer refilled. Current count: \(self?.letterBuffer.count ?? 0)")
         }
     }
     

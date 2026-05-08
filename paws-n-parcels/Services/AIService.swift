@@ -13,34 +13,37 @@ class AIService {
     private var session: LanguageModelSession?
 
     init() {
-        // FIX: LanguageModelSession() is not async or throwing
         self.session = LanguageModelSession()
     }
 
-    func generateBatch(item: String, from: String, to: String, level: Int) async -> [PackageLetter] {
-        guard let session = session else { return [] }
+    func generateSingleLetter(from: String, to: String, level: Int) async -> PackageLetter? {
+        guard let session = session else { return nil }
 
         let tone: String
         switch level {
         case 0: tone = "polite and formal"
         case 1: tone = "polite and friendly"
-        case 2: tone = "friendly and getting to know each other better"
-        case 3: tone = "friendly and very close"
-        case 4: tone = "very close to each other and very endearing"
+        case 2: tone = "friendly and warm"
+        case 3: tone = "affectionate and close"
+        case 4: tone = "very endearing and deeply bonded"
         default: tone = "neutral"
         }
 
-        let prompt = "Write 5 short letters from \(from) to \(to) about sending a \(item). Tone: \(tone)."
+        // set the item and make the letter
+        let prompt = """
+        Pick one unique, cozy gift item (like a 'warm scarf', 'special pebble', or 'bag of chips', add more, be creative). 
+        Write a short, heartfelt letter from \(from) to \(to) about sending this item. 
+        Tone: \(tone).
+        Ensure the 'itemSent' field matches the item mentioned in the letter.
+        """
 
         do {
-            // FIX: Use .respond(to:generating:)
-            // The result is a Response object; the data is in .content
-            let response = try await session.respond(to: prompt, generating: LetterBatch.self)
-            
-            return response.content.letters
+            // generate the package letter directly
+            let response = try await session.respond(to: prompt, generating: PackageLetter.self)
+            return response.content
         } catch {
-            print("AI Generation Error: \(error)")
-            return []
+            print("Single Letter Generation Error: \(error)")
+            return nil
         }
     }
 }
