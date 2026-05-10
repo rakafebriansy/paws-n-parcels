@@ -172,6 +172,11 @@ class GameScene: SKScene {
         playerNode.lineWidth = 3
         playerNode.zPosition = 5
         playerNode.position = CGPoint(x: 0, y: 0)
+        
+        // add physics body
+        playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
+        playerNode.physicsBody?.affectedByGravity = false
+        playerNode.physicsBody?.allowsRotation = false
         addChild(playerNode)
         
         // insert visual into entity
@@ -179,78 +184,34 @@ class GameScene: SKScene {
         movementSystem.addComponent(foundIn: playerEntity)
     }
     
-    // MARK: - Setup camera & joystick
-    func setupCameraAndJoystick() {
-        
-        // camera
-        self.camera = cameraNode
-        addChild(cameraNode)
-        
-        // joystick base
-        joystickBase = SKShapeNode(circleOfRadius: 50)
-        joystickBase.fillColor = UIColor.black.withAlphaComponent(0.2)
-        joystickBase.strokeColor = .clear
-        joystickBase.position = CGPoint(x: 0, y: -250) // bottom of screen
-        joystickBase.zPosition = 100 // bring to front
-        cameraNode.addChild(joystickBase)
-        
-        // joystick knob
-        joystickKnob = SKShapeNode(circleOfRadius: 25)
-        joystickKnob.fillColor = .white
-        joystickKnob.strokeColor = .clear
-        joystickKnob.zPosition = 101
-        joystickBase.addChild(joystickKnob)
-    }
-    
-    // MARK: - Touch Input
+    // MARK: - Handling Joystick
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: cameraNode)
+        let treshold = -(self.size.height / 4)
         
-        if joystickBase.contains(location) {
-            isJoystickActive = true
-        }
+        joystick.processTouchBegan(location: location, treshold: treshold)
     }
     
-    // MARK: - Joystick Logic
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard isJoystickActive, let touch = touches.first else { return }
-        let location = touch.location(in: joystickBase)
+        guard let touch = touches.first else { return }
+        let locationInBase = touch.location(in: joystick.baseNode)
         
-        // set knob bounds
-        let maxRadius: CGFloat = 50.0
-        let distance = sqrt(location.x * location.x + location.y * location.y)
+        joystick.processTouchMoved(locationInBase: locationInBase)
         
-        var newPosition = location
-        if distance > maxRadius {
-            let ratio: CGFloat = maxRadius / distance
-            newPosition.x *= ratio
-            newPosition.y *= ratio
-        }
-        joystickKnob.position = newPosition
-        
-        let velocityX = newPosition.x / maxRadius
-        let velocityY = newPosition.y / maxRadius
-    
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
-            movement.velocity = CGPoint(x: velocityX, y: velocityY)
+            movement.velocity = joystick.currentVelocity
         }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        joystick.processTouchEnded()
         
-        // reset joystick on release
-        isJoystickActive = false
-        let resetAction = SKAction.move(to: .zero, duration: 0.1)
-        resetAction.timingMode = .easeOut
-        joystickKnob.run(resetAction)
-        
-        // stop gameplay kit movement
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
-            movement.velocity = .zero
+            movement.velocity = joystick.currentVelocity
         }
     }
-    
+ 
     // MARK: - Update Loop
     override func update(_ currentTime: TimeInterval) {
         if previousTime == 0 {
@@ -261,8 +222,8 @@ class GameScene: SKScene {
         
         movementSystem.update(deltaTime: deltaTime)
         
-        if let renderNode = playerEntity.component(ofType: RenderComponent.self)?.node {
-            cameraNode.position = renderNode.position
+        if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
+            cameraNode.position = playerNode.position
         }
     }
 }
