@@ -22,7 +22,7 @@ class GameScene: SKScene {
     var previousTime: TimeInterval = 0
     
     override func didMove(to view: SKView) {
-        self.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        self.anchorPoint = CGPoint(x: 0, y: 0)
         self.camera = cameraNode
         addChild(cameraNode)
         
@@ -82,12 +82,14 @@ class GameScene: SKScene {
         playerNode.strokeColor = .white
         playerNode.lineWidth = 3
         playerNode.zPosition = 5
-        playerNode.position = CGPoint(x: 0, y: 0)
+        playerNode.position = CGPoint(x: 400, y: 400)
         
         // add physics body
         playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
+        playerNode.physicsBody?.restitution = 0.0
+
         addChild(playerNode)
         
         // insert visual into entity
@@ -134,7 +136,12 @@ class GameScene: SKScene {
         movementSystem.update(deltaTime: deltaTime)
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
-            cameraNode.position = playerNode.position
+            let viewWidth = self.size.width
+                    let viewHeight = self.size.height
+                    let xPos = max(viewWidth / 2, min(playerNode.position.x, 2000 - viewWidth / 2))
+                    let yPos = max(viewHeight / 2, min(playerNode.position.y, 2000 - viewHeight / 2))
+                    
+                    cameraNode.position = CGPoint(x: xPos, y: yPos)
         }
     }
 }
