@@ -177,6 +177,8 @@ class GameScene: SKScene {
         playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
+        playerNode.physicsBody?.restitution = 0.0
+
         addChild(playerNode)
         
         // insert visual into entity
@@ -223,7 +225,12 @@ class GameScene: SKScene {
         movementSystem.update(deltaTime: deltaTime)
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
-            cameraNode.position = playerNode.position
+            let viewWidth = self.size.width
+                    let viewHeight = self.size.height
+                    let xPos = max(viewWidth / 2, min(playerNode.position.x, 2000 - viewWidth / 2))
+                    let yPos = max(viewHeight / 2, min(playerNode.position.y, 2000 - viewHeight / 2))
+                    
+                    cameraNode.position = CGPoint(x: xPos, y: yPos)
         }
     }
 }
