@@ -12,9 +12,17 @@ import SwiftData
 final class PlayerProfile {
     var totalDeliveries: Int = 0
     var totalPoints: Int = 0
-    
+    var positionX: Double
+    var positionY: Double
+
     @Relationship(deleteRule: .cascade)
     var collectibles: [Collectible] = []
     
-    init() {}
+    init(
+        positionX: Double = 0,
+        positionY: Double = 0
+    ) {
+        self.positionX = positionX
+        self.positionY = positionY
+    }
 }

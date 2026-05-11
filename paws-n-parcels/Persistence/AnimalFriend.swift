@@ -10,15 +10,15 @@ import SwiftData
 
 @Model
 final class AnimalFriend {
-    var id: UUID = UUID()
+    @Attribute(.unique) var id: UUID = UUID()
     var name: String
-    var species: String
+    var assetName: String
     
     @Relationship(deleteRule: .cascade)
     var relationships: [AnimalFriendRelationship] = []
     
-    init(name: String, species: String) {
+    init(id: UUID = UUID(), name: String, assetName: String) {
         self.name = name
-        self.species = species
+        self.assetName = assetName
     }
 }
