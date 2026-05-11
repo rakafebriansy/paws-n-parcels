@@ -12,7 +12,6 @@ import FoundationModels
 struct PackageLetter {
     let sender: String
     let recipient: String
-    let itemSent: String
     let messageBody: String
 }
 

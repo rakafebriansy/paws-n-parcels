@@ -27,7 +27,7 @@ class DeliverySystem: GKComponentSystem<DeliveryComponent> {
             item: itemName,
             from: "NPC_Name",  // You can get this from an IdentityComponent if you have one
             to: "NPC Name",
-            level: <#Int#>
+            level: 0
         ) {
             // 2. Send to UI Presentation layer
             print("Showing Letter: \(letter.messageBody)")
