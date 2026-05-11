@@ -27,12 +27,17 @@ class MapBuilder {
             buildRoad(points: roadPath)
         }
         
-        for home in blueprint.homes {
-            buildHome(at: grid(home.pos), color: home.color)
+        for item in blueprint.items {
+            switch item.type {
+            case .house(let color):
+                buildHouse(at: grid(item.pos), color: color, rotation: item.rotation)
+            case .pond:
+                buildPond(at: grid(item.pos), rotation: item.rotation)
+            }
         }
         
-        for obstacle in blueprint.obstacles {
-            buildObstacle(at: grid(obstacle), size: CGSize(width: 50, height: 50))
+        for tree in blueprint.trees {
+            buildTree(at: grid(tree))
         }
     }
     
@@ -88,7 +93,7 @@ class MapBuilder {
         scene.addChild(roadNode)
     }
     
-    private func buildHome(at point: CGPoint, color: UIColor) {
+    private func buildHouse(at point: CGPoint, color: UIColor, rotation: CGFloat?) {
         let homeSize = CGSize(width: 80, height: 80)
         let homeNode = SKShapeNode(rectOf: homeSize, cornerRadius: 15)
         
@@ -97,6 +102,11 @@ class MapBuilder {
         homeNode.strokeColor = .white
         homeNode.lineWidth = 4
         homeNode.zPosition = 1
+        
+        if let degrees = rotation {
+            let angleInRadians = degrees * .pi / 180
+            homeNode.zRotation = angleInRadians
+        }
         
         homeNode.physicsBody = SKPhysicsBody(rectangleOf: homeSize)
         homeNode.physicsBody?.isDynamic = false
@@ -107,24 +117,76 @@ class MapBuilder {
         environmentEntities.append(EnvironmentEntity(node: homeNode))
     }
     
-    private func buildObstacle(at point: CGPoint, size: CGSize) {
-        let obstacle = SKShapeNode(rectOf: size, cornerRadius: 5)
+    private func buildTree(at point: CGPoint) {
+        let treeGroup = SKNode()
+        treeGroup.position = point
         
-        obstacle.position = point
-        obstacle.fillColor = .darkGray
-        obstacle.strokeColor = .black
-        obstacle.zPosition = 1
+        let trunkSize = CGSize(width: 15, height: 30)
+        let trunk = SKShapeNode(rectOf: trunkSize, cornerRadius: 4)
+        trunk.fillColor = UIColor(red: 0.45, green: 0.30, blue: 0.25, alpha: 1.0)
+        trunk.strokeColor = .clear
+        trunk.position = CGPoint(x: 0, y: 0)
+        treeGroup.addChild(trunk)
         
-        obstacle.physicsBody = SKPhysicsBody(rectangleOf: size)
-        obstacle.physicsBody?.isDynamic = false
-        obstacle.physicsBody?.restitution = 0.0
+        let leafColor = UIColor(red: 0.30, green: 0.50, blue: 0.35, alpha: 1.0)
         
-        scene.addChild(obstacle)
+        let mainLeaf = SKShapeNode(circleOfRadius: 35)
+        mainLeaf.fillColor = leafColor
+        mainLeaf.strokeColor = .white
+        mainLeaf.lineWidth = 3
+        mainLeaf.position = CGPoint(x: 0, y: 35)
+        mainLeaf.zPosition = 1
+        treeGroup.addChild(mainLeaf)
+    
+        treeGroup.physicsBody = SKPhysicsBody(circleOfRadius: 15)
+        treeGroup.physicsBody?.isDynamic = false
+        treeGroup.physicsBody?.restitution = 0.0
+        treeGroup.physicsBody?.friction = 0.0
         
-        environmentEntities.append(EnvironmentEntity(node: obstacle))
+        scene.addChild(treeGroup)
+        
+        let treeEntity = EnvironmentEntity(node: treeGroup)
+        environmentEntities.append(treeEntity)
+    }
+    
+    private func buildPond(at point: CGPoint, rotation: CGFloat?) {
+        let s = gridSize * 2
+        let path = CGMutablePath()
+        
+        path.move(to: CGPoint(x: -s, y: -s))
+        path.addLine(to: CGPoint(x: s, y: -s))
+        path.addLine(to: CGPoint(x: s, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: s))
+        path.addLine(to: CGPoint(x: -s, y: s))
+        path.closeSubpath()
+        
+        let pondNode = SKShapeNode(path: path)
+        pondNode.position = point
+        pondNode.fillColor = .systemCyan
+        pondNode.strokeColor = .white.withAlphaComponent(0.5)
+        pondNode.lineWidth = 5
+        pondNode.zPosition = -1
+        
+        if let degrees = rotation {
+            pondNode.zRotation = degrees * .pi / 180
+        }
+        
+        pondNode.physicsBody = SKPhysicsBody(polygonFrom: path)
+        pondNode.physicsBody?.isDynamic = false
+        pondNode.physicsBody?.restitution = 0.0
+        
+        scene.addChild(pondNode)
+        environmentEntities.append(EnvironmentEntity(node: pondNode))
     }
     
     private func grid(_ point: CGPoint) -> CGPoint {
-        return CGPoint(x: point.x * gridSize, y: point.y * gridSize)
+        let offsetX = gridSize / 2
+        let offsetY = gridSize / 2
+        
+        return CGPoint(
+            x: (point.x * gridSize) + offsetX,
+            y: (point.y * gridSize) + offsetY
+        )
     }
 }
