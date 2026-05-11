@@ -24,7 +24,6 @@ struct DeliveryView: View {
     @State private var showCollectibleModal: Bool = false
     @State private var pointsEarned: Int = 0
     
-    // Warna kustom dari desain Figma-mu
     let sageGreen = Color(red: 197/255, green: 218/255, blue: 179/255)
     let creamBackground = Color(red: 0.98, green: 0.96, blue: 0.9)
     let brownText = Color(red: 0.4, green: 0.25, blue: 0.15)
@@ -105,7 +104,7 @@ struct DeliveryView: View {
                     .padding(30)
                     .background(creamBackground)
                     .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.blue.opacity(0.5), lineWidth: 3))
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(brownText, lineWidth: 3))
                     .shadow(radius: 10)
                     .transition(.scale.combined(with: .opacity))
                 }
