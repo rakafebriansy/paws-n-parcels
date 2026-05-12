@@ -8,7 +8,6 @@
 import Foundation
 import GameplayKit
 import SwiftData
-
 class DeliverySystem: GKComponentSystem<DeliveryComponent> {
     private var context: ModelContext?
     
@@ -27,7 +26,7 @@ class DeliverySystem: GKComponentSystem<DeliveryComponent> {
     }
     
     // Fungsi untuk mengantar paket
-    func deliverPackage(for entity: GKEntity, allRelationships: [AnimalFriendRelationship]) -> (pointsAdded: Int, isLevelUp: Bool) {
+    func deliverPackage(for entity: GKEntity) -> (pointsAdded: Int, isLevelUp: Bool) {
         guard let deliveryComp = entity.component(ofType: DeliveryComponent.self),
               let request = deliveryComp.activeRequest,
               let context = self.context else {
@@ -38,6 +37,9 @@ class DeliverySystem: GKComponentSystem<DeliveryComponent> {
         
         // Tandai request selesai
         request.isCompleted = true
+        
+        let fetchDescriptor = FetchDescriptor<AnimalFriendRelationship>()
+        let allRelationships = (try? context.fetch(fetchDescriptor)) ?? []
         
         // Cari relasi di database
         if let relationship = allRelationships.first(where: {

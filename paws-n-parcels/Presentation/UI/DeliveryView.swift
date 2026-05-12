@@ -10,23 +10,20 @@ import SwiftData
 import GameplayKit
 
 struct DeliveryView: View {
-    @Query private var allRelationships: [AnimalFriendRelationship]
-    
     var playerEntity: GKEntity
     var deliverySystem: DeliverySystem
     var req: Requests
     
     @Bindable var activeRelationship: AnimalFriendRelationship
     
-    // State untuk mengontrol Tampilan UI
-    @State private var showPointsToast: Bool = false
-    @State private var showDeliveryModal: Bool = false
-    @State private var showCollectibleModal: Bool = false
-    @State private var pointsEarned: Int = 0
+    @State private var showRelationshipPointsAlert: Bool = false
+    @State private var showPickUpSuccessAlert: Bool = false
+    @State private var showDeliverySuccessAlert: Bool = false
+    @State private var showNewCollectibleAlert: Bool = false
     
-    let sageGreen = Color(red: 197/255, green: 218/255, blue: 179/255)
-    let creamBackground = Color(red: 0.98, green: 0.96, blue: 0.9)
-    let brownText = Color(red: 0.4, green: 0.25, blue: 0.15)
+    @State private var hasPickedUp: Bool = false
+    
+    @State private var pointsEarned: Int = 0
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -45,113 +42,82 @@ struct DeliveryView: View {
                 
                 Button("Ambil Paket") {
                     deliverySystem.pickUpPackage(request: req, for: playerEntity)
+                    hasPickedUp =  true
+                    
+                    withAnimation(.spring()) {
+                        showPickUpSuccessAlert = true
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation(.easeInOut) {
+                            showPickUpSuccessAlert = false
+                        }
+                        
+                    }
                 }
+                .disabled(hasPickedUp)
                 
                 Button("Antar ke Rumah") {
                     processDelivery()
+                    hasPickedUp = false
                 }
+                .disabled(!hasPickedUp)
+
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            
-            if showDeliveryModal || showCollectibleModal {
-                Color.black.opacity(0.3)
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-                    .zIndex(1)
+            if showPickUpSuccessAlert || showDeliverySuccessAlert || showNewCollectibleAlert {
+                Color.black.opacity(0.3).ignoresSafeArea().transition(.opacity).zIndex(1)
             }
             
             ZStack {
-                // Modal A: Pengantaran Sukses
-                if showDeliveryModal {
-                    VStack(spacing: 20) {
-                        Image(systemName: "checkmark")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 80, height: 80)
-                            .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
-                            .bold()
-                        
-                        Text("Package has been delivered!")
-                            .font(.headline)
-                            .bold()
-                            .foregroundColor(brownText)
-                    }
-                    .padding(40)
-                    .background(creamBackground)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(brownText, lineWidth: 3))
-                    .shadow(radius: 10)
-                    .transition(.scale.combined(with: .opacity))
+                if showPickUpSuccessAlert {
+                    PickUpSuccessAlertView()
                 }
                 
-                // Modal B: New Collectible
-                if showCollectibleModal {
-                    VStack(spacing: 20) {
-                        Text("New Collectible Unlocked!")
-                            .font(.largeTitle)
-                            .bold()
-                            .foregroundColor(brownText)
-                        
-                        Button("Tutup") {
-                            withAnimation(.easeInOut) {
-                                showCollectibleModal = false
-                            }
-                        }
-                        .padding(.top, 10)
-                    }
-                    .padding(30)
-                    .background(creamBackground)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(brownText, lineWidth: 3))
-                    .shadow(radius: 10)
-                    .transition(.scale.combined(with: .opacity))
+                if showDeliverySuccessAlert {
+                    DeliverySuccessAlertView()
+                }
+                
+                if showNewCollectibleAlert {
+                    NewCollectibleAlertView(isPresented: $showNewCollectibleAlert)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             .zIndex(2)
             
-            
-            if showPointsToast {
-                Text("+\(pointsEarned) Relationship Points")
-                    .font(.headline)
-                    .foregroundColor(brownText)
-                    .padding()
-                    .background(sageGreen)
-                    .cornerRadius(25)
-                    .shadow(radius: 3)
-                    .padding(.top, 20)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+            if showRelationshipPointsAlert {
+                RelationshipPointsAlertView(points: pointsEarned)
                     .zIndex(3)
             }
         }
     }
     
     private func processDelivery() {
-        let result = deliverySystem.deliverPackage(for: playerEntity, allRelationships: allRelationships)
+        let result = deliverySystem.deliverPackage(for: playerEntity)
         
         if result.pointsAdded > 0 {
             self.pointsEarned = result.pointsAdded
             
-            // 1. Munculkan Toast Poin dan Modal Pengantaran bersamaan
+            // 1. Munculkan Relationship Poin dan Alert Pengantaran bersamaan
             withAnimation(.spring()) {
-                showPointsToast = true
-                showDeliveryModal = true
+                showRelationshipPointsAlert = true
+                showDeliverySuccessAlert = true
             }
             
             // 2. Hilangkan keduanya setelah 1.5 detik
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 withAnimation(.easeInOut) {
-                    showPointsToast = false
-                    showDeliveryModal = false
+                    showRelationshipPointsAlert = false
+                    showDeliverySuccessAlert = false
                 }
                 
-                // 3. Jika naik level, tunggu modal pengantaran hilang, baru munculkan modal New Collectible
+                // 3. Jika naik level, tunggu modal pengantaran hilang, baru munculkan Alert New Collectible
                 if result.isLevelUp {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                            showCollectibleModal = true
+                            showNewCollectibleAlert = true
                         }
                     }
                 }
