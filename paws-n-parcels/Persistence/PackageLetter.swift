@@ -9,7 +9,7 @@ import Foundation
 import FoundationModels
 
 @Generable
-struct PackageLetter {
+struct PackageLetter : Codable{
     let sender: String
     let recipient: String
     let messageBody: String
@@ -17,7 +17,6 @@ struct PackageLetter {
 
 @Generable
 struct LetterBatch {
-    // FIX: Add the 'description:' label to the string
     @Guide(description: "A list of 5 unique letters", .count(5))
     let letters: [PackageLetter]
 }

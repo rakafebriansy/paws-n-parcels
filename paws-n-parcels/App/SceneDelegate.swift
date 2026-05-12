@@ -7,21 +7,27 @@
 
 import UIKit
 import SwiftUI
+import SwiftData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-    func scene(
-        _ scene: UIScene,
-        willConnectTo session: UISceneSession,
-        options connectionOptions: UIScene.ConnectionOptions
-    ) {
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        let container = try! ModelContainer(for: Request.self, AnimalFriend.self, AnimalFriendRelationship.self)
+        let context = ModelContext(container)
+        
+        // In SceneDelegate.swift
+        let system = RequestSystem(modelContext: context)
 
-        // 1. Create your SwiftUI Test View
-        let testView = AITestView()
+        // DO NOT create a new array here. Fill the one inside the system!
+        let names = ["Clair", "Kaelen", "Somi", "Sun-woo", "Min-jun"]
+        system.allHouses = names.map { name in
+            HouseEntity(name: name, position: .zero)
+        }
 
-        // 2. Wrap it in a UIHostingController (this lets SwiftUI live inside UIKit)
+        let testView = RequestDebugView(system: system)
+
         if let windowScene = scene as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
             window.rootViewController = UIHostingController(rootView: testView)
@@ -29,6 +35,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.makeKeyAndVisible()
         }
     }
+    //MARK: FOR AI
+//    func scene(
+//        _ scene: UIScene,
+//        willConnectTo session: UISceneSession,
+//        options connectionOptions: UIScene.ConnectionOptions
+//    ) {
+//
+//        // 1. Create your SwiftUI Test View
+//        let testView = AITestView()
+//
+//        // 2. Wrap it in a UIHostingController (this lets SwiftUI live inside UIKit)
+//        if let windowScene = scene as? UIWindowScene {
+//            let window = UIWindow(windowScene: windowScene)
+//            window.rootViewController = UIHostingController(rootView: testView)
+//            self.window = window
+//            window.makeKeyAndVisible()
+//        }
+//    }
 
     //    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
     //        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
