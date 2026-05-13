@@ -12,6 +12,7 @@ import SwiftUI
 
 class RequestSystem: ObservableObject {
     
+    
     //MARK: VARIABLES
     
     ///request to show for the swiftui popup
@@ -80,6 +81,8 @@ class RequestSystem: ObservableObject {
 
     ///generate and spawn the request on the main 5 houses with generated letter as well
     private func generateAndSpawnRequest() {
+        guard !isGenerating else { return }
+        
         //1. filter the houses that are active from all the houses, check from if the house has name
         ///the main 5 houses that has the NPC
         let eligibleHouses = allHouses.filter { house in
@@ -156,12 +159,84 @@ class RequestSystem: ObservableObject {
                     //add the request component to the sender house as new request
                     senderHouse.addComponent(component)
                     requestComponentSystem.addComponent(component)
+                    
+                    // 5. Trigger UI Refresh
+                    self.refreshID = UUID()
+                    self.objectWillChange.send()
 
+                    isGenerating = false
                     //print for log checking
                     print(
                         "Generated a Level \(friendshipLevel) letter from \(senderName) to \(finalRecipientName)!"
                     )
                 }
+            } else {
+                await MainActor.run { isGenerating = false }
+            }
+        }
+    }
+    
+    func generateAndSpawnRequest() {
+        guard !isGenerating else { return }
+        
+        // 1. Filter for active houses without a request
+        let eligibleHouses = allHouses.filter { house in
+            guard house.characterName != nil else { return false }
+            return house.component(ofType: RequestComponent.self) == nil
+        }
+
+        guard let senderHouse = eligibleHouses.randomElement(),
+              let senderName = senderHouse.characterName else { return }
+
+        // 2. Relationship Logic: Check both slots
+        let validRels = relationships.filter {
+            $0.friendOne?.name == senderName || $0.friendTwo?.name == senderName
+        }
+        
+        guard let chosenRel = validRels.randomElement() else {
+            print("No relationships found for \(senderName)")
+            return
+        }
+
+        let recipientName = (chosenRel.friendOne?.name == senderName)
+            ? chosenRel.friendTwo?.name
+            : chosenRel.friendOne?.name
+
+        guard let finalRecipientName = recipientName else { return }
+
+        isGenerating = true
+        
+        Task {
+            // Call AI Service
+            if let letterData = await AIService.shared.generateSingleLetter(
+                from: senderName,
+                to: finalRecipientName,
+                level: chosenRel.friendshipLevel
+            ) {
+                await MainActor.run {
+                    // 3. The Bridge: Link to SwiftData Objects
+                    guard let senderObj = allFriends.first(where: { $0.name == senderName }),
+                          let receiverObj = allFriends.first(where: { $0.name == finalRecipientName }) else {
+                        isGenerating = false
+                        return
+                    }
+
+                    let newRequest = Request(sender: senderObj, receiver: receiverObj, letter: letterData)
+                    let component = RequestComponent(requestData: newRequest)
+
+                    // 4. Attach to Entity and System
+                    senderHouse.addComponent(component)
+                    requestComponentSystem.addComponent(component)
+
+                    // 5. Trigger UI Refresh
+                    self.refreshID = UUID()
+                    self.objectWillChange.send()
+                    
+                    isGenerating = false
+                    print("✅ Generated: \(senderName) to \(finalRecipientName)")
+                }
+            } else {
+                await MainActor.run { isGenerating = false }
             }
         }
     }
