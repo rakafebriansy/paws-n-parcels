@@ -6,3 +6,8 @@
 //
 
 import Foundation
+import GameplayKit
+
+class FriendshipComponent: GKComponent {
+   
+}

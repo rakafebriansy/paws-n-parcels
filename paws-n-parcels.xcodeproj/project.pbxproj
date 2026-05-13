@@ -34,6 +34,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				App/Info.plist,
+				Info.plist,
 			);
 			target = 1DDB9DB82FA8EE3800AFC25E /* paws-n-parcels */;
 		};
@@ -289,7 +290,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = URFUZSHWW9;
+				DEVELOPMENT_TEAM = D926JM6B44;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "paws-n-parcels/App/Info.plist";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -321,7 +322,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = URFUZSHWW9;
+				DEVELOPMENT_TEAM = D926JM6B44;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "paws-n-parcels/App/Info.plist";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

@@ -6,18 +6,60 @@
 //
 
 import UIKit
+import SwiftUI
+import SwiftData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        guard let _ = (scene as? UIWindowScene) else { return }
+        let container = try! ModelContainer(for: Request.self, AnimalFriend.self, AnimalFriendRelationship.self)
+        let context = ModelContext(container)
+        
+        // In SceneDelegate.swift
+        let system = RequestSystem(modelContext: context)
+
+        // DO NOT create a new array here. Fill the one inside the system!
+        let names = ["Clair", "Kaelen", "Somi", "Sun-woo", "Min-jun"]
+        system.allHouses = names.map { name in
+            HouseEntity(name: name, position: .zero)
+        }
+
+        let testView = RequestDebugView(system: system)
+
+        if let windowScene = scene as? UIWindowScene {
+            let window = UIWindow(windowScene: windowScene)
+            window.rootViewController = UIHostingController(rootView: testView)
+            self.window = window
+            window.makeKeyAndVisible()
+        }
     }
+    //MARK: FOR AI
+//    func scene(
+//        _ scene: UIScene,
+//        willConnectTo session: UISceneSession,
+//        options connectionOptions: UIScene.ConnectionOptions
+//    ) {
+//
+//        // 1. Create your SwiftUI Test View
+//        let testView = AITestView()
+//
+//        // 2. Wrap it in a UIHostingController (this lets SwiftUI live inside UIKit)
+//        if let windowScene = scene as? UIWindowScene {
+//            let window = UIWindow(windowScene: windowScene)
+//            window.rootViewController = UIHostingController(rootView: testView)
+//            self.window = window
+//            window.makeKeyAndVisible()
+//        }
+//    }
+
+    //    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+    //        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
+    //        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
+    //        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
+    //        guard let _ = (scene as? UIWindowScene) else { return }
+    //    }
 
     func sceneDidDisconnect(_ scene: UIScene) {
         // Called as the scene is being released by the system.
@@ -47,6 +89,4 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
 
-
 }
-
