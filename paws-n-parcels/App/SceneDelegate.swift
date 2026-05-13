@@ -5,28 +5,85 @@
 //  Created by Raka Febrian Syahputra on 04/05/26.
 //
 
-import UIKit
-import SwiftUI
 import SwiftData
+import SwiftUI
+import UIKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        let container = try! ModelContainer(for: Request.self, AnimalFriend.self, AnimalFriendRelationship.self)
-        let context = ModelContext(container)
-        
-        // In SceneDelegate.swift
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+
+        // 1. Setup SwiftData Container (In-Memory for clean testing)
+        let schema = Schema([
+            Request.self,
+            AnimalFriend.self,
+            AnimalFriendRelationship.self,
+        ])
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        let container: ModelContainer
+        do {
+            container = try ModelContainer(
+                for: schema,
+                configurations: [config]
+            )
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+
+        let context = container.mainContext
+
+        // 2. BOOTSTRAP: Create the 5 Characters & Relationships
+        // This ensures the 'Bridge' logic in RequestSystem doesn't fail.
+        let names = ["Clair", "Kaelen", "Somi", "Sun-woo", "Min-jun"]
+        var friends: [AnimalFriend] = []
+
+        for name in names {
+            let friend = AnimalFriend(name: name, species: "Domestic")
+            context.insert(friend)
+            friends.append(friend)
+        }
+
+        // Create 2 sample relationships (Clair-Kaelen and Somi-Sunwoo)
+        let rel1 = AnimalFriendRelationship(
+            friendOne: friends[0],
+            friendTwo: friends[1]
+        )
+        rel1.friendOne = friends[0]  // Clair
+        rel1.friendTwo = friends[1]  // Kaelen
+        rel1.friendshipLevel = 1
+
+        let rel2 = AnimalFriendRelationship(
+            friendOne: friends[2],
+            friendTwo: friends[3]
+        )
+        rel2.friendOne = friends[2]  // Somi
+        rel2.friendTwo = friends[3]  // Sun-woo
+        rel2.friendshipLevel = 2
+
+        context.insert(rel1)
+        context.insert(rel2)
+
+        // 3. Initialize RequestSystem & Inject House Entities
         let system = RequestSystem(modelContext: context)
 
-        // DO NOT create a new array here. Fill the one inside the system!
-        let names = ["Clair", "Kaelen", "Somi", "Sun-woo", "Min-jun"]
+        // Create the House objects the system and UI will share
         system.allHouses = names.map { name in
             HouseEntity(name: name, position: .zero)
         }
 
+        // Load the friends/relationships we just created into the system
+        system.fetchInitialData()
+
+        // 4. Wrap in UIHostingController
         let testView = RequestDebugView(system: system)
+            .modelContainer(container)  // Pass container to environment
 
         if let windowScene = scene as? UIWindowScene {
             let window = UIWindow(windowScene: windowScene)
@@ -35,24 +92,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.makeKeyAndVisible()
         }
     }
+
     //MARK: FOR AI
-//    func scene(
-//        _ scene: UIScene,
-//        willConnectTo session: UISceneSession,
-//        options connectionOptions: UIScene.ConnectionOptions
-//    ) {
-//
-//        // 1. Create your SwiftUI Test View
-//        let testView = AITestView()
-//
-//        // 2. Wrap it in a UIHostingController (this lets SwiftUI live inside UIKit)
-//        if let windowScene = scene as? UIWindowScene {
-//            let window = UIWindow(windowScene: windowScene)
-//            window.rootViewController = UIHostingController(rootView: testView)
-//            self.window = window
-//            window.makeKeyAndVisible()
-//        }
-//    }
+    //    func scene(
+    //        _ scene: UIScene,
+    //        willConnectTo session: UISceneSession,
+    //        options connectionOptions: UIScene.ConnectionOptions
+    //    ) {
+    //
+    //        // 1. Create your SwiftUI Test View
+    //        let testView = AITestView()
+    //
+    //        // 2. Wrap it in a UIHostingController (this lets SwiftUI live inside UIKit)
+    //        if let windowScene = scene as? UIWindowScene {
+    //            let window = UIWindow(windowScene: windowScene)
+    //            window.rootViewController = UIHostingController(rootView: testView)
+    //            self.window = window
+    //            window.makeKeyAndVisible()
+    //        }
+    //    }
 
     //    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
     //        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
