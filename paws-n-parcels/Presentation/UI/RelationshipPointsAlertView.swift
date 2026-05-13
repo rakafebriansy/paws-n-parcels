@@ -9,16 +9,14 @@ import SwiftUI
 
 struct RelationshipPointsAlertView: View {
     var points: Int
-    
-    let sageGreen = Color(red: 197/255, green: 218/255, blue: 179/255)
-    let brownText = Color(red: 0.4, green: 0.25, blue: 0.15)
-    
+   
     var body: some View {
         Text("+\(points) Relationship Points")
-            .font(.headline)
-            .foregroundColor(brownText)
+            .comicRelief(size: 20, isBold: true)
+            .multilineTextAlignment(.center)
+            .foregroundColor(.brown)
             .padding()
-            .background(sageGreen)
+            .background(Color.sage)
             .cornerRadius(25)
             .shadow(radius: 3)
             .padding(.top, 20)

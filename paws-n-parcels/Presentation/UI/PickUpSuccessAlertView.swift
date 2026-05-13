@@ -8,28 +8,39 @@
 import SwiftUI
 
 struct PickUpSuccessAlertView: View {
-    let creamBackground = Color(red: 0.98, green: 0.96, blue: 0.9)
-    let brownText = Color(red: 0.4, green: 0.25, blue: 0.15)
-    
+    var message: String
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "checkmark")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
-                .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
-                .bold()
+        ZStack{
+            Image("modal").resizable().scaledToFit().padding(24)
             
-            Text("Package has been picked up!")
-                .font(.headline)
-                .bold()
-                .foregroundColor(brownText)
+            VStack(spacing: 40) {
+                Text("Package has been picked up!")
+                    .comicRelief(size: 30, isBold: true)      .foregroundColor(.brown)
+                    .multilineTextAlignment(.center)
+                
+                Image(systemName: "checkmark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
+                    .bold()
+                
+                Text("\"\(message)\"")
+                    .comicRelief(size: 20, isBold: false)
+                    .foregroundColor(.brown)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
+            .padding(40)
         }
-        .padding(40)
-        .background(creamBackground)
-        .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(brownText, lineWidth: 3))
         .shadow(radius: 10)
         .transition(.scale.combined(with: .opacity))
+    }
+}
+
+#Preview {
+    ZStack {
+        Color.black.opacity(0.3).ignoresSafeArea()
+        PickUpSuccessAlertView(message: "Wow, thanks a ton! Please deliver it in a flash!")
     }
 }

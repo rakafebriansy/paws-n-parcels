@@ -36,11 +36,11 @@ class SeederDatabase {
             
             // Seed 5 AnimalFriend
             let animals = [
-                AnimalFriend(name: "Kelinci", assetName: "rabbit"),
-                AnimalFriend(name: "Kucing", assetName: "cat"),
-                AnimalFriend(name: "Berang-berang", assetName: "beaver"),
-                AnimalFriend(name: "Kura-kura", assetName: "turtle"),
-                AnimalFriend(name: "Capybara", assetName: "capybara")
+                AnimalFriend(name: "Kelinci", assetName: "rabbit", dialog:"Wow, thanks a ton! Please deliver it in a flash!"),
+                AnimalFriend(name: "Kucing", assetName: "cat", dialog:"Meow~ About time it got picked up. Handle it with care, I don't want a single scratch on my package!"),
+                AnimalFriend(name: "Berang-berang", assetName: "beaver", dialog:"Great job! This package is absolutely crucial!"),
+                AnimalFriend(name: "Kura-kura", assetName: "turtle", dialog:"Thank... you... just take your time delivering it... no need to rush..."),
+                AnimalFriend(name: "Capybara", assetName: "capybara", dialog:"Take it easy, my friend. Thanks for stopping by to grab the package.")
             ]
             
             for animal in animals {

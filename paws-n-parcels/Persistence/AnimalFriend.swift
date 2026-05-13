@@ -13,12 +13,14 @@ final class AnimalFriend {
     @Attribute(.unique) var id: UUID = UUID()
     var name: String
     var assetName: String
+    var dialog: String
     
     @Relationship(deleteRule: .cascade)
     var relationships: [AnimalFriendRelationship] = []
     
-    init(id: UUID = UUID(), name: String, assetName: String) {
+    init(id: UUID = UUID(), name: String, assetName: String, dialog: String) {
         self.name = name
         self.assetName = assetName
+        self.dialog = dialog
     }
 }
