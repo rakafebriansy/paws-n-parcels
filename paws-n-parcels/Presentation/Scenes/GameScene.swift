@@ -23,6 +23,7 @@ class GameScene: SKScene {
     
     override func didMove(to view: SKView) {
         self.anchorPoint = CGPoint(x: 0, y: 0)
+        cameraNode.zPosition = 100_000
         self.camera = cameraNode
         addChild(cameraNode)
         
@@ -30,6 +31,7 @@ class GameScene: SKScene {
         mapBuilder.build(blueprint: worldMap)
         
         setupPlayer()
+        setupInvisibleWalls()
         joystick.attach(to: cameraNode, screenHeight: self.size.height)
         
         drawDebugGrid(gridSize: 100)
@@ -137,12 +139,27 @@ class GameScene: SKScene {
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
             let viewWidth = self.size.width
-                    let viewHeight = self.size.height
-                    let xPos = max(viewWidth / 2, min(playerNode.position.x, 2000 - viewWidth / 2))
-                    let yPos = max(viewHeight / 2, min(playerNode.position.y, 2000 - viewHeight / 2))
-                    
-                    cameraNode.position = CGPoint(x: xPos, y: yPos)
+            let viewHeight = self.size.height
+            
+            let mapWidth = worldMap.groundSize.width
+            let mapHeight = worldMap.groundSize.height
+            
+            let xPos = max(viewWidth / 2, min(playerNode.position.x, mapWidth - viewWidth / 2))
+            let yPos = max(viewHeight / 2, min(playerNode.position.y, mapHeight - viewHeight / 2))
+            
+            cameraNode.position = CGPoint(x: xPos, y: yPos)
+            
+            playerNode.zPosition = 10000 - playerNode.position.y
         }
+    }
+    
+    private func setupInvisibleWalls() {
+        let mapSize = worldMap.groundSize
+        
+        let boundaryRect = CGRect(x: 0, y: 0, width: mapSize.width, height: mapSize.height)
+        
+        self.physicsBody = SKPhysicsBody(edgeLoopFrom: boundaryRect)
+        self.physicsBody?.friction = 0.0
     }
 }
 
@@ -152,6 +169,6 @@ class GameScene: SKScene {
         scene.size = CGSize(width: 375, height: 812)
         scene.scaleMode = .aspectFill
         return scene
-    }())
+    }(), debugOptions: [.showsPhysics])
     .ignoresSafeArea()
 }

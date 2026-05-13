@@ -26,7 +26,7 @@ class GameViewController: UIViewController {
             view.showsNodeCount = true
             
             // debugging
-            // view.showsPhysics = true
+             view.showsPhysics = true
         }
     }
 

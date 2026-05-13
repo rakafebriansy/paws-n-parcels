@@ -8,6 +8,7 @@
 import Foundation
 import SpriteKit
 import GameplayKit
+import SwiftUI
 
 class MapBuilder {
     let scene: SKScene
@@ -21,86 +22,167 @@ class MapBuilder {
     }
     
     func build(blueprint: MapBlueprint) {
+        
         buildTerrain(mapSize: blueprint.groundSize, oceanGrids: blueprint.oceanGridHeight, beachGrids: blueprint.beachGridHeight)
         
-        for roadPath in blueprint.roads {
-            buildRoad(points: roadPath)
-        }
+        buildRoads(blueprint.roads)
         
         for item in blueprint.items {
             switch item.type {
-            case .house(let color):
-                buildHouse(at: grid(item.pos), color: color, rotation: item.rotation)
-            case .pond:
-                buildPond(at: grid(item.pos), rotation: item.rotation)
+            case .house:
+                let centerPos = gridCenter(forBottomLeft: item.pos, widthInGrids: 2, heightInGrids: 2)
+                buildHouse(at: centerPos, rotation: item.rotation)
+            case .pond(_):
+                buildIrregularPond(at: CGPoint(x: 12.7, y: 13.7))
+            case .tree:
+                let centerPos = gridCenter(forBottomLeft: item.pos, widthInGrids: 1, heightInGrids: 1)
+                buildTree(at: centerPos)
             }
-        }
-        
-        for tree in blueprint.trees {
-            buildTree(at: grid(tree))
         }
     }
     
     private func buildTerrain(mapSize: CGSize, oceanGrids: CGFloat, beachGrids: CGFloat) {
-        let oceanHeight = oceanGrids * gridSize
-        let beachHeight = beachGrids * gridSize
-        let grassHeight = mapSize.height - oceanHeight - beachHeight
+        let maxGridX = Int(mapSize.width / gridSize)
+        let maxGridY = Int(mapSize.height / gridSize)
         
-        let oceanRect = CGRect(x: 0, y: 0, width: mapSize.width, height: oceanHeight)
-        let ocean = SKShapeNode(rect: oceanRect)
-        ocean.fillColor = .systemBlue
-        ocean.strokeColor = .clear
-        ocean.zPosition = -10
+        let seaTiles = ["sea_1", "sea_2", "sea_3"]
+        let oceanTiles = ["ocean_1", "ocean_2", "ocean_3"]
+        let beachTiles = ["beach_1", "beach_2", "beach_3"]
         
-        ocean.physicsBody = SKPhysicsBody(rectangleOf: oceanRect.size, center: CGPoint(x: oceanRect.width / 2, y: oceanHeight / 2))
-        ocean.physicsBody?.isDynamic = false
-        ocean.physicsBody?.restitution = 0.0
-        ocean.physicsBody?.friction = 0.0
-        scene.addChild(ocean)
-        environmentEntities.append(EnvironmentEntity(node: ocean))
+        let waterHeight = 3.0 * gridSize
+        let waterPhysicsNode = SKNode()
         
-        let beachRect = CGRect(x: 0, y: oceanHeight, width: mapSize.width, height: beachHeight)
-        let beach = SKShapeNode(rect: beachRect)
-        beach.fillColor = UIColor(red: 0.93, green: 0.86, blue: 0.70, alpha: 1.0)
-        beach.strokeColor = .clear
-        beach.zPosition = -10
-        scene.addChild(beach)
+        waterPhysicsNode.position = CGPoint(x: mapSize.width / 2, y: waterHeight / 2)
+        waterPhysicsNode.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: mapSize.width, height: waterHeight))
+        waterPhysicsNode.physicsBody?.isDynamic = false
+        waterPhysicsNode.physicsBody?.restitution = 0.0
+        waterPhysicsNode.physicsBody?.friction = 0.0
         
-        let grassRect = CGRect(x: 0, y: oceanHeight + beachHeight, width: mapSize.width, height: grassHeight)
-        let grass = SKShapeNode(rect: grassRect)
-        grass.fillColor = .systemGreen
-        grass.strokeColor = .clear
-        grass.zPosition = -10
-        scene.addChild(grass)
+        scene.addChild(waterPhysicsNode)
+        environmentEntities.append(EnvironmentEntity(node: waterPhysicsNode))
+        
+        for x in 0..<maxGridX {
+            let repeatingIndex = x % 3
+            
+            for y in 0..<maxGridY {
+                let cell = CGPoint(x: x, y: y)
+                var tileName = ""
+               
+                switch y {
+                case 0:
+                    tileName = "sea"
+                case 1:
+                    tileName = seaTiles[repeatingIndex]
+                case 2:
+                    tileName = oceanTiles[repeatingIndex]
+                case 3:
+                    tileName = beachTiles[repeatingIndex]
+                default:
+                    tileName = "grass"
+                }
+                
+                let tileNode = SKSpriteNode(imageNamed: tileName)
+                tileNode.size = CGSize(width: gridSize, height: gridSize)
+                tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
+
+                tileNode.zPosition = -10
+                scene.addChild(tileNode)
+            }
+        }
     }
     
-    private func buildRoad(points: [CGPoint]) {
-        guard points.count > 1 else { return }
+    private func buildRoads(_ roads: [[CGPoint]]) {
+        var roadCells = Set<CGPoint>()
         
-        let roadPath = CGMutablePath()
-        roadPath.move(to: grid(points[0]))
-        
-        for i in 1..<points.count {
-            roadPath.addLine(to: grid(points[i]))
+        for path in roads {
+            guard path.count > 1 else {
+                continue
+            }
+            
+            for i in 0..<(path.count - 1) {
+                let p1 = path[i]
+                let p2 = path[i + 1]
+                
+                let minX = Int(min(p1.x, p2.x))
+                let maxX = Int(max(p1.x, p2.x))
+                let minY = Int(min(p1.y, p2.y))
+                let maxY = Int(max(p1.y, p2.y))
+                
+                for x in minX...maxX {
+                    for y in minY...maxY {
+                        roadCells.insert(CGPoint(x: x, y: y))
+                        roadCells.insert(CGPoint(x: x + 1, y: y))
+                        roadCells.insert(CGPoint(x: x, y: y - 1))
+                        roadCells.insert(CGPoint(x: x + 1, y: y - 1))
+                    }
+                }
+            }
         }
         
-        let roadNode = SKShapeNode(path: roadPath)
-        roadNode.strokeColor = .systemGray
-        roadNode.lineWidth = 80
-        roadNode.lineCap = .round
-        roadNode.lineJoin = .round
-        roadNode.zPosition = -5
-        scene.addChild(roadNode)
+        for cell in roadCells {
+            let x = Int(cell.x)
+            let y = Int(cell.y)
+            
+            let n = roadCells.contains(CGPoint(x: x, y: y + 1))
+            let e = roadCells.contains(CGPoint(x: x + 1, y: y))
+            let s = roadCells.contains(CGPoint(x: x, y: y - 1))
+            let w = roadCells.contains(CGPoint(x: x - 1, y: y))
+            
+            var sum = 0
+            if n {
+                sum += 1
+            }
+            if e {
+                sum += 2
+            }
+            if s {
+                sum += 4
+            }
+            if w {
+                sum += 8
+            }
+            
+            var tileName = ""
+            
+            switch sum {
+            case 3: tileName = "gravel_corner_bl"
+            case 6: tileName = "gravel_corner_tl"
+            case 7: tileName = "gravel_vertical_l"
+            case 9: tileName = "gravel_corner_br"
+            case 11: tileName = "gravel_horizontal_b"
+            case 12: tileName = "gravel_corner_tr"
+            case 13: tileName = "gravel_vertical_r"
+            case 14: tileName = "gravel_horizontal_t"
+            case 15:
+                let nw = roadCells.contains(CGPoint(x: x - 1, y: y + 1))
+                let ne = roadCells.contains(CGPoint(x: x + 1, y: y + 1))
+                let sw = roadCells.contains(CGPoint(x: x - 1, y: y - 1))
+                let se = roadCells.contains(CGPoint(x: x + 1, y: y - 1))
+                
+                if !nw { tileName = "gravel_bend_tl" }
+                else if !ne { tileName = "gravel_bend_tr" }
+                else if !sw { tileName = "gravel_bend_bl" }
+                else if !se { tileName = "gravel_bend_br" }
+                else { tileName = "gravel_horizontal_t" }
+            default:
+                tileName = "gravel_horizontal_t"
+            }
+            
+            let tileNode = SKSpriteNode(imageNamed: tileName)
+            tileNode.size = CGSize(width: gridSize, height: gridSize)
+            tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
+            tileNode.zPosition = -5
+            
+            scene.addChild(tileNode)
+        }
     }
     
-    private func buildHouse(at point: CGPoint, color: UIColor, rotation: CGFloat?) {
-        let homeSize = CGSize(width: 80, height: 80)
-        let homeNode = SKShapeNode(rectOf: homeSize, cornerRadius: 15)
+    private func buildHouse(at point: CGPoint, rotation: CGFloat?) {
+        let homeSize = CGSize(width: gridSize * 2, height: gridSize * 2)
+        let homeNode = SKSpriteNode(imageNamed: "goldies_house")
         
+        homeNode.size = homeSize
         homeNode.position = point
-        homeNode.fillColor = color
-        homeNode.strokeColor = .white
-        homeNode.lineWidth = 4
         homeNode.zPosition = 1
         
         if let degrees = rotation {
@@ -118,66 +200,68 @@ class MapBuilder {
     }
     
     private func buildTree(at point: CGPoint) {
-        let treeGroup = SKNode()
-        treeGroup.position = point
+        let treeNode = SKSpriteNode(imageNamed: "tree")
         
-        let trunkSize = CGSize(width: 15, height: 30)
-        let trunk = SKShapeNode(rectOf: trunkSize, cornerRadius: 4)
-        trunk.fillColor = UIColor(red: 0.45, green: 0.30, blue: 0.25, alpha: 1.0)
-        trunk.strokeColor = .clear
-        trunk.position = CGPoint(x: 0, y: 0)
-        treeGroup.addChild(trunk)
+        let scaleFactor = gridSize / treeNode.size.width
+        let actualHeight = treeNode.size.height * scaleFactor
+        let trunkYPosition = -(actualHeight / 2) + 15
+        let trunkOffset = CGPoint(x: 0, y: trunkYPosition)
         
-        let leafColor = UIColor(red: 0.30, green: 0.50, blue: 0.35, alpha: 1.0)
+        treeNode.setScale(scaleFactor)
+        treeNode.position = point
+        let baseOfTheTreeY = point.y - (actualHeight / 2)
+        treeNode.zPosition = 10000 - baseOfTheTreeY
         
-        let mainLeaf = SKShapeNode(circleOfRadius: 35)
-        mainLeaf.fillColor = leafColor
-        mainLeaf.strokeColor = .white
-        mainLeaf.lineWidth = 3
-        mainLeaf.position = CGPoint(x: 0, y: 35)
-        mainLeaf.zPosition = 1
-        treeGroup.addChild(mainLeaf)
-    
-        treeGroup.physicsBody = SKPhysicsBody(circleOfRadius: 15)
-        treeGroup.physicsBody?.isDynamic = false
-        treeGroup.physicsBody?.restitution = 0.0
-        treeGroup.physicsBody?.friction = 0.0
+        treeNode.physicsBody = SKPhysicsBody(circleOfRadius: 15, center: trunkOffset)
         
-        scene.addChild(treeGroup)
+        treeNode.physicsBody?.isDynamic = false
+        treeNode.physicsBody?.restitution = 0.0
+        treeNode.physicsBody?.friction = 0.0
         
-        let treeEntity = EnvironmentEntity(node: treeGroup)
+        scene.addChild(treeNode)
+        
+        let treeEntity = EnvironmentEntity(node: treeNode)
         environmentEntities.append(treeEntity)
     }
     
-    private func buildPond(at point: CGPoint, rotation: CGFloat?) {
-        let s = gridSize * 2
-        let path = CGMutablePath()
+    private func buildIrregularPond(at origin: CGPoint) {
+        let pondLayout: [[String?]] = [
+            ["pond_corner_tl", "pond_horizontal_t" ,"pond_horizontal_t", "pond_horizontal_t", "pond_horizontal_t", "pond_horizontal_t", "pond_horizontal_t", "pond_corner_tr"],
+            ["pond_vertical_l", "pond", "pond", "pond", "pond", "pond", "pond", "pond_vertical_r"],
+            ["pond_vertical_l", "pond", "pond", "pond", "pond", "pond", "pond", "pond_vertical_r"],
+            ["pond_corner_bl", "pond_horizontal_b" ,"pond_horizontal_b","pond_bend_bl", "pond", "pond", "pond", "pond_vertical_r"],
+            [nil, nil, nil, "pond_vertical_l", "pond", "pond", "pond", "pond_vertical_r"],
+            [nil, nil, nil, "pond_corner_bl", "pond_horizontal_b", "pond_horizontal_b", "pond_horizontal_b", "pond_corner_br"]
+        ]
         
-        path.move(to: CGPoint(x: -s, y: -s))
-        path.addLine(to: CGPoint(x: s, y: -s))
-        path.addLine(to: CGPoint(x: s, y: 0))
-        path.addLine(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: 0, y: s))
-        path.addLine(to: CGPoint(x: -s, y: s))
-        path.closeSubpath()
+        let totalRows = pondLayout.count
         
-        let pondNode = SKShapeNode(path: path)
-        pondNode.position = point
-        pondNode.fillColor = .systemCyan
-        pondNode.strokeColor = .white.withAlphaComponent(0.5)
-        pondNode.lineWidth = 5
-        pondNode.zPosition = -1
-        
-        if let degrees = rotation {
-            pondNode.zRotation = degrees * .pi / 180
+        for (rowIndex, rowArray) in pondLayout.enumerated() {
+            for (colIndex, tileName) in rowArray.enumerated() {
+                
+                guard let tileName = tileName else { continue }
+                
+                let currentX = origin.x + CGFloat(colIndex)
+
+                let currentY = origin.y + CGFloat(totalRows - 1 - rowIndex)
+                
+                let cell = CGPoint(x: currentX, y: currentY)
+                
+                let tileNode = SKSpriteNode(imageNamed: tileName)
+                tileNode.size = CGSize(width: gridSize, height: gridSize)
+                tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
+
+                tileNode.zPosition = -8
+                
+                tileNode.physicsBody = SKPhysicsBody(rectangleOf: tileNode.size)
+                tileNode.physicsBody?.isDynamic = false
+                tileNode.physicsBody?.restitution = 0.0
+                tileNode.physicsBody?.friction = 0.0
+                
+                scene.addChild(tileNode)
+                environmentEntities.append(EnvironmentEntity(node: tileNode))
+            }
         }
-        
-        pondNode.physicsBody = SKPhysicsBody(polygonFrom: path)
-        pondNode.physicsBody?.isDynamic = false
-        pondNode.physicsBody?.restitution = 0.0
-        
-        scene.addChild(pondNode)
-        environmentEntities.append(EnvironmentEntity(node: pondNode))
     }
     
     private func grid(_ point: CGPoint) -> CGPoint {
@@ -189,4 +273,25 @@ class MapBuilder {
             y: (point.y * gridSize) + offsetY
         )
     }
+    
+    private func gridCenter(forBottomLeft point: CGPoint, widthInGrids: CGFloat, heightInGrids: CGFloat) -> CGPoint {
+        let exactX = (point.x * gridSize) + ((widthInGrids * gridSize) / 2)
+        let exactY = (point.y * gridSize) + ((heightInGrids * gridSize) / 2)
+        return CGPoint(x: exactX, y: exactY)
+    }
+}
+#Preview {
+    SpriteView(scene: {
+        // Asumsi variabel global `worldMap` dapat dibaca oleh file ini
+        let previewScene = SKScene(size: worldMap.groundSize)
+        
+        previewScene.anchorPoint = CGPoint(x: 0, y: 0)
+        previewScene.scaleMode = .aspectFit
+        
+        let builder = MapBuilder(scene: previewScene, gridSize: 100)
+        builder.build(blueprint: worldMap)
+        
+        return previewScene
+    }())
+    .ignoresSafeArea()
 }
