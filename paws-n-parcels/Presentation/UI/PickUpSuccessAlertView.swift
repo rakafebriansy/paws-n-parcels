@@ -14,8 +14,8 @@ struct PickUpSuccessAlertView: View {
             Image("modal").resizable().scaledToFit().padding(24)
             
             VStack(spacing: 40) {
-                Text("Package has been picked up!")
-                    .comicRelief(size: 30, isBold: true)      .foregroundColor(.brown)
+                Text("Ready for Delivery!")
+                    .comicRelief(size: 45, isBold: true)      .foregroundColor(.brown)
                     .multilineTextAlignment(.center)
                 
                 Image(systemName: "checkmark")
