@@ -8,16 +8,13 @@
 import SwiftUI
 
 struct DeliverySuccessAlertView: View {
-    let creamBackground = Color(red: 0.98, green: 0.96, blue: 0.9)
-    let brownText = Color(red: 0.4, green: 0.25, blue: 0.15)
-    
     var body: some View {
         ZStack {
             Image("modal").resizable().scaledToFit().padding(24)
             
             VStack(spacing: 40) {
                 Text("Package has been delivered!")
-                    .comicRelief(size: 30, isBold: true)     .foregroundColor(.brown)
+                    .comicRelief(size: 35, isBold: true)     .foregroundColor(.brown)
                     .multilineTextAlignment(.center)
                 
                 Image(systemName: "checkmark")
