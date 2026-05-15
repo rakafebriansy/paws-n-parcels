@@ -14,7 +14,7 @@ struct DeliverySuccessAlertView: View {
             
             VStack(spacing: 40) {
                 Text("Package has been delivered!")
-                    .comicRelief(size: 35, isBold: true)     .foregroundColor(.brown)
+                    .comicRelief(size: 35, isBold: true)     .foregroundColor(.darkGray)
                     .multilineTextAlignment(.center)
                 
                 Image(systemName: "checkmark")
@@ -28,7 +28,6 @@ struct DeliverySuccessAlertView: View {
             }
             .padding(40)
         }
-            .shadow(radius: 10)
             .transition(.scale.combined(with: .opacity))
     }
 }

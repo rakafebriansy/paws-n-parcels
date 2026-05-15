@@ -12,9 +12,9 @@ struct NewCollectibleAlertView: View {
     var body: some View {
         ZStack{
             Image("modal").resizable().scaledToFit().padding(24)
-            VStack(spacing: 20) {
+            VStack(spacing: 40) {
                 Text("New Collectible Unlocked!")
-                    .comicRelief(size: 30, isBold: true)     .foregroundColor(.brown)
+                    .comicRelief(size: 30, isBold: true)     .foregroundColor(.darkGray)
                     .multilineTextAlignment(.center)
                 
                 Image(systemName: "checkmark")
@@ -24,16 +24,25 @@ struct NewCollectibleAlertView: View {
                     .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
                     .bold()
                 
-                Button("Tutup") {
+                Button(action: {
                     withAnimation(.easeInOut) {
                         isPresented = false
                     }
+                }){
+                    HStack{
+                        Text("Yay!")
                 }
-                .padding(.top, 10)
+                                        .comicRelief(size: 25, isBold: true)
+                                        .tracking(1.5)
+                                        .foregroundColor(Color.cream)
+                                        .padding(.vertical, 8)
+                                        .padding(.horizontal, 20)
+                                        .background(Color.darkGray)
+                                        .cornerRadius(35)
+                                    }
+                                }
             }
             .padding(30)
-        }
-            .shadow(radius: 10)
             .transition(.scale.combined(with: .opacity))
     }
 }
@@ -42,7 +51,6 @@ struct NewCollectibleAlertView: View {
    
     ZStack {
         Color.black.opacity(0.3).ignoresSafeArea()
-        
         NewCollectibleAlertView(isPresented: .constant(true))
     }
 }
