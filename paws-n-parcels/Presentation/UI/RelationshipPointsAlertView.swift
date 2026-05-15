@@ -18,7 +18,6 @@ struct RelationshipPointsAlertView: View {
             .padding()
             .background(Color.sage)
             .cornerRadius(25)
-            .shadow(radius: 3)
             .padding(.top, 20)
             .transition(.move(edge: .top).combined(with: .opacity))
     }

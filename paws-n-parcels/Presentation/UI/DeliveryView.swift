@@ -133,7 +133,7 @@ struct DeliveryView: View {
     let context = container.mainContext
     
     // data hewan dan request palsu
-    let kelinci = AnimalFriend(name: "Kelinci", assetName: "rabbit", dialog: "Wow, thanks a ton! Please deliver it in a flash!")
+    let kelinci = AnimalFriend(name: "Kelinci", assetName: "rabbit", dialog: "Oh, you're here! I’ve been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!")
     let beruang = AnimalFriend(name: "Beruang", assetName: "bear", dialog: "Thanks for picking this up! Make sure it arrives safely.")
     let relasiPalsu = AnimalFriendRelationship(friendOne: kelinci, friendTwo: beruang)
     let requestPalsu = Requests(sender: kelinci, receiver: beruang)

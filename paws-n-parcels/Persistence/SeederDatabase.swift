@@ -36,11 +36,31 @@ class SeederDatabase {
             
             // Seed 5 AnimalFriend
             let animals = [
-                AnimalFriend(name: "Kelinci", assetName: "rabbit", dialog:"Wow, thanks a ton! Please deliver it in a flash!"),
-                AnimalFriend(name: "Kucing", assetName: "cat", dialog:"Meow~ About time it got picked up. Handle it with care, I don't want a single scratch on my package!"),
-                AnimalFriend(name: "Berang-berang", assetName: "beaver", dialog:"Great job! This package is absolutely crucial!"),
-                AnimalFriend(name: "Kura-kura", assetName: "turtle", dialog:"Thank... you... just take your time delivering it... no need to rush..."),
-                AnimalFriend(name: "Capybara", assetName: "capybara", dialog:"Take it easy, my friend. Thanks for stopping by to grab the package.")
+                AnimalFriend(
+                    name: "Kelinci",
+                    assetName: "rabbit",
+                    dialog: "Oh, you're here! I’ve been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!"
+                ),
+                AnimalFriend(
+                    name: "Kucing",
+                    assetName: "cat",
+                    dialog: "Meow~ About time. Handle it with care, please; I don’t want a single scratch on my package! Thanks for finally showing up."
+                ),
+                AnimalFriend(
+                    name: "Berang-berang",
+                    assetName: "beaver",
+                    dialog: "Great job being on time! This package is absolutely crucial for me. Thanks for the help—I’m counting on you to get it there in one piece."
+                ),
+                AnimalFriend(
+                    name: "Kura-kura",
+                    assetName: "turtle",
+                    dialog: "Thank... you... just take your time delivering it... no need to rush... the world moves fast enough as it is. Have a... lovely... stroll."
+                ),
+                AnimalFriend(
+                    name: "Capybara",
+                    assetName: "capybara",
+                    dialog: "Take it easy, my friend. Thanks for stopping by to grab the package. No need to stress—it’ll get there when it gets there. Safe travels."
+                )
             ]
             
             for animal in animals {
