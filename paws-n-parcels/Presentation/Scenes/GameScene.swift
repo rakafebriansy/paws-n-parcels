@@ -18,16 +18,7 @@ class GameScene: SKScene {
     weak var deliverySystem: DeliverySystem?
     weak var requestSystem: RequestSystem? {
         didSet {
-            if let builder = mapBuilder {
-                requestSystem?.allHouses = builder.environmentEntities.compactMap {
-                    entity in
-                    return entity as? HouseEntity
-                }
-                print("\(requestSystem?.allHouses.count ?? 0) houses registered successfully")
-                
-                requestSystem?.fetchRelationships()
-                requestSystem?.initialBurstSpawn()
-            }
+            registerHousesAndStartSpawning()
         }
     }
     
@@ -53,6 +44,21 @@ class GameScene: SKScene {
         joystick.attach(to: cameraNode, screenHeight: self.size.height)
         
         drawDebugGrid(gridSize: 100)
+        
+        // If requestSystem was already set before didMove, register houses now
+        registerHousesAndStartSpawning()
+    }
+    
+    private func registerHousesAndStartSpawning() {
+        guard let builder = mapBuilder, let reqSys = requestSystem else { return }
+        // Only register if not already done
+        guard reqSys.allHouses.isEmpty else { return }
+        
+        reqSys.allHouses = builder.environmentEntities.compactMap { $0 as? HouseEntity }
+        print("\(reqSys.allHouses.count) houses registered successfully")
+        
+        reqSys.fetchRelationships()
+        reqSys.initialBurstSpawn()
     }
     
     // MARK: - Grid support line
@@ -279,12 +285,11 @@ class GameScene: SKScene {
     }
     
     private func updateIndicators() {
-        guard let mapBuilder = mapBuilder,
-              let deliverySys = deliverySystem else {
+        guard let mapBuilder = mapBuilder else {
             return
         }
         
-        let targetReceiverId = deliverySys.activePackage?.receiverId
+        let targetReceiverId = deliverySystem?.activePackage?.receiverId
         
         for entity in mapBuilder.environmentEntities {
             if let house = entity as? HouseEntity,
@@ -295,7 +300,14 @@ class GameScene: SKScene {
                 let isSender = house.component(ofType: RequestComponent.self) != nil
                 senderIcon?.isHidden = !isSender
                 
-                let isTarget = (house.characterName != nil && house.characterName == requestSystem?.allFriends.first(where: { $0.id == targetReceiverId })?.name)
+                let isTarget: Bool
+                if let receiverId = targetReceiverId,
+                   let houseName = house.characterName,
+                   let receiverName = requestSystem?.allFriends.first(where: { $0.id == receiverId })?.name {
+                    isTarget = (houseName == receiverName)
+                } else {
+                    isTarget = false
+                }
                 receiverIcon?.isHidden = !isTarget
                 
                 // BUG-09: Counter-rotate indicators
@@ -311,7 +323,6 @@ class GameScene: SKScene {
                     }
                 } else {
                     senderIcon?.removeAction(forKey: "bounce")
-                    // Reset to original position if needed, or it's fine since it's hidden
                 }
                 
                 if isTarget {

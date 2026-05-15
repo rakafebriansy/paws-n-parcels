@@ -25,7 +25,29 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             )
         } catch {
             print("Failed to create ModelContainer: \(error)")
-            return
+            print("Deleting old database and retrying...")
+            
+            // Delete the old incompatible database files
+            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let storePath = appSupport.appendingPathComponent("default.store").path
+            for suffix in ["", "-wal", "-shm"] {
+                try? FileManager.default.removeItem(atPath: storePath + suffix)
+            }
+            
+            // Retry
+            do {
+                container = try ModelContainer(for: 
+                    Request.self, 
+                    AnimalFriend.self, 
+                    AnimalFriendRelationship.self,
+                    Collectible.self,
+                    PlayerProfile.self
+                )
+                print("ModelContainer created successfully after reset.")
+            } catch {
+                print("Fatal: Could not create ModelContainer even after reset: \(error)")
+                return
+            }
         }
         
         let context = ModelContext(container)

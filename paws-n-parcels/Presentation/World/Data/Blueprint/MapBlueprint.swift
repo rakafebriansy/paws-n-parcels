@@ -80,7 +80,7 @@ let worldMap = MapBlueprint(
         ItemBlueprint(type: .house, pos: CGPoint(x: 21, y: 25)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 23, y: 23)),
         
-        ItemBlueprint(type: .pond(size: CGSize(width: 3, height: 2)), pos: CGPoint(x: 14, y: 16), rotation: 180),
+        ItemBlueprint(type: .pond(size: CGSize(width: 3, height: 2)), pos: CGPoint(x: 12.7, y: 13.7), rotation: 180),
     ] +
     ItemBlueprint.generateForest(origin: CGPoint(x: 5, y: 6), columns: 8, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
     ItemBlueprint.generateForest(origin: CGPoint(x: 0, y: 26), columns: 5, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +

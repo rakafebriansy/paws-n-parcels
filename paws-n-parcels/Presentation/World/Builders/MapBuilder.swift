@@ -201,7 +201,7 @@ class MapBuilder {
         senderIndicator.name = "indicator_sender"
         senderIndicator.fontSize = 40
         senderIndicator.position = CGPoint(x: 0, y: (houseSize.height / 2) + 20)
-        senderIndicator.zPosition = 10
+        senderIndicator.zPosition = 100
         senderIndicator.isHidden = true
         houseNode.addChild(senderIndicator)
         
@@ -209,7 +209,7 @@ class MapBuilder {
         receiverIndicator.name = "indicator_receiver"
         receiverIndicator.fontSize = 40
         receiverIndicator.position = CGPoint(x: 0, y: (houseSize.height / 2) + 20)
-        receiverIndicator.zPosition = 10
+        receiverIndicator.zPosition = 100
         receiverIndicator.isHidden = true
         houseNode.addChild(receiverIndicator)
 

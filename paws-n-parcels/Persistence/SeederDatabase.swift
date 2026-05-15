@@ -71,6 +71,15 @@ class SeederDatabase {
             for item in collectibles {
                 context.insert(item)
             }
+            
+            do {
+                try context.save()
+                print("Seeding berhasil! \(animals.count) animals, \(allRelationships.count) relationships, \(collectibles.count) collectibles.")
+            } catch {
+                print("Gagal menyimpan seed data: \(error)")
+            }
+        } else {
+            print("Database sudah terisi: \(existingAnimals.count) animals, \(existingRelationships.count) relationships.")
         }
     }
 }

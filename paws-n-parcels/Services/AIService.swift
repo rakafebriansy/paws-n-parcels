@@ -22,7 +22,13 @@ class AIService {
     func generateSingleLetter(from: String, to: String, level: Int) async
         -> PackageLetter?
     {
-        guard let session = session else { return nil }
+        guard let session = session else { 
+            return PackageLetter(
+                sender: from,
+                recipient: to,
+                messageBody: "Hello \(to), here is a special package for you! Best, \(from)."
+            )
+        }
 
         ///tone depending on the relationship level
         let tone: String
@@ -55,9 +61,12 @@ class AIService {
             // This is now a real PackageLetter object, not just a string!
             return response.content
         } catch {
-            //print for log
             print("Generation Error: \(error)")
-            return nil
+            return PackageLetter(
+                sender: from,
+                recipient: to,
+                messageBody: "Hello \(to), here is a special package for you! Best, \(from)."
+            )
         }
     }
 }
