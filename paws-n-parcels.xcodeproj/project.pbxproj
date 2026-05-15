@@ -34,7 +34,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				App/Info.plist,
-				Info.plist,
 			);
 			target = 1DDB9DB82FA8EE3800AFC25E /* paws-n-parcels */;
 		};

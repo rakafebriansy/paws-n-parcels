@@ -13,7 +13,9 @@ class AIService {
     private var session: LanguageModelSession?
 
     init() {
-        self.session = LanguageModelSession()
+        if #available(iOS 26.0, *) {
+            self.session = LanguageModelSession()
+        }
     }
 
     ///generate single letter with from, to, and level of relationship filled

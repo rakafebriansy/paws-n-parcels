@@ -14,10 +14,7 @@ final class AnimalFriend {
     var name: String
     var assetName: String
     
-    @Relationship(deleteRule: .cascade)
-    var relationships: [AnimalFriendRelationship] = []
-    
-    init(id: UUID = UUID(), name: String, assetName: String) {
+    init(name: String, assetName: String) {
         self.name = name
         self.assetName = assetName
     }

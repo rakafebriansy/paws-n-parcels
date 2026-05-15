@@ -12,16 +12,16 @@ import Foundation
 class Request {
     @Attribute(.unique) var id: UUID
     var isCompleted: Bool
-    var sender: AnimalFriend
-    var receiver: AnimalFriend
+    var senderId: UUID
+    var receiverId: UUID
     var letter: PackageLetter
     
     var timestampCompleted: Date
     
-    init(id: UUID = UUID(), sender: AnimalFriend, receiver: AnimalFriend, letter: PackageLetter, isCompleted: Bool = false, timestampCompleted: Date = Date()) {
+    init(id: UUID = UUID(), senderId: UUID, receiverId: UUID, letter: PackageLetter, isCompleted: Bool = false, timestampCompleted: Date = Date()) {
         self.id = id
-        self.sender = sender
-        self.receiver = receiver
+        self.senderId = senderId
+        self.receiverId = receiverId
         self.letter = letter
         self.isCompleted = isCompleted
         self.timestampCompleted = timestampCompleted

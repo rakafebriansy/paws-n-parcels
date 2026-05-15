@@ -12,14 +12,14 @@ import SwiftData
 final class AnimalFriendRelationship {
     @Attribute(.unique) var id: UUID = UUID()
     var friendshipPoints: Int = 0
-    // var friendshipLevel: Int = 0
+     var friendshipLevel: Int = 0
     
-    var friendOne: AnimalFriend
-    var friendTwo: AnimalFriend
+    var friendOneId: UUID
+    var friendTwoId: UUID
     
-    init(friendOne: AnimalFriend, friendTwo: AnimalFriend) {
-        self.friendOne = friendOne
-        self.friendTwo = friendTwo
+    init(friendOneId: UUID, friendTwoId: UUID) {
+        self.friendOneId = friendOneId
+        self.friendTwoId = friendTwoId
     }
     
 //    var coinMultiplier: Double {

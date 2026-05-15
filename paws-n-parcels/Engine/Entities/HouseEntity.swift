@@ -9,16 +9,24 @@ import GameplayKit
 import SpriteKit
 
 class HouseEntity: GKEntity {
-    // If this is nil, it's just a decoration house!
     let characterName: String?
 
+    init(name: String? = nil, node: SKNode) {
+        self.characterName = name
+        super.init()
+        
+        addComponent(RenderComponent(node: node))
+    }
+
+    // testing usage
     init(name: String? = nil, position: CGPoint) {
         self.characterName = name
         super.init()
         
-        // Everyone gets a sprite
-        let sprite = SpriteComponent(texture: SKTexture(imageNamed: "house_static"), position: position)
-        addComponent(sprite)
+        let logicalNode = SKNode()
+        logicalNode.position = position
+        
+        addComponent(RenderComponent(node: logicalNode))
     }
     
     required init?(coder: NSCoder) { fatalError() }

@@ -11,7 +11,9 @@ import GameplayKit
 
 class MovementComponent: GKComponent {
     var velocity: CGPoint = .zero
-    let speed: CGFloat = 200.0
+    var speed: CGFloat {
+        return 200.0 * GameConfig.playerSpeedMultiplier
+    }
     
     override func update(deltaTime seconds: TimeInterval) {
         guard let renderNode = entity?.component(ofType: RenderComponent.self)?.node else { return }

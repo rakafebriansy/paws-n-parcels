@@ -10,11 +10,12 @@ import SwiftData
 import GameplayKit
 
 struct DeliveryView: View {
+    @Query private var allFriends: [AnimalFriend]
     @Query private var allRelationships: [AnimalFriendRelationship]
     
     var playerEntity: GKEntity
     var deliverySystem: DeliverySystem
-    var req: Requests
+    var req: Request
     
     @Bindable var activeRelationship: AnimalFriendRelationship
     
@@ -32,8 +33,10 @@ struct DeliveryView: View {
         ZStack(alignment: .top) {
             VStack(spacing: 40) {
                 VStack(spacing: 8) {
-                    Text("Paket dari: \(req.sender.name)")
-                    Text("Untuk: \(req.receiver.name)")
+                    let senderName = allFriends.first(where: { $0.id == req.senderId })?.name ?? "Unknown"
+                    let receiverName = allFriends.first(where: { $0.id == req.receiverId })?.name ?? "Unknown"
+                    Text("Paket dari: \(senderName)")
+                    Text("Untuk: \(receiverName)")
                     Divider().padding(.vertical, 5)
                     Text("Relationship Points: \(activeRelationship.friendshipPoints)")
                         .font(.headline)
@@ -158,30 +161,4 @@ struct DeliveryView: View {
             }
         }
     }
-}
-
-#Preview {
-    // database palsu
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: AnimalFriend.self, AnimalFriendRelationship.self, Collectible.self, Requests.self, configurations: config)
-    let context = container.mainContext
-    
-    // data hewan dan request palsu
-    let kelinci = AnimalFriend(name: "Kelinci", assetName: "rabbit")
-    let beruang = AnimalFriend(name: "Beruang", assetName: "bear")
-    let relasiPalsu = AnimalFriendRelationship(friendOne: kelinci, friendTwo: beruang)
-    let requestPalsu = Requests(sender: kelinci, receiver: beruang)
-    
-    context.insert(kelinci)
-    context.insert(beruang)
-    context.insert(relasiPalsu)
-    context.insert(requestPalsu)
-    
-    // Entitas dan Sistem palsu
-    let dummyGoldie = GoldieEntity()
-    let dummySystem = DeliverySystem()
-    dummySystem.setup(context: context)
-    
-    return DeliveryView(playerEntity: dummyGoldie, deliverySystem: dummySystem, req: requestPalsu, activeRelationship: relasiPalsu)
-        .modelContainer(container)
 }

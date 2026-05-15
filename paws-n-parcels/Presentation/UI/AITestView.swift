@@ -69,7 +69,7 @@ struct AITestView: View {
             (from: "Raka",  to: "Feli",  level: 4)
         ]
 
-        Task {
+        Task { @MainActor in
             // 2. Loop through the scenarios
             for scene in scenarios {
                 if let letter = await AIService.shared.generateSingleLetter(
@@ -77,17 +77,13 @@ struct AITestView: View {
                     to: scene.to,
                     level: scene.level
                 ) {
-                    DispatchQueue.main.async {
-                        self.generatedLetters.append(letter)
-                    }
+                    self.generatedLetters.append(letter)
                 }
             }
 
             // 3. This MUST be inside the Task to wait for the loop to finish!
-            DispatchQueue.main.async {
-                self.statusMessage = "Finished! Generated \(scenarios.count) unique letters."
-                self.isLoading = false
-            }
+            self.statusMessage = "Finished! Generated \(scenarios.count) unique letters."
+            self.isLoading = false
         }
     }
 }

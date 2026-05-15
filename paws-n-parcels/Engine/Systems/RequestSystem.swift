@@ -5,193 +5,189 @@
 //  Created by Felicia Joshlyn Purnomo on 11/05/26.
 //
 
-internal import Combine
+import Combine
 import GameplayKit
 import SwiftData
 import SwiftUI
 
+@MainActor
 class RequestSystem: ObservableObject {
-    //to pause when it's generating
-    @Published var isGenerating: Bool = false
-    //forces swiftUI to redraw when entities change
     @Published var refreshID = UUID()
 
-    //MARK: VARIABLES
-
-    ///request to show for the swiftui popup
     @Published var completedRequestToShow: Request?
-
-    ///call the request component
-    let requestComponentSystem = GKComponentSystem(
+    let system = GKComponentSystem(
         componentClass: RequestComponent.self
     )
-
-    ///current active request for delivery
     var currentActiveRequest: Request?
-
-    ///get all friends for the letter making
     var allFriends: [AnimalFriend] = []
-
-    ///model context for the...
-    private var modelContext: ModelContext
-
-    ///timer for the spawning for the request notif (10 seconds as default)
-    private var spawnTimer: TimeInterval = 10.0
-
-    ///make sure the max request is 5
-    private let maxRequests = 5
-
-    ///get all the houses from the whole game
+    var modelContext: ModelContext
+    var spawnTimer: TimeInterval = 10.0
     var allHouses: [HouseEntity] = []
+    
+    private var reservedHouseNames: Set<String> = []
 
-    //MARK: use later
-    ///state machine
-    let stateMachine = GKStateMachine(states: [])  // Initialize with states above
 
-    ///get all the realtionship
     var relationships: [AnimalFriendRelationship] = []
 
-    //initialize model context
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
     }
-
-    ///update for each time for the requests spawn
+    
     func update(deltaTime: TimeInterval) {
-        // 1. Count how many houses have a notification component
         let activeCount = allHouses.filter {
             $0.component(ofType: RequestComponent.self) != nil
         }.count
 
-        // 2. Spawn logic: If < 5, run the 10s timer
-        if activeCount < maxRequests {
+        if activeCount < GameConfig.maxRequests {
             spawnTimer -= deltaTime
             if spawnTimer <= 0 {
                 generateAndSpawnRequest()
-                spawnTimer = 10.0  // Reset interval
+                spawnTimer = 10.0
             }
         }
     }
-
-    //MARK: REQUEST GENERATION
-
-    ///fetch all the relationships to generate the letter and get the friendship level for letter generation
-    private func fetchRelationships() {
-        let descriptor = FetchDescriptor<AnimalFriendRelationship>()
-        self.relationships = (try? modelContext.fetch(descriptor)) ?? []
+    
+    func pickupRequest(from house: HouseEntity) -> Request? {
+        if let component = house.component(ofType: RequestComponent.self) {
+            let request = component.requestData
+            
+            house.removeComponent(ofType: RequestComponent.self)
+            system.removeComponent(component)
+            
+            self.refreshID = UUID()
+            self.objectWillChange.send()
+            
+            return request
+        }
+        return nil
     }
-
-    ///generate and spawn the request on the main 5 houses with generated letter as well
-    private func generateAndSpawnRequest() {
-        guard !isGenerating else { return }
-
-        //1. filter the houses that are active from all the houses, check from if the house has name
-        ///the main 5 houses that has the NPC
-        let eligibleHouses = allHouses.filter { house in
-            guard house.characterName != nil else { return false }
-            return house.component(ofType: RequestComponent.self) == nil
+    
+    func deliverRequest(_ request: Request) {
+        request.isCompleted = true
+        try? modelContext.save()
+        
+        self.refreshID = UUID()
+        self.objectWillChange.send()
+    }
+    
+    func removePackageFromHouse(_ house: HouseEntity) -> Request? {
+        if let component = house.component(ofType: RequestComponent.self) {
+            let request = component.requestData
+            
+            house.removeComponent(ofType: RequestComponent.self)
+            system.removeComponent(component)
+            
+            self.refreshID = UUID()
+            self.objectWillChange.send()
+            return request
+        }
+        return nil
+    }
+    
+    func triggerNewPackageSpawn() {
+        spawnTimer = 0.0
+    }
+    
+    func fetchRelationships() {
+        let relDescriptor = FetchDescriptor<AnimalFriendRelationship>()
+        self.relationships = (try? modelContext.fetch(relDescriptor)) ?? []
+        
+        let friendDescriptor = FetchDescriptor<AnimalFriend>()
+        self.allFriends = (try? modelContext.fetch(friendDescriptor)) ?? []
+    }
+    
+    func initialBurstSpawn() {
+        let activeCount = allHouses.filter {
+            $0.component(ofType: RequestComponent.self) != nil
+        }.count
+        
+        let needed = GameConfig.maxRequests - activeCount
+        if needed > 0 {
+            print("Starting burst spawn for \(needed) initial package")
+            for _ in 0..<needed {
+                generateAndSpawnRequest()
+            }
+        }
+    }
+    
+    func generateAndSpawnRequest() {
+        let eligibleHouses = allHouses.filter {
+            house in
+            guard let name = house.characterName else {
+                return false
+            }
+            let hasComponent = house.component(ofType: RequestComponent.self) != nil
+            return !hasComponent && !reservedHouseNames.contains(name)
         }
 
-        ///set the sender house, get the name from the house
         guard let senderHouse = eligibleHouses.randomElement(),
             let senderName = senderHouse.characterName
-        else { return }
-
-        //2. get all the realtionships to see where the senders name is involved
-        ///relationships where the sender is in one of it
-        let validRelationships = relationships.filter { rel in
-            rel.friendOne?.name == senderName
-                || rel.friendTwo?.name == senderName
+        else {
+            return
         }
 
-        //3. pick a random relationship and look for the other persons name
-        ///get the chosen relationship that is known that the sender is in it
-        guard let chosenRel = validRelationships.randomElement() else { return }
+        let validRelationships = relationships.filter {
+            rel in
+            let f1 = allFriends.first(where: { $0.id == rel.friendOneId })
+            let f2 = allFriends.first(where: { $0.id == rel.friendTwoId })
+            return f1?.name == senderName || f2?.name == senderName
+        }
 
-        // If sender is friendOne, the recipient is friendTwo. Otherwise, it's friendOne.
-        ///set the recipient name from the other side of the relationship
-        let recipientName =
-            (chosenRel.friendOne?.name == senderName)
-            ? chosenRel.friendTwo?.name
-            : chosenRel.friendOne?.name
+        guard let chosenRel = validRelationships.randomElement() else {
+            reservedHouseNames.remove(senderName)
+            return
+        }
 
-        ///frienship level gotten from the relationship
+        let f1Name = allFriends.first(where: { $0.id == chosenRel.friendOneId })?.name ?? ""
+        let f2Name = allFriends.first(where: { $0.id == chosenRel.friendTwoId })?.name ?? ""
+        
+        let recipientName = (f1Name == senderName) ? f2Name : f1Name
         let friendshipLevel = chosenRel.friendshipLevel
-
-        ///final recipient name that is confirmed
-        guard let finalRecipientName = recipientName else { return }
-
-        //4. start the generation for the letter inside
-        ///the AI task
+        
         Task {
-            //fill in the needed info for generation
-            if let letterData = await AIService.shared.generateSingleLetter(
-                from: senderName,
-                to: finalRecipientName,
-                level: friendshipLevel
-            ) {
-
-                //main actor for the ai
-                await MainActor.run {
-                    //match the strings to the swiftdata models
-                    guard
-                        //sender object as the name of the friend object
-                        let senderObj = allFriends.first(where: {
-                            $0.name == senderName
-                        }),
-                        //receiver object as the name of the friend object
-                        let receiverObj = allFriends.first(where: {
-                            $0.name == finalRecipientName
-                        })
-                    else {
+            if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: friendshipLevel) {
+                _ = await MainActor.run {
+                    guard let senderObj = allFriends.first(where: {
+                        $0.name == senderName
+                    }),
+                          let receiverObj = allFriends.first(where: {
+                              $0.name == recipientName
+                          }) else {
+                        reservedHouseNames.remove(senderName)
                         return
                     }
-
-                    //create and attach new request
-                    ///create and attach new request
-                    let newRequest = Request(
-                        sender: senderObj,
-                        receiver: receiverObj,
-                        letter: letterData
-                    )
-
-                    ///call the request component with the request data
+        
+                    let newRequest = Request(senderId: senderObj.id, receiverId: receiverObj.id, letter: letterData)
                     let component = RequestComponent(requestData: newRequest)
 
-                    //add the request component to the sender house as new request
                     senderHouse.addComponent(component)
-                    requestComponentSystem.addComponent(component)
+                    system.addComponent(component)
+                    
+                    reservedHouseNames.remove(senderName)
 
-                    // 5. Trigger UI Refresh
                     self.refreshID = UUID()
                     self.objectWillChange.send()
 
-                    isGenerating = false
-                    //print for log checking
                     print(
-                        "Generated a Level \(friendshipLevel) letter from \(senderName) to \(finalRecipientName)!"
+                        "Generated a Level \(friendshipLevel) letter from \(senderName) to \(recipientName)!"
                     )
                 }
             } else {
-                await MainActor.run { isGenerating = false }
+                _ = await MainActor.run {
+                    reservedHouseNames.remove(senderName)
+                }
             }
         }
     }
 
-    //MARK: DATABASE
-
-    ///sync the active request to the database after closing the game
     func syncToDatabase() {
-        //1. fetch all request currently in the database
         let deleteDescriptor = FetchDescriptor<Request>()
         let oldRequests = (try? modelContext.fetch(deleteDescriptor)) ?? []
 
-        // 2. Delete the request one by one
         for oldRequest in oldRequests {
             modelContext.delete(oldRequest)
         }
 
-        // 3. Insert the 5 active notifications from your houses
         for house in allHouses {
             if let component = house.component(ofType: RequestComponent.self) {
                 let requestToSave = component.requestData
@@ -200,23 +196,17 @@ class RequestSystem: ObservableObject {
             }
         }
 
-        // 4. Save changes to the phone's storage
         try? modelContext.save()
         print("Sync complete.")
     }
-
-    ///load from the database when we first open the game
     func loadFromDatabase() {
-        //1. fetch request where the isCompleted is false
         let descriptor = FetchDescriptor<Request>(
             predicate: #Predicate { $0.isCompleted == false }
         )
-        ///saved request on the database
         let savedRequests = (try? modelContext.fetch(descriptor)) ?? []
 
-        //2. put the requests in the corresponding houses
         for request in savedRequests {
-            let senderName = request.sender.name
+            let senderName = allFriends.first(where: { $0.id == request.senderId })?.name ?? ""
 
             if let targetHouse = allHouses.first(where: {
                 $0.characterName == senderName
@@ -224,11 +214,9 @@ class RequestSystem: ObservableObject {
                 let component = RequestComponent(requestData: request)
                 targetHouse.addComponent(component)
 
-                //3. Re-track it in the GameplayKit system
-                requestComponentSystem.addComponent(component)
+                system.addComponent(component)
             }
         }
-        //print for log
         print("Restored \(savedRequests.count) active requests.")
     }
 }

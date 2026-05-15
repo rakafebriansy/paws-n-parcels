@@ -14,10 +14,10 @@ class SeederDatabase {
     // FUNGSI RESET: Menghapus semua data
     static func clearDatabase(context: ModelContext) {
         do {
-            try context.delete(model: AnimalFriend.self)
+            try context.delete(model: Request.self)
             try context.delete(model: AnimalFriendRelationship.self)
             try context.delete(model: Collectible.self)
-            try context.delete(model: Requests.self)
+            try context.delete(model: AnimalFriend.self)
             try context.save()
             print("Database berhasil direset (dikosongkan).")
         } catch {
@@ -27,19 +27,22 @@ class SeederDatabase {
     
     // FUNGSI SEEDER: Mengisi data awal
     static func seedDatabaseIfNeeded(context: ModelContext) {
-        let fetchDescriptor = FetchDescriptor<AnimalFriend>()
-        let existingAnimals = (try? context.fetch(fetchDescriptor)) ?? []
+        let animalDescriptor = FetchDescriptor<AnimalFriend>()
+        let existingAnimals = (try? context.fetch(animalDescriptor)) ?? []
         
-        // Hanya jalan jika database benar-benar kosong
-        if existingAnimals.isEmpty {
+        let relDescriptor = FetchDescriptor<AnimalFriendRelationship>()
+        let existingRelationships = (try? context.fetch(relDescriptor)) ?? []
+        
+        // Hanya jalan jika database benar-benar kosong atau relasi hilang
+        if existingAnimals.isEmpty || existingRelationships.isEmpty {
             print("Database kosong. Memulai proses Seeding...")
             
             // Seed 5 AnimalFriend
             let animals = [
-                AnimalFriend(name: "Kelinci", assetName: "rabbit"),
-                AnimalFriend(name: "Kucing", assetName: "cat"),
-                AnimalFriend(name: "Berang-berang", assetName: "beaver"),
-                AnimalFriend(name: "Kura-kura", assetName: "turtle"),
+                AnimalFriend(name: "Joko", assetName: "rabbit"),
+                AnimalFriend(name: "Susilo", assetName: "cat"),
+                AnimalFriend(name: "Santoso", assetName: "beaver"),
+                AnimalFriend(name: "Purnomo", assetName: "turtle"),
                 AnimalFriend(name: "Capybara", assetName: "capybara")
             ]
             
@@ -51,7 +54,7 @@ class SeederDatabase {
             var allRelationships: [AnimalFriendRelationship] = []
             for i in 0..<animals.count {
                 for j in (i + 1)..<animals.count {
-                    let relation = AnimalFriendRelationship(friendOne: animals[i], friendTwo: animals[j])
+                    let relation = AnimalFriendRelationship(friendOneId: animals[i].id, friendTwoId: animals[j].id)
                     context.insert(relation)
                     allRelationships.append(relation)
                 }
@@ -67,25 +70,6 @@ class SeederDatabase {
             ]
             for item in collectibles {
                 context.insert(item)
-            }
-            
-            // Seed 5 Requests Pertama
-            for _ in 1...5 {
-                if let randomRelation = allRelationships.randomElement() {
-                    let isReversed = Bool.random()
-                    let sender = isReversed ? randomRelation.friendTwo : randomRelation.friendOne
-                    let receiver = isReversed ? randomRelation.friendOne : randomRelation.friendTwo
-                    
-                    let newRequest = Requests(sender: sender, receiver: receiver)
-                    context.insert(newRequest)
-                }
-            }
-            
-            do {
-                try context.save()
-                print("Seeding sukses! 5 Hewan, 10 Relasi, 5 Collectibles, 5 Requests.")
-            } catch {
-                print("Gagal menyimpan hasil seeding: \(error)")
             }
         }
     }

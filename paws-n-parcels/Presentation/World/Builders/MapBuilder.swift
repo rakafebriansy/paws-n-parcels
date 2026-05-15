@@ -12,13 +12,11 @@ import SwiftUI
 
 class MapBuilder {
     let scene: SKScene
-    let gridSize: CGFloat
     
-    var environmentEntities: [EnvironmentEntity] = []
+    var environmentEntities: [GKEntity] = []
     
-    init(scene: SKScene, gridSize: CGFloat) {
+    init(scene: SKScene) {
         self.scene = scene
-        self.gridSize = gridSize
     }
     
     func build(blueprint: MapBlueprint) {
@@ -28,28 +26,30 @@ class MapBuilder {
         buildRoads(blueprint.roads)
         
         for item in blueprint.items {
+            let actualPos = item.scenePosition()
+            
             switch item.type {
             case .house:
-                let centerPos = gridCenter(forBottomLeft: item.pos, widthInGrids: 2, heightInGrids: 2)
-                buildHouse(at: centerPos, rotation: item.rotation)
+                buildHouse(at: actualPos, rotation: item.rotation, ownerName: item.characterName)
             case .pond(_):
-                buildIrregularPond(at: CGPoint(x: 12.7, y: 13.7))
+                buildIrregularPond(at: item.pos)
             case .tree:
-                let centerPos = gridCenter(forBottomLeft: item.pos, widthInGrids: 1, heightInGrids: 1)
-                buildTree(at: centerPos)
+                buildTree(at: actualPos)
             }
         }
     }
     
     private func buildTerrain(mapSize: CGSize, oceanGrids: CGFloat, beachGrids: CGFloat) {
-        let maxGridX = Int(mapSize.width / gridSize)
-        let maxGridY = Int(mapSize.height / gridSize)
+        let grid = GameConfig.gridSize
+        
+        let maxGridX = Int(mapSize.width / grid)
+        let maxGridY = Int(mapSize.height / grid)
         
         let seaTiles = ["sea_1", "sea_2", "sea_3"]
         let oceanTiles = ["ocean_1", "ocean_2", "ocean_3"]
         let beachTiles = ["beach_1", "beach_2", "beach_3"]
         
-        let waterHeight = 3.0 * gridSize
+        let waterHeight = 3.0 * grid
         let waterPhysicsNode = SKNode()
         
         waterPhysicsNode.position = CGPoint(x: mapSize.width / 2, y: waterHeight / 2)
@@ -82,7 +82,7 @@ class MapBuilder {
                 }
                 
                 let tileNode = SKSpriteNode(imageNamed: tileName)
-                tileNode.size = CGSize(width: gridSize, height: gridSize)
+                tileNode.size = CGSize(width: grid, height: grid)
                 tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
 
                 tileNode.zPosition = -10
@@ -93,6 +93,7 @@ class MapBuilder {
     
     private func buildRoads(_ roads: [[CGPoint]]) {
         var roadCells = Set<CGPoint>()
+        let grid = GameConfig.gridSize
         
         for path in roads {
             guard path.count > 1 else {
@@ -169,7 +170,7 @@ class MapBuilder {
             }
             
             let tileNode = SKSpriteNode(imageNamed: tileName)
-            tileNode.size = CGSize(width: gridSize, height: gridSize)
+            tileNode.size = CGSize(width: grid, height: grid)
             tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
             tileNode.zPosition = -5
             
@@ -177,32 +178,51 @@ class MapBuilder {
         }
     }
     
-    private func buildHouse(at point: CGPoint, rotation: CGFloat?) {
-        let homeSize = CGSize(width: gridSize * 2, height: gridSize * 2)
-        let homeNode = SKSpriteNode(imageNamed: "goldies_house")
+    private func buildHouse(at point: CGPoint, rotation: CGFloat?, ownerName: String? = nil) {
+        let grid = GameConfig.gridSize
         
-        homeNode.size = homeSize
-        homeNode.position = point
-        homeNode.zPosition = 1
+        let houseSize = CGSize(width: grid * 2, height: grid * 2)
+        let houseNode = SKSpriteNode(imageNamed: "goldies_house")
+        
+        houseNode.size = houseSize
+        houseNode.position = point
+        houseNode.zPosition = 1
         
         if let degrees = rotation {
             let angleInRadians = degrees * .pi / 180
-            homeNode.zRotation = angleInRadians
+            houseNode.zRotation = angleInRadians
         }
         
-        homeNode.physicsBody = SKPhysicsBody(rectangleOf: homeSize)
-        homeNode.physicsBody?.isDynamic = false
-        homeNode.physicsBody?.restitution = 0.0
-
-        scene.addChild(homeNode)
+        houseNode.physicsBody = SKPhysicsBody(rectangleOf: houseSize)
+        houseNode.physicsBody?.isDynamic = false
+        houseNode.physicsBody?.restitution = 0.0
         
-        environmentEntities.append(EnvironmentEntity(node: homeNode))
+        let senderIndicator = SKLabelNode(text: "📦")
+        senderIndicator.name = "indicator_sender"
+        senderIndicator.fontSize = 40
+        senderIndicator.position = CGPoint(x: 0, y: (houseSize.height / 2) + 20)
+        senderIndicator.zPosition = 10
+        senderIndicator.isHidden = true
+        houseNode.addChild(senderIndicator)
+        
+        let receiverIndicator = SKLabelNode(text: "📍")
+        receiverIndicator.name = "indicator_receiver"
+        receiverIndicator.fontSize = 40
+        receiverIndicator.position = CGPoint(x: 0, y: (houseSize.height / 2) + 20)
+        receiverIndicator.zPosition = 10
+        receiverIndicator.isHidden = true
+        houseNode.addChild(receiverIndicator)
+
+        scene.addChild(houseNode)
+        
+        let houseEntity = HouseEntity(name: ownerName, node: houseNode)
+        environmentEntities.append(houseEntity)
     }
     
     private func buildTree(at point: CGPoint) {
         let treeNode = SKSpriteNode(imageNamed: "tree")
         
-        let scaleFactor = gridSize / treeNode.size.width
+        let scaleFactor = GameConfig.gridSize / treeNode.size.width
         let actualHeight = treeNode.size.height * scaleFactor
         let trunkYPosition = -(actualHeight / 2) + 15
         let trunkOffset = CGPoint(x: 0, y: trunkYPosition)
@@ -233,7 +253,7 @@ class MapBuilder {
             [nil, nil, nil, "pond_vertical_l", "pond", "pond", "pond", "pond_vertical_r"],
             [nil, nil, nil, "pond_corner_bl", "pond_horizontal_b", "pond_horizontal_b", "pond_horizontal_b", "pond_corner_br"]
         ]
-        
+        let grid = GameConfig.gridSize
         let totalRows = pondLayout.count
         
         for (rowIndex, rowArray) in pondLayout.enumerated() {
@@ -248,7 +268,7 @@ class MapBuilder {
                 let cell = CGPoint(x: currentX, y: currentY)
                 
                 let tileNode = SKSpriteNode(imageNamed: tileName)
-                tileNode.size = CGSize(width: gridSize, height: gridSize)
+                tileNode.size = CGSize(width: grid, height: grid)
                 tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
 
                 tileNode.zPosition = -8
@@ -265,18 +285,20 @@ class MapBuilder {
     }
     
     private func grid(_ point: CGPoint) -> CGPoint {
-        let offsetX = gridSize / 2
-        let offsetY = gridSize / 2
+        let grid = GameConfig.gridSize
+        let centerOffset = grid / 2
         
         return CGPoint(
-            x: (point.x * gridSize) + offsetX,
-            y: (point.y * gridSize) + offsetY
+            x: (point.x * grid) + centerOffset,
+            y: (point.y * grid) + centerOffset
         )
     }
     
     private func gridCenter(forBottomLeft point: CGPoint, widthInGrids: CGFloat, heightInGrids: CGFloat) -> CGPoint {
-        let exactX = (point.x * gridSize) + ((widthInGrids * gridSize) / 2)
-        let exactY = (point.y * gridSize) + ((heightInGrids * gridSize) / 2)
+        let grid = GameConfig.gridSize
+        
+        let exactX = (point.x * grid) + ((widthInGrids * grid) / 2)
+        let exactY = (point.y * grid) + ((heightInGrids * grid) / 2)
         return CGPoint(x: exactX, y: exactY)
     }
 }
@@ -288,7 +310,7 @@ class MapBuilder {
         previewScene.anchorPoint = CGPoint(x: 0, y: 0)
         previewScene.scaleMode = .aspectFit
         
-        let builder = MapBuilder(scene: previewScene, gridSize: 100)
+        let builder = MapBuilder(scene: previewScene)
         builder.build(blueprint: worldMap)
         
         return previewScene

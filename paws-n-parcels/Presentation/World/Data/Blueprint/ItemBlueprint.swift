@@ -18,9 +18,33 @@ struct ItemBlueprint {
     let type: ItemType
     let pos: CGPoint
     var rotation: CGFloat = 0
+    var characterName: String? = nil
 }
 
 extension ItemBlueprint {
+    func scenePosition() -> CGPoint {
+        let width: CGFloat
+        let height: CGFloat
+        let grid = GameConfig.gridSize
+        
+        switch type {
+        case .house:
+            width = 2
+            height = 2
+        case .pond(size: let size):
+            width = size.width
+            height = size.height
+        case .tree:
+            width = 1
+            height = 1
+        }
+        
+        let exactX = (pos.x * grid) + ((width * grid) / 2)
+        let exactY = (pos.y * grid) + ((height * grid) / 2)
+        
+        return CGPoint(x: exactX, y: exactY)
+    }
+    
     static func generateForest(
         origin: CGPoint,
         columns: Int,

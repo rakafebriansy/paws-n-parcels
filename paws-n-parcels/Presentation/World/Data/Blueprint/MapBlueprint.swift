@@ -20,7 +20,7 @@ struct MapBlueprint {
 }
 
 let worldMap = MapBlueprint(
-    groundSize: CGSize(width: 3000, height: 3000),
+    groundSize: GameConfig.worldSize,
     oceanGridHeight: 3,
     beachGridHeight: 2,
     roads: [
@@ -60,23 +60,23 @@ let worldMap = MapBlueprint(
     items: [
         ItemBlueprint(type: .house, pos: CGPoint(x: 1, y: 6)), //goldie's house
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 19, y: 7)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 17, y: 7)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 19, y: 7), characterName: "Joko"),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 17, y: 7), characterName: "Susilo"),
         ItemBlueprint(type: .house, pos: CGPoint(x: 15, y: 7)),
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 27, y: 9)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 27, y: 9), characterName: "Santoso"),
         ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 11)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 7)),
         
         ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 25)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 27)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 25)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 25), characterName: "Purnomo"),
         
         ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 15)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 17)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 15)),
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 19, y: 23)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 19, y: 23), characterName: "Capybara"),
         ItemBlueprint(type: .house, pos: CGPoint(x: 21, y: 25)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 23, y: 23)),
         
@@ -95,7 +95,7 @@ let worldMap = MapBlueprint(
         previewScene.anchorPoint = CGPoint(x: 0, y: 0)
         previewScene.scaleMode = .aspectFit
         
-        let builder = MapBuilder(scene: previewScene, gridSize: 100)
+        let builder = MapBuilder(scene: previewScene)
         builder.build(blueprint: worldMap)
         
         return previewScene
