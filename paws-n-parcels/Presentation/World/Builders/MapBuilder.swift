@@ -182,7 +182,7 @@ class MapBuilder {
         let grid = GameConfig.gridSize
         let houseSize = CGSize(width: grid * 2, height: grid * 2)
         
-        let houseNode = SKSpriteNode(imageNamed: "goldies_house")
+        let houseNode = SKSpriteNode(imageNamed: "house")
         houseNode.size = houseSize
         houseNode.position = point
         houseNode.zPosition = 1
@@ -196,12 +196,22 @@ class MapBuilder {
         houseNode.physicsBody?.isDynamic = false
         houseNode.physicsBody?.restitution = 0.0
         
-        let senderIndicator = SKLabelNode(text: "📦")
+        let senderIndicator = SKSpriteNode(texture: getTexture(named: "conversation_bubble"))
         senderIndicator.name = "indicator_sender"
-        senderIndicator.fontSize = 40
+        senderIndicator.size = GameConfig.requestIndicatorSize
         senderIndicator.position = CGPoint(x: 0, y: (houseSize.height / 2) + 20)
         senderIndicator.zPosition = 100
         senderIndicator.isHidden = true
+        
+        if let owner = ownerName, let assetName = getAnimalAsset(for: owner) {
+            let animalFace = SKSpriteNode(texture: getTexture(named: assetName))
+            animalFace.size = GameConfig.requestIndicatorAnimalFaceSize
+            animalFace.position = CGPoint(x: 0, y: 3)
+            animalFace.zPosition = 1
+            
+            senderIndicator.addChild(animalFace)
+        }
+            
         houseNode.addChild(senderIndicator)
         
         let receiverIndicator = SKLabelNode(text: "📍")
@@ -289,6 +299,10 @@ class MapBuilder {
         let texture = SKTexture(imageNamed: name)
         textureCache[name] = texture
         return texture
+    }
+    
+    private func getAnimalAsset(for ownerName: String) -> String? {
+        return CharacterRegistry.getAsset(for: ownerName)
     }
     
     private func gridCenter(forBottomLeft point: CGPoint, widthInGrids: CGFloat, heightInGrids: CGFloat) -> CGPoint {

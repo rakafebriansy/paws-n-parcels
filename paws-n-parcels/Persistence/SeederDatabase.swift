@@ -27,18 +27,12 @@ class SeederDatabase {
         let animalCount = (try? context.fetchCount(FetchDescriptor<Animal>())) ?? 0
         let relationshipCount = (try? context.fetchCount(FetchDescriptor<AnimalRelationship>())) ?? 0
         
-        // Hanya jalan jika database benar-benar kosong atau relasi hilang
         if animalCount == 0 || relationshipCount == 0 {
             print("[SeederDatabase] Database is empty. Starting the seeding process...")
             
-            // Seed 5 Animal
-            let animals = [
-                Animal(name: "Joko", assetName: "rabbit"),
-                Animal(name: "Susilo", assetName: "cat"),
-                Animal(name: "Santoso", assetName: "beaver"),
-                Animal(name: "Purnomo", assetName: "turtle"),
-                Animal(name: "Capybara", assetName: "capybara")
-            ]
+            let animals = CharacterRegistry.all.map {
+                Animal(name: $0.name, assetName: $0.assetName)
+            }
             
             for animal in animals {
                 context.insert(animal)

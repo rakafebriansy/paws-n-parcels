@@ -60,28 +60,28 @@ let worldMap = MapBlueprint(
     items: [
         ItemBlueprint(type: .house, pos: CGPoint(x: 1, y: 6)), //goldie's house
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 19, y: 7), characterName: "Joko"),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 17, y: 7), characterName: "Susilo"),
         ItemBlueprint(type: .house, pos: CGPoint(x: 15, y: 7)),
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 27, y: 9), characterName: "Santoso"),
         ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 11)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 7)),
         
         ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 25)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 27)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 25), characterName: "Purnomo"),
         
         ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 15)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 17)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 15)),
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 19, y: 23), characterName: "Capybara"),
         ItemBlueprint(type: .house, pos: CGPoint(x: 21, y: 25)),
         ItemBlueprint(type: .house, pos: CGPoint(x: 23, y: 23)),
         
         ItemBlueprint(type: .pond(size: CGSize(width: 3, height: 2)), pos: CGPoint(x: 12.7, y: 13.7), rotation: 180),
-    ] +
+    ]
+    +
+    CharacterRegistry.all.map {
+        ItemBlueprint(type: .house, pos: $0.housePosition, characterName: $0.name)
+    }
+    +
     ItemBlueprint.generateForest(origin: CGPoint(x: 5, y: 6), columns: 8, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
     ItemBlueprint.generateForest(origin: CGPoint(x: 0, y: 26), columns: 5, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
     ItemBlueprint.generateForest(origin: CGPoint(x: 0, y: 22), columns: 2, rows: 8, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
