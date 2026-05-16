@@ -9,9 +9,8 @@ import Foundation
 import SwiftData
 
 @Model
-final class AnimalFriend {
-    @Attribute(.unique) var id: UUID = UUID()
-    var name: String
+final class Animal {
+    @Attribute(.unique) var name: String
     var assetName: String
     
     init(name: String, assetName: String) {

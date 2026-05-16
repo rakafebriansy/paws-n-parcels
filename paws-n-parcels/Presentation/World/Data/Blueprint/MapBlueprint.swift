@@ -96,7 +96,7 @@ let worldMap = MapBlueprint(
         previewScene.scaleMode = .aspectFit
         
         let builder = MapBuilder(scene: previewScene)
-        builder.build(blueprint: worldMap)
+        builder.build(worldMap)
         
         return previewScene
     }())

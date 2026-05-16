@@ -12,17 +12,23 @@ import SwiftUI
 
 class MapBuilder {
     let scene: SKScene
-    
     var environmentEntities: [GKEntity] = []
+    
+    private var textureCache: [String: SKTexture] = [:]
+    private struct GridPoint: Hashable {
+        let x: Int
+        let y: Int
+    }
     
     init(scene: SKScene) {
         self.scene = scene
+        print("[MapBuilder] Initializing MapBuilder.")
     }
     
-    func build(blueprint: MapBlueprint) {
+    func build(_ blueprint: MapBlueprint) {
+        print("[MapBuilder] Starting map generation...")
         
         buildTerrain(mapSize: blueprint.groundSize, oceanGrids: blueprint.oceanGridHeight, beachGrids: blueprint.beachGridHeight)
-        
         buildRoads(blueprint.roads)
         
         for item in blueprint.items {
@@ -37,9 +43,13 @@ class MapBuilder {
                 buildTree(at: actualPos)
             }
         }
+        
+        print("[MapBuilder] Map generation completed. Total entities created: \(environmentEntities.count).")
     }
     
     private func buildTerrain(mapSize: CGSize, oceanGrids: CGFloat, beachGrids: CGFloat) {
+        print("[MapBuilder] Generating terrain grid...")
+        
         let grid = GameConfig.gridSize
         
         let maxGridX = Int(mapSize.width / grid)
@@ -69,22 +79,16 @@ class MapBuilder {
                 var tileName = ""
                
                 switch y {
-                case 0:
-                    tileName = "sea"
-                case 1:
-                    tileName = seaTiles[repeatingIndex]
-                case 2:
-                    tileName = oceanTiles[repeatingIndex]
-                case 3:
-                    tileName = beachTiles[repeatingIndex]
-                default:
-                    tileName = "grass"
+                case 0: tileName = "sea"
+                case 1: tileName = seaTiles[repeatingIndex]
+                case 2: tileName = oceanTiles[repeatingIndex]
+                case 3: tileName = beachTiles[repeatingIndex]
+                default: tileName = "grass"
                 }
                 
                 let tileNode = SKSpriteNode(imageNamed: tileName)
                 tileNode.size = CGSize(width: grid, height: grid)
                 tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
-
                 tileNode.zPosition = -10
                 scene.addChild(tileNode)
             }
@@ -92,29 +96,20 @@ class MapBuilder {
     }
     
     private func buildRoads(_ roads: [[CGPoint]]) {
-        var roadCells = Set<CGPoint>()
+        print("[MapBuilder] Generating roads network...")
+        var roadCells = Set<GridPoint>()
         let grid = GameConfig.gridSize
         
         for path in roads {
-            guard path.count > 1 else {
-                continue
-            }
-            
-            for i in 0..<(path.count - 1) {
-                let p1 = path[i]
-                let p2 = path[i + 1]
-                
+            for (p1, p2) in zip(path, path.dropFirst()) {
                 let minX = Int(min(p1.x, p2.x))
                 let maxX = Int(max(p1.x, p2.x))
                 let minY = Int(min(p1.y, p2.y))
                 let maxY = Int(max(p1.y, p2.y))
                 
-                for x in minX...maxX {
-                    for y in minY...maxY {
-                        roadCells.insert(CGPoint(x: x, y: y))
-                        roadCells.insert(CGPoint(x: x + 1, y: y))
-                        roadCells.insert(CGPoint(x: x, y: y - 1))
-                        roadCells.insert(CGPoint(x: x + 1, y: y - 1))
+                for x in minX...(maxX + 1) {
+                    for y in (minY - 1)...maxY {
+                        roadCells.insert(GridPoint(x: x, y: y))
                     }
                 }
             }
@@ -169,9 +164,11 @@ class MapBuilder {
                 tileName = "gravel_horizontal_t"
             }
             
-            let tileNode = SKSpriteNode(imageNamed: tileName)
+            let tileNode = SKSpriteNode(texture: getTexture(named: tileName))
             tileNode.size = CGSize(width: grid, height: grid)
-            tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
+            
+            let posCell = CGPoint(x: CGFloat(x), y: CGFloat(y))
+            tileNode.position = gridCenter(forBottomLeft: posCell, widthInGrids: 1, heightInGrids: 1)
             tileNode.zPosition = -5
             
             scene.addChild(tileNode)
@@ -179,11 +176,13 @@ class MapBuilder {
     }
     
     private func buildHouse(at point: CGPoint, rotation: CGFloat?, ownerName: String? = nil) {
+        let houseId = ownerName ?? "Unknown"
+        print("[MapBuilder] Spawning house for \(houseId) at \(point).")
+        
         let grid = GameConfig.gridSize
-        
         let houseSize = CGSize(width: grid * 2, height: grid * 2)
-        let houseNode = SKSpriteNode(imageNamed: "goldies_house")
         
+        let houseNode = SKSpriteNode(imageNamed: "goldies_house")
         houseNode.size = houseSize
         houseNode.position = point
         houseNode.zPosition = 1
@@ -221,7 +220,6 @@ class MapBuilder {
     
     private func buildTree(at point: CGPoint) {
         let treeNode = SKSpriteNode(imageNamed: "tree")
-        
         let scaleFactor = GameConfig.gridSize / treeNode.size.width
         let actualHeight = treeNode.size.height * scaleFactor
         let trunkYPosition = -(actualHeight / 2) + 15
@@ -233,7 +231,6 @@ class MapBuilder {
         treeNode.zPosition = 10000 - baseOfTheTreeY
         
         treeNode.physicsBody = SKPhysicsBody(circleOfRadius: 15, center: trunkOffset)
-        
         treeNode.physicsBody?.isDynamic = false
         treeNode.physicsBody?.restitution = 0.0
         treeNode.physicsBody?.friction = 0.0
@@ -256,27 +253,28 @@ class MapBuilder {
         let grid = GameConfig.gridSize
         let totalRows = pondLayout.count
         
+        let tileSize = CGSize(width: grid, height: grid)
+        let gridHalf = grid / 2.0
+
+        let startX = (origin.x * grid) + gridHalf
+        let startY = ((origin.y + CGFloat(totalRows - 1)) * grid) + gridHalf
+        
         for (rowIndex, rowArray) in pondLayout.enumerated() {
+            let currentY = startY - (CGFloat(rowIndex) * grid)
+            
             for (colIndex, tileName) in rowArray.enumerated() {
-                
                 guard let tileName = tileName else { continue }
                 
-                let currentX = origin.x + CGFloat(colIndex)
-
-                let currentY = origin.y + CGFloat(totalRows - 1 - rowIndex)
-                
-                let cell = CGPoint(x: currentX, y: currentY)
-                
-                let tileNode = SKSpriteNode(imageNamed: tileName)
-                tileNode.size = CGSize(width: grid, height: grid)
-                tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
-
+                let tileNode = SKSpriteNode(texture: getTexture(named: tileName))
+                tileNode.size = tileSize                
+                tileNode.position = CGPoint(x: startX + (CGFloat(colIndex) * grid), y: currentY)
                 tileNode.zPosition = -8
                 
-                tileNode.physicsBody = SKPhysicsBody(rectangleOf: tileNode.size)
-                tileNode.physicsBody?.isDynamic = false
-                tileNode.physicsBody?.restitution = 0.0
-                tileNode.physicsBody?.friction = 0.0
+                let physics = SKPhysicsBody(rectangleOf: tileSize)
+                physics.isDynamic = false
+                physics.restitution = 0.0
+                physics.friction = 0.0
+                tileNode.physicsBody = physics
                 
                 scene.addChild(tileNode)
                 environmentEntities.append(EnvironmentEntity(node: tileNode))
@@ -284,14 +282,13 @@ class MapBuilder {
         }
     }
     
-    private func grid(_ point: CGPoint) -> CGPoint {
-        let grid = GameConfig.gridSize
-        let centerOffset = grid / 2
-        
-        return CGPoint(
-            x: (point.x * grid) + centerOffset,
-            y: (point.y * grid) + centerOffset
-        )
+    private func getTexture(named name: String) -> SKTexture {
+        if let cached = textureCache[name] {
+            return cached
+        }
+        let texture = SKTexture(imageNamed: name)
+        textureCache[name] = texture
+        return texture
     }
     
     private func gridCenter(forBottomLeft point: CGPoint, widthInGrids: CGFloat, heightInGrids: CGFloat) -> CGPoint {
@@ -302,16 +299,16 @@ class MapBuilder {
         return CGPoint(x: exactX, y: exactY)
     }
 }
+
 #Preview {
     SpriteView(scene: {
-        // Asumsi variabel global `worldMap` dapat dibaca oleh file ini
         let previewScene = SKScene(size: worldMap.groundSize)
         
         previewScene.anchorPoint = CGPoint(x: 0, y: 0)
         previewScene.scaleMode = .aspectFit
         
         let builder = MapBuilder(scene: previewScene)
-        builder.build(blueprint: worldMap)
+        builder.build(worldMap)
         
         return previewScene
     }())

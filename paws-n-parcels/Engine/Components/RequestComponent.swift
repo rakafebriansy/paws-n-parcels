@@ -8,10 +8,10 @@
 import GameplayKit
 
 class RequestComponent: GKComponent {
-    let requestData: Request
+    let request: Request
     
-    init(requestData: Request) {
-        self.requestData = requestData
+    init(request: Request) {
+        self.request = request
         super.init()
     }
     

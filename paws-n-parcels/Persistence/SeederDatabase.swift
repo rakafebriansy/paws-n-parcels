@@ -10,57 +10,53 @@ import Foundation
 
 @MainActor
 class SeederDatabase {
-    
-    // FUNGSI RESET: Menghapus semua data
     static func clearDatabase(context: ModelContext) {
         do {
             try context.delete(model: Request.self)
-            try context.delete(model: AnimalFriendRelationship.self)
+            try context.delete(model: AnimalRelationship.self)
             try context.delete(model: Collectible.self)
-            try context.delete(model: AnimalFriend.self)
+            try context.delete(model: Animal.self)
             try context.save()
-            print("Database berhasil direset (dikosongkan).")
+            print("[SeederDatabase] Successfully reset and cleared the database.")
         } catch {
-            print("Gagal mereset database: \(error)")
+            print("[SeederDatabase] Failed to reset the database. Error: \(error.localizedDescription)")
         }
     }
     
-    // FUNGSI SEEDER: Mengisi data awal
     static func seedDatabaseIfNeeded(context: ModelContext) {
-        let animalDescriptor = FetchDescriptor<AnimalFriend>()
-        let existingAnimals = (try? context.fetch(animalDescriptor)) ?? []
-        
-        let relDescriptor = FetchDescriptor<AnimalFriendRelationship>()
-        let existingRelationships = (try? context.fetch(relDescriptor)) ?? []
+        let animalCount = (try? context.fetchCount(FetchDescriptor<Animal>())) ?? 0
+        let relationshipCount = (try? context.fetchCount(FetchDescriptor<AnimalRelationship>())) ?? 0
         
         // Hanya jalan jika database benar-benar kosong atau relasi hilang
-        if existingAnimals.isEmpty || existingRelationships.isEmpty {
-            print("Database kosong. Memulai proses Seeding...")
+        if animalCount == 0 || relationshipCount == 0 {
+            print("[SeederDatabase] Database is empty. Starting the seeding process...")
             
-            // Seed 5 AnimalFriend
+            // Seed 5 Animal
             let animals = [
-                AnimalFriend(name: "Joko", assetName: "rabbit"),
-                AnimalFriend(name: "Susilo", assetName: "cat"),
-                AnimalFriend(name: "Santoso", assetName: "beaver"),
-                AnimalFriend(name: "Purnomo", assetName: "turtle"),
-                AnimalFriend(name: "Capybara", assetName: "capybara")
+                Animal(name: "Joko", assetName: "rabbit"),
+                Animal(name: "Susilo", assetName: "cat"),
+                Animal(name: "Santoso", assetName: "beaver"),
+                Animal(name: "Purnomo", assetName: "turtle"),
+                Animal(name: "Capybara", assetName: "capybara")
             ]
             
             for animal in animals {
                 context.insert(animal)
             }
             
-            // Seed 10 Relasi
-            var allRelationships: [AnimalFriendRelationship] = []
+            var relationCount = 0
             for i in 0..<animals.count {
                 for j in (i + 1)..<animals.count {
-                    let relation = AnimalFriendRelationship(friendOneId: animals[i].id, friendTwoId: animals[j].id)
+                    let relation = AnimalRelationship(
+                        friendOneName: animals[i].name,
+                        friendTwoName: animals[j].name,
+                        friendshipLevel: 1
+                    )
                     context.insert(relation)
-                    allRelationships.append(relation)
+                    relationCount += 1
                 }
             }
             
-            // Seed 5 Collectibles
             let collectibles = [
                 Collectible(name: "Wortel Emas", desc: "Ditemukan di kebun Kelinci."),
                 Collectible(name: "Pita Merah", desc: "Pita favorit Kucing."),
@@ -68,18 +64,19 @@ class SeederDatabase {
                 Collectible(name: "Batu Lumut", desc: "Tempat kura-kura bersantai."),
                 Collectible(name: "Jeruk Hangat", desc: "Cemilan Capybara saat mandi.")
             ]
+            
             for item in collectibles {
                 context.insert(item)
             }
             
             do {
                 try context.save()
-                print("Seeding berhasil! \(animals.count) animals, \(allRelationships.count) relationships, \(collectibles.count) collectibles.")
+                print("[SeederDatabase] Seeding successful! Inserted \(animals.count) animals, \(relationCount) relationships, and \(collectibles.count) collectibles.")
             } catch {
-                print("Gagal menyimpan seed data: \(error)")
+                print("[SeederDatabase] Failed to save seed data. Error: \(error.localizedDescription)")
             }
         } else {
-            print("Database sudah terisi: \(existingAnimals.count) animals, \(existingRelationships.count) relationships.")
+            print("[SeederDatabase] Database is already populated. Found \(animalCount) animals and \(relationshipCount) relationships.")
         }
     }
 }

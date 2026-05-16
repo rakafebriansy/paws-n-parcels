@@ -16,6 +16,8 @@ class MovementComponent: GKComponent {
     }
     
     override func update(deltaTime seconds: TimeInterval) {
+        super.update(deltaTime: seconds)
+        
         guard let renderNode = entity?.component(ofType: RenderComponent.self)?.node else { return }
         
         let velocityX = velocity.x * speed

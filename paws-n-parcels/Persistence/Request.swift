@@ -10,20 +10,15 @@ import Foundation
 
 @Model
 class Request {
-    @Attribute(.unique) var id: UUID
+    var senderName: String
+    var receiverName: String
     var isCompleted: Bool
-    var senderId: UUID
-    var receiverId: UUID
     var letter: PackageLetter
     
-    var timestampCompleted: Date
-    
-    init(id: UUID = UUID(), senderId: UUID, receiverId: UUID, letter: PackageLetter, isCompleted: Bool = false, timestampCompleted: Date = Date()) {
-        self.id = id
-        self.senderId = senderId
-        self.receiverId = receiverId
+    init(senderName: String, receiverName: String, letter: PackageLetter, isCompleted: Bool = false) {
+        self.senderName = senderName
+        self.receiverName = receiverName
         self.letter = letter
         self.isCompleted = isCompleted
-        self.timestampCompleted = timestampCompleted
     }
 }

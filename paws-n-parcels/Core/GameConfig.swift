@@ -16,6 +16,10 @@ struct GameConfig {
     
     static let gridSize: CGFloat = 100.0
     static let worldSize: CGSize = CGSize(width: 3000, height: 3000)
+    static let interactionRadius: CGFloat = 150.0
+    static var interactionRadiusSquared: CGFloat {
+        return interactionRadius * interactionRadius
+    }
     
     static let maxRequests = 5
     

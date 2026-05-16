@@ -28,7 +28,14 @@ class GameScene: SKScene {
     
     var previousTime: TimeInterval = 0
     
+    private let bounceAction: SKAction = {
+        let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
+        let moveDown = moveUp.reversed()
+        return SKAction.repeatForever(SKAction.sequence([moveUp, moveDown]))
+    }()
+
     override func didMove(to view: SKView) {
+        print("[GameScene] Starting Scene initialization...")
         self.anchorPoint = CGPoint(x: 0, y: 0)
         
         cameraNode.zPosition = 100_000
@@ -37,25 +44,29 @@ class GameScene: SKScene {
         addChild(cameraNode)
         
         mapBuilder = MapBuilder(scene: self)
-        mapBuilder.build(blueprint: worldMap)
+        mapBuilder.build(worldMap)
 
         setupPlayer()
         setupInvisibleWalls()
         joystick.attach(to: cameraNode, screenHeight: self.size.height)
         
         drawDebugGrid(gridSize: 100)
-        
-        // If requestSystem was already set before didMove, register houses now
         registerHousesAndStartSpawning()
+        
+        print("[GameScene] Initialization complete. Game is ready to play!")
     }
     
     private func registerHousesAndStartSpawning() {
-        guard let builder = mapBuilder, let reqSys = requestSystem else { return }
-        // Only register if not already done
-        guard reqSys.allHouses.isEmpty else { return }
+        guard let builder = mapBuilder, let reqSys = requestSystem else {
+            print("[GameScene] Failed to register houses: mapBuilder or requestSystem is nil.")
+            return
+        }
+        guard reqSys.houses.isEmpty else {
+            return
+        }
         
-        reqSys.allHouses = builder.environmentEntities.compactMap { $0 as? HouseEntity }
-        print("\(reqSys.allHouses.count) houses registered successfully")
+        reqSys.houses = builder.environmentEntities.compactMap { $0 as? HouseEntity }
+        print("[GameScene] Successfully registered \(reqSys.houses.count) houses into the system.")
         
         reqSys.fetchRelationships()
         reqSys.initialBurstSpawn()
@@ -66,7 +77,7 @@ class GameScene: SKScene {
         let path = CGMutablePath()
         
         let worldRadius: CGFloat = GameConfig.worldSize.width
-        let start = -worldRadius
+        let start = 0.0
         let end = worldRadius
         
         for x in stride(from: start, through: end, by: gridSize) {
@@ -122,7 +133,9 @@ class GameScene: SKScene {
     
     // MARK: - Handling Joystick
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
+        guard let touch = touches.first else {
+            return
+        }
         let location = touch.location(in: cameraNode)
         let treshold = -(self.size.height / 4)
         
@@ -164,7 +177,6 @@ class GameScene: SKScene {
         }
     }
  
-    // MARK: - Update Loop
     override func update(_ currentTime: TimeInterval) {
         if previousTime == 0 {
             previousTime = currentTime
@@ -174,7 +186,6 @@ class GameScene: SKScene {
         
         movementSystem.update(deltaTime: deltaTime)
         
-        requestSystem?.update(deltaTime: deltaTime)
         updateIndicators()
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
@@ -194,17 +205,17 @@ class GameScene: SKScene {
             
             if let mapBuilder = mapBuilder {
                 var closestHouse: HouseEntity? = nil
-                var minDistance: CGFloat = 150.0
+                var minDistanceSquared: CGFloat = GameConfig.interactionRadiusSquared
                  
                 for entity in mapBuilder.environmentEntities {
                     if let house = entity as? HouseEntity,
                        let houseNode = house.component(ofType: RenderComponent.self)?.node {
                         let dx = playerNode.position.x - houseNode.position.x
                         let dy = playerNode.position.y - houseNode.position.y
-                        let distance = sqrt(dx*dx + dy*dy)
-                        
-                        if distance < minDistance {
-                            minDistance = distance
+                        let distanceSquared = (dx * dx) + (dy * dy)
+                                                
+                        if distanceSquared < minDistanceSquared {
+                            minDistanceSquared = distanceSquared
                             closestHouse = house
                         }
                     }
@@ -243,43 +254,44 @@ class GameScene: SKScene {
     private func interactWithHouse(_ house: HouseEntity) {
         let houseName = house.characterName ?? "Unknown"
         
-        guard let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node,
-              let houseNode = house.component(ofType: RenderComponent.self)?.node else {
+        guard let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node, let houseNode = house.component(ofType: RenderComponent.self)?.node else {
+            print("[GameScene] Error: Player or house visual component not found.")
             return
         }
         
         let dx = playerNode.position.x - houseNode.position.x
         let dy = playerNode.position.y - houseNode.position.y
-        let distance = sqrt(dx*dx + dy*dy)
+        let distanceSquared = (dx * dx) + (dy * dy)
         
-        if distance > 150.0 {
+        if distanceSquared > GameConfig.interactionRadiusSquared {
+            print("[GameScene] Click ignored: Goldie is too far from \(houseName)'s house.")
             return
         }
         
         guard let deliverySys = deliverySystem,
               let requestSys = requestSystem else {
-            print("Goldie is too far away from \(houseName)'s house")
+            print("[GameScene] Error: Delivery System or Request System has not been injected!")
             return
         }
         
         if deliverySys.activePackage == nil {
             if house.component(ofType: RequestComponent.self) != nil {
-                if let requestData = requestSys.removePackageFromHouse(house) {
-                    deliverySys.pickUpPackage(request: requestData, for: playerEntity)
-                    print("Package picked up from \(houseName)'s house")
+                if let request = requestSys.pickupRequest(house) {
+                    deliverySys.pickUpPackage(request: request, for: playerEntity)
+                    print("[GameScene] Successfully picked up package from \(houseName)'s house.")
                 }
             } else {
-                print("Theres no package on \(houseName)'s house")
+                print("[GameScene] \(houseName)'s house has no package to pick up.")
             }
         } else if let heldPackage = deliverySys.activePackage {
-            let receiverName = requestSys.allFriends.first(where: { $0.id == heldPackage.receiverId })?.name
+            let receiverName = heldPackage.receiverName
             if receiverName == houseName {
                 let result = deliverySys.deliverPackage(for: playerEntity, allRelationships: requestSys.relationships)
-                print("Package has been delivered to \(houseName)'s house. Got \(result.pointsAdded) points")
+                print("[GameScene] Package successfully delivered to \(houseName)! Reward: \(result.pointsAdded) Points.")
                 
                 requestSys.triggerNewPackageSpawn()
             } else {
-                print("Wrong destination, this package doesn't belong to \(houseName)")
+                print("[GameScene] Wrong address! This package is for \(receiverName), not for \(houseName).")
             }
         }
     }
@@ -289,7 +301,7 @@ class GameScene: SKScene {
             return
         }
         
-        let targetReceiverId = deliverySystem?.activePackage?.receiverId
+        let targetReceiverName = deliverySystem?.activePackage?.receiverName
         
         for entity in mapBuilder.environmentEntities {
             if let house = entity as? HouseEntity,
@@ -300,26 +312,15 @@ class GameScene: SKScene {
                 let isSender = house.component(ofType: RequestComponent.self) != nil
                 senderIcon?.isHidden = !isSender
                 
-                let isTarget: Bool
-                if let receiverId = targetReceiverId,
-                   let houseName = house.characterName,
-                   let receiverName = requestSystem?.allFriends.first(where: { $0.id == receiverId })?.name {
-                    isTarget = (houseName == receiverName)
-                } else {
-                    isTarget = false
-                }
+                let isTarget = (targetReceiverName != nil) && (targetReceiverName == house.characterName)
                 receiverIcon?.isHidden = !isTarget
                 
-                // BUG-09: Counter-rotate indicators
                 senderIcon?.zRotation = -houseNode.zRotation
                 receiverIcon?.zRotation = -houseNode.zRotation
                 
                 if isSender {
                     if senderIcon?.action(forKey: "bounce") == nil {
-                        let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
-                        let moveDown = moveUp.reversed()
-                        let bounce = SKAction.repeatForever(SKAction.sequence([moveUp, moveDown]))
-                        senderIcon?.run(bounce, withKey: "bounce")
+                        senderIcon?.run(bounceAction, withKey: "bounce")
                     }
                 } else {
                     senderIcon?.removeAction(forKey: "bounce")
@@ -327,10 +328,7 @@ class GameScene: SKScene {
                 
                 if isTarget {
                     if receiverIcon?.action(forKey: "bounce") == nil {
-                        let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
-                        let moveDown = moveUp.reversed()
-                        let bounce = SKAction.repeatForever(SKAction.sequence([moveUp, moveDown]))
-                        receiverIcon?.run(bounce, withKey: "bounce")
+                        receiverIcon?.run(bounceAction, withKey: "bounce")
                     }
                 } else {
                     receiverIcon?.removeAction(forKey: "bounce")

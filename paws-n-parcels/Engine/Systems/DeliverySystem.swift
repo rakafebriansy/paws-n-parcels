@@ -8,56 +8,77 @@
 import Foundation
 import GameplayKit
 import SwiftData
-import Combine
 
 @MainActor
-class DeliverySystem: GKComponentSystem<DeliveryComponent>, ObservableObject {
+class DeliverySystem: GKComponentSystem<DeliveryComponent> {
     private var context: ModelContext?
     
-    @Published var activePackage: Request? = nil
-    @Published var nearbyHouse: HouseEntity? = nil
+    var activePackage: Request? = nil
+    var nearbyHouse: HouseEntity? = nil
     
     func setup(context: ModelContext) {
         self.context = context
+        print("[DeliverySystem] Initialized and linked with ModelContext.")
     }
     
     func pickUpPackage(request: Request, for entity: GKEntity) {
-        guard let deliveryComp = entity.component(ofType: DeliveryComponent.self) else { return }
+        guard let deliveryComp = entity.component(ofType: DeliveryComponent.self) else {
+            print("[DeliverySystem] Error: Entity does not have a DeliveryComponent. Pickup aborted.")
+            return
+        }
         
         if !deliveryComp.isHoldingPackage {
             deliveryComp.activeRequest = request
             self.activePackage = request
-            print("Paket berhasil diambil!")
+            print("[DeliverySystem] Package picked up successfully. Sender: \(request.senderName), Receiver: \(request.receiverName).")
+        } else {
+            print("[DeliverySystem] Warning: Entity is already holding a package. Cannot pick up another one.")
         }
     }
     
-    func deliverPackage(for entity: GKEntity, allRelationships: [AnimalFriendRelationship]) -> (pointsAdded: Int, isLevelUp: Bool) {
-        guard let deliveryComp = entity.component(ofType: DeliveryComponent.self),
-              let request = deliveryComp.activeRequest,
-              let context = self.context else {
+    func deliverPackage(for entity: GKEntity, relationships: [AnimalRelationship]) -> (pointsAdded: Int, isLevelUp: Bool) {
+        guard let deliveryComp = entity.component(ofType: DeliveryComponent.self) else {
+            print("[DeliverySystem] Error: Entity does not have a DeliveryComponent. Delivery aborted.")
+            return (0, false)
+        }
+        
+        guard let request = deliveryComp.activeRequest else {
+            print("[DeliverySystem] Error: Entity is not holding any active request to deliver.")
+            return (0, false)
+        }
+        
+        guard let context = self.context else {
+            print("[DeliverySystem] Error: ModelContext is missing. Have you called setup(context:)?")
             return (0, false)
         }
         
         var isLevelUp = false
-        
         request.isCompleted = true
         
-        if let relationship = allRelationships.first(where: {
-            ($0.friendOneId == request.senderId && $0.friendTwoId == request.receiverId) ||
-            ($0.friendOneId == request.receiverId && $0.friendTwoId == request.senderId)
+        if let relationship = relationships.first(where: {
+            ($0.friendOneName == request.senderName && $0.friendTwoName == request.receiverName) ||
+            ($0.friendOneName == request.receiverName && $0.friendTwoName == request.senderName)
         }) {
-            let oldLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoints)
+            let oldLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoint)
             
-            relationship.friendshipPoints += GameConfig.deliveryRewardPoints
+            relationship.friendshipPoint += GameConfig.deliveryRewardPoints
             
-            let newLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoints)
+            let newLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoint)
             relationship.friendshipLevel = newLevel.intValue
             
             if oldLevel != newLevel {
                 isLevelUp = true
+                print("[DeliverySystem] Level Up! Friendship between \(relationship.friendOneName) and \(relationship.friendTwoName) reached level \(newLevel.intValue).")
             }
             
-            try? context.save()
+            do {
+                try context.save()
+                print("[DeliverySystem] Package delivered. \(GameConfig.deliveryRewardPoints) points added. Database saved.")
+            } catch {
+                print("[DeliverySystem] Error: Failed to save relationship data after delivery. Details: \(error.localizedDescription)")
+            }
+        } else {
+            print("[DeliverySystem] Warning: No relationship found between \(request.senderName) and \(request.receiverName). Package delivered but no points awarded.")
         }
         
         deliveryComp.activeRequest = nil

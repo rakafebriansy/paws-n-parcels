@@ -22,39 +22,10 @@ struct GameView: View {
         return scene
     }()
     
-    @Query private var allRelationships: [AnimalFriendRelationship]
-    
     var body: some View {
         ZStack {
             SpriteView(scene: gameScene)
                 .ignoresSafeArea()
-            
-            if let nearbyHouse = deliverySystem.nearbyHouse,
-               let activeReq = deliverySystem.activePackage ?? nearbyHouse.component(ofType: RequestComponent.self)?.requestData {
-                
-                let rel = allRelationships.first(where: {
-                    ($0.friendOneId == activeReq.senderId && $0.friendTwoId == activeReq.receiverId) ||
-                    ($0.friendOneId == activeReq.receiverId && $0.friendTwoId == activeReq.senderId)
-                })
-                
-                if let activeRel = rel {
-                    VStack {
-                        Spacer()
-                        DeliveryView(
-                            playerEntity: gameScene.playerEntity,
-                            deliverySystem: deliverySystem,
-                            req: activeReq,
-                            activeRelationship: activeRel
-                        )
-                        .frame(height: 300)
-                        .background(Color.white)
-                        .cornerRadius(20)
-                        .shadow(radius: 10)
-                        .transition(.move(edge: .bottom))
-                    }
-                    .ignoresSafeArea()
-                }
-            }
         }
         .onAppear {
             deliverySystem.setup(context: requestSystem.modelContext)
