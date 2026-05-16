@@ -15,8 +15,9 @@ struct GameConfig {
     static let pointsForBestFriend: Int = 1000
     
     static let maxRequests = 5
-    static let playerSpeedMultiplier: CGFloat = 2.5
+    static let playerSpeedMultiplier: CGFloat = 1
     
+    static let cameraScale: CGFloat = 1
     static let gridSize: CGFloat = 100.0
     static let worldSize: CGSize = CGSize(width: 3000, height: 3000)
     static let requestIndicatorSize = CGSize(width: 120, height: 120)

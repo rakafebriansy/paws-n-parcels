@@ -39,7 +39,7 @@ class GameScene: SKScene {
         self.anchorPoint = CGPoint(x: 0, y: 0)
         
         cameraNode.zPosition = 100_000
-        cameraNode.setScale(3)
+        cameraNode.setScale(GameConfig.cameraScale)
         self.camera = cameraNode
         addChild(cameraNode)
         
@@ -200,8 +200,9 @@ class GameScene: SKScene {
             let yPos = max(viewHeight / 2, min(playerNode.position.y, mapHeight - viewHeight / 2))
             
             cameraNode.position = CGPoint(x: xPos, y: yPos)
-            
             playerNode.zPosition = 10000 - playerNode.position.y
+            
+            updateScreenEdgeArrows(viewWidth: viewWidth, viewHeight: viewHeight)
             
             if let mapBuilder = mapBuilder {
                 var closestHouse: HouseEntity? = nil
@@ -396,6 +397,64 @@ class GameScene: SKScene {
         let remove = SKAction.removeFromParent()
         
         xLabel.run(SKAction.sequence([spawnGroup, wait, fadeOut, remove]))
+    }
+    
+    private func updateScreenEdgeArrows(viewWidth: CGFloat, viewHeight: CGFloat) {
+        cameraNode.enumerateChildNodes(withName: "edge_arrow") {
+            node, _ in
+            node.removeFromParent()
+        }
+        
+        guard let mapBuilder = mapBuilder else {
+            return
+        }
+        
+        let screenWidth = self.size.width
+        let screenHeight = self.size.height
+        
+        let padding: CGFloat = 45.0
+        let ovalRadiusX = (screenWidth / 2) - padding
+        let ovalRadiusY = (screenHeight / 2) - padding
+        
+        if let activePackage = deliverySystem?.activePackage {
+            let receiverName = activePackage.receiverName
+            if let targetHouse = mapBuilder.environmentEntities.first(where: {
+                ($0 as? HouseEntity)?.characterName == receiverName
+            }) as? HouseEntity, let houseNode = targetHouse.component(ofType: RenderComponent.self)?.node {
+                createArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+            }
+        } else {
+            for entity in mapBuilder.environmentEntities {
+                if let house = entity as? HouseEntity, house.component(ofType: RequestComponent.self) != nil, let houseNode = house.component(ofType: RenderComponent.self)?.node {
+                    createArrowNode(to: houseNode.position, assetName: "arrow_yellow", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+                }
+            }
+        }
+    }
+    
+    private func createArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) {
+        let dx = targetPosition.x - cameraNode.position.x
+        let dy = targetPosition.y - cameraNode.position.y
+        
+        let safetyMargin: CGFloat = 50.0
+        if abs(dx) < (viewW / 2) - safetyMargin && abs(dy) < (viewH / 2) - safetyMargin {
+            return
+        }
+        
+        let angle = atan2(dy, dx)
+        
+        let arrowX = ovalX * cos(angle)
+        let arrowY = ovalY * sin(angle)
+        
+        let arrowNode = SKSpriteNode(imageNamed: assetName)
+        arrowNode.name = "edge_arrow"
+        arrowNode.size = CGSize(width: 45, height: 45)
+        arrowNode.position = CGPoint(x: arrowX, y: arrowY)
+        
+        arrowNode.zRotation = angle - (.pi / 2)
+        arrowNode.zPosition = 90_000
+        
+        cameraNode.addChild(arrowNode)
     }
 }
 
