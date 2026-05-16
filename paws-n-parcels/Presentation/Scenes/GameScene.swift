@@ -286,7 +286,7 @@ class GameScene: SKScene {
         } else if let heldPackage = deliverySys.activePackage {
             let receiverName = heldPackage.receiverName
             if receiverName == houseName {
-                let result = deliverySys.deliverPackage(for: playerEntity, allRelationships: requestSys.relationships)
+                let result = deliverySys.deliverPackage(for: playerEntity, relationships: requestSys.relationships)
                 print("[GameScene] Package successfully delivered to \(houseName)! Reward: \(result.pointsAdded) Points.")
                 
                 requestSys.triggerNewPackageSpawn()

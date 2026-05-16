@@ -14,43 +14,53 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        print("[SceneDelegate] Initializing application scene...")
+        let schema = Schema([
+            Request.self,
+            Animal.self,
+            AnimalRelationship.self,
+            Collectible.self,
+            PlayerProfile.self
+        ])
+        
+        
+        let modelConfiguration = ModelConfiguration(schema: schema)
         let container: ModelContainer
+        
         do {
-            container = try ModelContainer(for: 
-                Request.self, 
-                AnimalFriend.self, 
-                AnimalFriendRelationship.self,
-                Collectible.self,
-                PlayerProfile.self
-            )
+            container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            print("[SceneDelegate] ModelContainer successfully initialized.")
         } catch {
-            print("Failed to create ModelContainer: \(error)")
-            print("Deleting old database and retrying...")
+            print("[SceneDelegate] Error: Failed to create ModelContainer. Reason: \(error.localizedDescription)")
+            print("[SceneDelegate] Attempting to delete old database files to recover...")
             
-            // Delete the old incompatible database files
-            let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            let storePath = appSupport.appendingPathComponent("default.store").path
-            for suffix in ["", "-wal", "-shm"] {
-                try? FileManager.default.removeItem(atPath: storePath + suffix)
+            let fileManager = FileManager.default
+            if let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+                let storePath = appSupport.appendingPathComponent("default.store").path
+                
+                for suffix in ["", "-wal", "-shm"] {
+                    let targetPath = storePath + suffix
+                    do {
+                        try fileManager.removeItem(atPath: targetPath)
+                        print("[SceneDelegate] Deleted incompatible database file: default.store\(suffix)")
+                    } catch {
+                        print("[SceneDelegate] File not found or could not be deleted: default.store\(suffix)")
+                    }
+                }
             }
             
-            // Retry
             do {
-                container = try ModelContainer(for: 
-                    Request.self, 
-                    AnimalFriend.self, 
-                    AnimalFriendRelationship.self,
-                    Collectible.self,
-                    PlayerProfile.self
-                )
-                print("ModelContainer created successfully after reset.")
+                container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+                print("[SceneDelegate] ModelContainer successfully created after database reset.")
             } catch {
-                print("Fatal: Could not create ModelContainer even after reset: \(error)")
-                return
+                print("[SceneDelegate] Fatal Error: Could not create ModelContainer even after reset. Details: \(error.localizedDescription)")
+                fatalError("[SceneDelegate] Database initialization failed completely.")
             }
         }
         
         let context = ModelContext(container)
+        print("[SceneDelegate] Main ModelContext created.")
+        
         SeederDatabase.seedDatabaseIfNeeded(context: context)
         
         let requestSystem = RequestSystem(modelContext: context)
@@ -63,6 +73,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = UIHostingController(rootView: mainGameView)
             self.window = window
             window.makeKeyAndVisible()
+            print("[SceneDelegate] UIWindow configured and visible.")
         }
     }
 }

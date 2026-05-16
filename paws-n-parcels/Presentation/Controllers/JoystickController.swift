@@ -40,7 +40,9 @@ class JoystickController {
     
     func attach(to camera: SKCameraNode, screenHeight: CGFloat) {
         let screenBottom = -(screenHeight / 2)
-        baseNode.position = CGPoint(x: 0, y: screenBottom + 150)
+        let defaultYPosition = screenBottom + 150
+        
+        baseNode.position = CGPoint(x: 0, y: defaultYPosition)
         camera.addChild(baseNode)
         
         print("[JoystickController] Attached to camera at default position Y: \(defaultYPosition).")

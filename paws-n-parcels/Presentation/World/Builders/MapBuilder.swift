@@ -119,10 +119,10 @@ class MapBuilder {
             let x = Int(cell.x)
             let y = Int(cell.y)
             
-            let n = roadCells.contains(CGPoint(x: x, y: y + 1))
-            let e = roadCells.contains(CGPoint(x: x + 1, y: y))
-            let s = roadCells.contains(CGPoint(x: x, y: y - 1))
-            let w = roadCells.contains(CGPoint(x: x - 1, y: y))
+            let n = roadCells.contains(GridPoint(x: x, y: y + 1))
+            let e = roadCells.contains(GridPoint(x: x + 1, y: y))
+            let s = roadCells.contains(GridPoint(x: x, y: y - 1))
+            let w = roadCells.contains(GridPoint(x: x - 1, y: y))
             
             var sum = 0
             if n {
@@ -150,10 +150,10 @@ class MapBuilder {
             case 13: tileName = "gravel_vertical_r"
             case 14: tileName = "gravel_horizontal_t"
             case 15:
-                let nw = roadCells.contains(CGPoint(x: x - 1, y: y + 1))
-                let ne = roadCells.contains(CGPoint(x: x + 1, y: y + 1))
-                let sw = roadCells.contains(CGPoint(x: x - 1, y: y - 1))
-                let se = roadCells.contains(CGPoint(x: x + 1, y: y - 1))
+                let nw = roadCells.contains(GridPoint(x: x - 1, y: y + 1))
+                let ne = roadCells.contains(GridPoint(x: x + 1, y: y + 1))
+                let sw = roadCells.contains(GridPoint(x: x - 1, y: y - 1))
+                let se = roadCells.contains(GridPoint(x: x + 1, y: y - 1))
                 
                 if !nw { tileName = "gravel_bend_tl" }
                 else if !ne { tileName = "gravel_bend_tr" }
