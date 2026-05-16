@@ -265,6 +265,7 @@ class GameScene: SKScene {
         
         if distanceSquared > GameConfig.interactionRadiusSquared {
             print("[GameScene] Click ignored: Goldie is too far from \(houseName)'s house.")
+            showTooFarIndicator(on: houseNode)
             return
         }
         
@@ -297,7 +298,7 @@ class GameScene: SKScene {
     }
     
     private func updateIndicators() {
-        guard let mapBuilder = mapBuilder else {
+        guard let mapBuilder = mapBuilder, let playerNode =  playerEntity.component(ofType: RenderComponent.self)?.node else {
             return
         }
         
@@ -305,14 +306,41 @@ class GameScene: SKScene {
         
         for entity in mapBuilder.environmentEntities {
             if let house = entity as? HouseEntity,
-               let houseNode = house.component(ofType: RenderComponent.self)?.node {
+               let houseNode = house.component(ofType: RenderComponent.self)?.node as? SKSpriteNode {
+                let isSender = house.component(ofType: RequestComponent.self) != nil
+                let isTarget = (targetReceiverName != nil) && (targetReceiverName == house.characterName)
+                
+                let dx = playerNode.position.x - houseNode.position.x
+                let dy = playerNode.position.y - houseNode.position.y
+                let distanceSquared = (dx * dx) + (dy * dy)
+                let isWithinRange = distanceSquared <= GameConfig.interactionRadiusSquared
+                
+                var highlight = houseNode.childNode(withName: "indicator_highlight") as? SKShapeNode
+                if highlight == nil {
+                    let margin: CGFloat = 10
+                    let rect = CGRect(
+                        x: -(houseNode.size.width / 2) - (margin / 2),
+                        y: -(houseNode.size.height / 2) - (margin / 2),
+                        width: houseNode.size.width + margin,
+                        height: houseNode.size.height + margin
+                    )
+                    
+                    highlight = SKShapeNode(rect: rect, cornerRadius: 8)
+                    highlight?.name = "indicator_highlight"
+                    highlight?.strokeColor = .systemYellow
+                    highlight?.lineWidth = 6
+                    highlight?.fillColor = .clear
+                    highlight?.zPosition = -1 // Render di belakang gambar rumah
+                    
+                    if let h = highlight { houseNode.addChild(h) }
+                }
+                
+                highlight?.isHidden = !(isSender && isWithinRange)
+                
                 let senderIcon = houseNode.childNode(withName: "indicator_sender")
                 let receiverIcon = houseNode.childNode(withName: "indicator_receiver")
                 
-                let isSender = house.component(ofType: RequestComponent.self) != nil
                 senderIcon?.isHidden = !isSender
-                
-                let isTarget = (targetReceiverName != nil) && (targetReceiverName == house.characterName)
                 receiverIcon?.isHidden = !isTarget
                 
                 senderIcon?.zRotation = -houseNode.zRotation
@@ -335,6 +363,39 @@ class GameScene: SKScene {
                 }
             }
         }
+    }
+    
+    private func showTooFarIndicator(on houseNode: SKNode) {
+        houseNode.childNode(withName: "too_far_x")?.removeFromParent()
+        
+        let xLabel = SKLabelNode(text: "❌")
+        xLabel.name = "too_far_x"
+        xLabel.fontSize = 55
+        xLabel.zPosition = 200
+        xLabel.position = CGPoint(x: 0, y: 0)
+        
+        let shadow = SKLabelNode(text: "❌")
+        shadow.fontSize = 55
+        shadow.fontColor = .black
+        shadow.alpha = 0.5
+        shadow.zPosition = -1
+        shadow.position = CGPoint(x: 3, y: -3)
+        xLabel.addChild(shadow)
+        
+        xLabel.setScale(0.0)
+        houseNode.addChild(xLabel)
+        
+        let popIn = SKAction.scale(to: 1.2, duration: 0.15)
+        let bounce = SKAction.scale(to: 1.0, duration: 0.1)
+        let moveUp = SKAction.moveBy(x: 0, y: 30, duration: 0.25)
+        
+        let spawnGroup = SKAction.group([SKAction.sequence([popIn, bounce]), moveUp])
+        
+        let wait = SKAction.wait(forDuration: 2.75)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
+        let remove = SKAction.removeFromParent()
+        
+        xLabel.run(SKAction.sequence([spawnGroup, wait, fadeOut, remove]))
     }
 }
 
