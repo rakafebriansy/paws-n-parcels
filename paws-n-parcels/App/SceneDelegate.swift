@@ -6,47 +6,74 @@
 //
 
 import UIKit
+import SwiftUI
+import SwiftData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-
+    
     var window: UIWindow?
-
-
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        guard let _ = (scene as? UIWindowScene) else { return }
+        print("[SceneDelegate] Initializing application scene...")
+        let schema = Schema([
+            Request.self,
+            Animal.self,
+            AnimalRelationship.self,
+            Collectible.self,
+            PlayerProfile.self
+        ])
+        
+        
+        let modelConfiguration = ModelConfiguration(schema: schema)
+        let container: ModelContainer
+        
+        do {
+            container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            print("[SceneDelegate] ModelContainer successfully initialized.")
+        } catch {
+            print("[SceneDelegate] Error: Failed to create ModelContainer. Reason: \(error.localizedDescription)")
+            print("[SceneDelegate] Attempting to delete old database files to recover...")
+            
+            let fileManager = FileManager.default
+            if let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
+                let storePath = appSupport.appendingPathComponent("default.store").path
+                
+                for suffix in ["", "-wal", "-shm"] {
+                    let targetPath = storePath + suffix
+                    do {
+                        try fileManager.removeItem(atPath: targetPath)
+                        print("[SceneDelegate] Deleted incompatible database file: default.store\(suffix)")
+                    } catch {
+                        print("[SceneDelegate] File not found or could not be deleted: default.store\(suffix)")
+                    }
+                }
+            }
+            
+            do {
+                container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+                print("[SceneDelegate] ModelContainer successfully created after database reset.")
+            } catch {
+                print("[SceneDelegate] Fatal Error: Could not create ModelContainer even after reset. Details: \(error.localizedDescription)")
+                fatalError("[SceneDelegate] Database initialization failed completely.")
+            }
+        }
+        
+        let context = ModelContext(container)
+        print("[SceneDelegate] Main ModelContext created.")
+        
+        SeederDatabase.seedDatabaseIfNeeded(context: context)
+        
+        let requestSystem = RequestSystem(modelContext: context)
+        
+        let mainGameView = GameView(requestSystem: requestSystem)
+            .modelContainer(container)
+        
+        if let windowScene = scene as? UIWindowScene {
+            let window = UIWindow(windowScene: windowScene)
+            window.rootViewController = UIHostingController(rootView: mainGameView)
+            self.window = window
+            window.makeKeyAndVisible()
+            print("[SceneDelegate] UIWindow configured and visible.")
+        }
     }
-
-    func sceneDidDisconnect(_ scene: UIScene) {
-        // Called as the scene is being released by the system.
-        // This occurs shortly after the scene enters the background, or when its session is discarded.
-        // Release any resources associated with this scene that can be re-created the next time the scene connects.
-        // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
-    }
-
-    func sceneDidBecomeActive(_ scene: UIScene) {
-        // Called when the scene has moved from an inactive state to an active state.
-        // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
-    }
-
-    func sceneWillResignActive(_ scene: UIScene) {
-        // Called when the scene will move from an active state to an inactive state.
-        // This may occur due to temporary interruptions (ex. an incoming phone call).
-    }
-
-    func sceneWillEnterForeground(_ scene: UIScene) {
-        // Called as the scene transitions from the background to the foreground.
-        // Use this method to undo the changes made on entering the background.
-    }
-
-    func sceneDidEnterBackground(_ scene: UIScene) {
-        // Called as the scene transitions from the foreground to the background.
-        // Use this method to save data, release shared resources, and store enough scene-specific state information
-        // to restore the scene back to its current state.
-    }
-
-
 }
-

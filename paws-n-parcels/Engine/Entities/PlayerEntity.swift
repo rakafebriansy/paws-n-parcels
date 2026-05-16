@@ -14,6 +14,7 @@ class PlayerEntity: GKEntity {
         super.init()
         addComponent(RenderComponent(node: node))
         addComponent(MovementComponent())
+        addComponent(DeliveryComponent())
     }
     required init?(coder: NSCoder) { fatalError() }
 }

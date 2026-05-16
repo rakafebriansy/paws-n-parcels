@@ -17,71 +17,75 @@ struct MapBlueprint {
     
     let roads: [[CGPoint]]
     let items: [ItemBlueprint]
-    let trees: [CGPoint]
 }
 
 let worldMap = MapBlueprint(
-    groundSize: CGSize(width: 2000, height: 2000),
+    groundSize: GameConfig.worldSize,
     oceanGridHeight: 3,
     beachGridHeight: 2,
     roads: [
         [
             CGPoint(x: 3, y: 6),
-            CGPoint(x: 3, y: 17),
+            CGPoint(x: 3, y: 24),
         ],
         [
-            CGPoint(x: 8, y: 17),
-            CGPoint(x: 3, y: 17),
+            CGPoint(x: 8, y: 24),
+            CGPoint(x: 3, y: 24),
         ],
         [
-            CGPoint(x: 8, y: 17),
-            CGPoint(x: 8, y: 18),
+            CGPoint(x: 8, y: 10),
+            CGPoint(x: 8, y: 16),
         ],
         [
-            CGPoint(x: 3, y: 9),
-            CGPoint(x: 17, y: 9),
+            CGPoint(x: 3, y: 10),
+            CGPoint(x: 25, y: 10),
         ],
         [
-            CGPoint(x: 8, y: 12),
-            CGPoint(x: 8, y: 9),
+            CGPoint(x: 8, y: 26),
+            CGPoint(x: 8, y: 25),
         ],
         [
-            CGPoint(x: 15, y: 9),
-            CGPoint(x: 15, y: 6),
+            CGPoint(x: 19, y: 6),
+            CGPoint(x: 14, y: 6),
         ],
         [
-            CGPoint(x: 15, y: 6),
-            CGPoint(x: 11, y: 6),
+            CGPoint(x: 21, y: 9),
+            CGPoint(x: 21, y: 6),
         ],
         [
-            CGPoint(x: 15, y: 9),
-            CGPoint(x: 15, y: 16),
+            CGPoint(x: 21, y: 9),
+            CGPoint(x: 21, y: 24),
         ],
     ],
     items: [
-        ItemBlueprint(type: .house(color: .systemYellow), pos: CGPoint(x: 2, y: 6), rotation: 45), //goldie's house
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 13, y: 7)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 12, y: 7)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 11, y: 7)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 18, y: 9)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 17, y: 10)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 17, y: 8)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 7, y: 18)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 9, y: 18)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 9, y: 17)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 7, y: 12)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 9, y: 12)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 8, y: 13)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 14, y: 16)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 16, y: 16)),
-        ItemBlueprint(type: .house(color: .systemBlue), pos: CGPoint(x: 15, y: 17)),
-        ItemBlueprint(type: .pond, pos: CGPoint(x: 11, y: 13), rotation: 180)
-    ],
-    trees: (6...8).flatMap { y in
-        (4...9).map { x in
-            CGPoint(x: CGFloat(x), y: CGFloat(y))
-        }
+        ItemBlueprint(type: .house, pos: CGPoint(x: 1, y: 6)), //goldie's house
+        
+        ItemBlueprint(type: .house, pos: CGPoint(x: 15, y: 7)),
+        
+        ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 11)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 7)),
+        
+        ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 25)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 27)),
+        
+        ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 15)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 17)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 15)),
+        
+        ItemBlueprint(type: .house, pos: CGPoint(x: 21, y: 25)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 23, y: 23)),
+        
+        ItemBlueprint(type: .pond(size: CGSize(width: 3, height: 2)), pos: CGPoint(x: 12.7, y: 13.7), rotation: 180),
+    ]
+    +
+    CharacterRegistry.all.map {
+        ItemBlueprint(type: .house, pos: $0.housePosition, characterName: $0.name)
     }
+    +
+    ItemBlueprint.generateForest(origin: CGPoint(x: 5, y: 6), columns: 8, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
+    ItemBlueprint.generateForest(origin: CGPoint(x: 0, y: 26), columns: 5, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
+    ItemBlueprint.generateForest(origin: CGPoint(x: 0, y: 22), columns: 2, rows: 8, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
+    ItemBlueprint.generateForest(origin: CGPoint(x: 24, y: 14), columns: 6, rows: 16, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5),
 )
 
 #Preview {
@@ -91,8 +95,8 @@ let worldMap = MapBlueprint(
         previewScene.anchorPoint = CGPoint(x: 0, y: 0)
         previewScene.scaleMode = .aspectFit
         
-        let builder = MapBuilder(scene: previewScene, gridSize: 100)
-        builder.build(blueprint: worldMap)
+        let builder = MapBuilder(scene: previewScene)
+        builder.build(worldMap)
         
         return previewScene
     }())

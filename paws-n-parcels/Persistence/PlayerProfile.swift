@@ -16,7 +16,7 @@ final class PlayerProfile {
     var positionY: Double
 
     @Relationship(deleteRule: .cascade)
-    var collectibles: [Collectible] = []
+    var collectibles: [Collectible]?
     
     init(
         positionX: Double = 0,

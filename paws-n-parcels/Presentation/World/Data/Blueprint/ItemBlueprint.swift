@@ -9,12 +9,64 @@ import Foundation
 import SwiftUI
 
 enum ItemType {
-    case house(color: UIColor)
-    case pond
+    case house
+    case pond(size: CGSize)
+    case tree
 }
 
 struct ItemBlueprint {
     let type: ItemType
     let pos: CGPoint
     var rotation: CGFloat = 0
+    var characterName: String? = nil
+}
+
+extension ItemBlueprint {
+    func scenePosition() -> CGPoint {
+        let width: CGFloat
+        let height: CGFloat
+        let grid = GameConfig.gridSize
+        
+        switch type {
+        case .house:
+            width = 2
+            height = 2
+        case .pond(size: let size):
+            width = size.width
+            height = size.height
+        case .tree:
+            width = 1
+            height = 1
+        }
+        
+        let exactX = (pos.x * grid) + ((width * grid) / 2)
+        let exactY = (pos.y * grid) + ((height * grid) / 2)
+        
+        return CGPoint(x: exactX, y: exactY)
+    }
+    
+    static func generateForest(
+        origin: CGPoint,
+        columns: Int,
+        rows: Int,
+        spacingX: CGFloat,
+        spacingY: CGFloat,
+        staggerOffsetX: CGFloat
+    ) -> [ItemBlueprint] {
+        var trees: [ItemBlueprint] = []
+        
+        for row in 0..<rows {
+            let currentY = origin.y + (CGFloat(row) * spacingY)
+            
+            let isOddRow = (row % 2 != 0)
+            let currentOffset = isOddRow ? staggerOffsetX : 0
+            
+            for col in 0..<columns {
+                let currentX = origin.x + (CGFloat(col) * spacingX) + currentOffset
+                trees.append(ItemBlueprint(type: .tree, pos: CGPoint(x: currentX, y: currentY)))
+            }
+        }
+        
+        return trees
+    }
 }

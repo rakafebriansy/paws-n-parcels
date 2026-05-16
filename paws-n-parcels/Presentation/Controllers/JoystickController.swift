@@ -16,7 +16,15 @@ class JoystickController {
     
     private let maxRadius: CGFloat = 50.0
     
+    private let resetAction: SKAction = {
+        let action = SKAction.move(to: .zero, duration: 0.1)
+        action.timingMode = .easeOut
+        return action
+    }()
+    
     init() {
+        print("[JoystickController] Initializing joystick nodes.")
+        
         baseNode = SKShapeNode(circleOfRadius: maxRadius)
         baseNode.fillColor = UIColor.black.withAlphaComponent(0.2)
         baseNode.strokeColor = .clear
@@ -32,8 +40,12 @@ class JoystickController {
     
     func attach(to camera: SKCameraNode, screenHeight: CGFloat) {
         let screenBottom = -(screenHeight / 2)
-        baseNode.position = CGPoint(x: 0, y: screenBottom + 150)
+        let defaultYPosition = screenBottom + 150
+        
+        baseNode.position = CGPoint(x: 0, y: defaultYPosition)
         camera.addChild(baseNode)
+        
+        print("[JoystickController] Attached to camera at default position Y: \(defaultYPosition).")
     }
     
     func processTouchBegan(location: CGPoint, treshold: CGFloat) {
@@ -41,12 +53,15 @@ class JoystickController {
             isActive = true
             baseNode.position = location
             knobNode.position = .zero
+            
+            print("[JoystickController] Touch began. Joystick activated at \(location).")
         }
     }
+    
     func processTouchMoved(locationInBase: CGPoint) {
         guard isActive else { return }
         
-        let distance = sqrt(locationInBase.x * locationInBase.x + locationInBase.y * locationInBase.y)
+        let distance = hypot(locationInBase.x, locationInBase.y)
         var newPosition = locationInBase
         
         if distance > maxRadius {
@@ -64,8 +79,8 @@ class JoystickController {
             isActive = false
             currentVelocity = .zero
             
-            let resetAction = SKAction.move(to: .zero, duration: 0.1)
-            resetAction.timingMode = .easeOut
+            print("[JoystickController] Touch ended. Joystick deactivated, resetting to center.")
+            
             knobNode.run(resetAction)
         }
     }
