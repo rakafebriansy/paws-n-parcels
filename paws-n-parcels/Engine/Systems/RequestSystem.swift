@@ -16,7 +16,9 @@ class RequestSystem {
     
     var houses: [HouseEntity] = []
     var modelContext: ModelContext
+    
     var relationships: [AnimalRelationship] = []
+    var animals: [Animal] = []
 
     private var reservedHouseNamesToSpawn: Set<String> = []
 
@@ -47,9 +49,12 @@ class RequestSystem {
         return nil
     }
     
-    func fetchRelationships() {
+    func fetchData() {
         let relDescriptor = FetchDescriptor<AnimalRelationship>()
         self.relationships = (try? modelContext.fetch(relDescriptor)) ?? []
+        
+        let animalDescriptor = FetchDescriptor<Animal>()
+        self.animals = (try? modelContext.fetch(animalDescriptor)) ?? []
     }
     
     func initialBurstSpawn() {
@@ -76,7 +81,7 @@ class RequestSystem {
               let senderName = senderHouse.characterName else { return }
 
         let validRelationships = relationships.filter { rel in
-            return rel.friendOneName == senderName || rel.friendTwoName == senderName
+            return rel.friendOne.name == senderName || rel.friendTwo.name == senderName
         }
 
         guard let chosenRel = validRelationships.randomElement() else { return }
@@ -87,11 +92,17 @@ class RequestSystem {
             reservedHouseNamesToSpawn.remove(senderName)
         }
 
-        let recipientName = (chosenRel.friendOneName == senderName) ? chosenRel.friendTwoName : chosenRel.friendOneName
+        let recipientName = (chosenRel.friendOne.name == senderName) ? chosenRel.friendTwo.name : chosenRel.friendOne.name
         let friendshipLevel = chosenRel.friendshipLevel
+        
+        guard let senderAnimal = animals.first(where: { $0.name == senderName }),
+              let receiverAnimal = animals.first(where: { $0.name == recipientName }) else {
+            print("[RequestSystem] Failed to find Animal objects for \(senderName) or \(recipientName)")
+            return
+        }
 
         if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: friendshipLevel) {
-            let newRequest = Request(senderName: senderName, receiverName: recipientName, letter: letterData)
+            let newRequest = Request(sender: senderAnimal, receiver: receiverAnimal, letter: letterData)
             let component = RequestComponent(request: newRequest)
 
             senderHouse.addComponent(component)

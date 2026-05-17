@@ -11,10 +11,10 @@ import SwiftData
 struct DebugDatabaseView: View {
     @Environment(\.modelContext) private var context
     
-    @Query private var animals: [AnimalFriend]
-    @Query private var relationships: [AnimalFriendRelationship]
+    @Query private var animals: [Animal]
+    @Query private var relationships: [AnimalRelationship]
     @Query private var collectibles: [Collectible]
-    @Query private var requests: [Requests]
+    @Query private var requests: [Request]
     
     var body: some View {
         NavigationStack {
@@ -34,7 +34,7 @@ struct DebugDatabaseView: View {
                 
                 Section("Relationships Points") {
                     ForEach(relationships) { relationship in
-                        Text("\(relationship.friendOne.name) & \(relationship.friendTwo.name) = \(relationship.friendshipPoints)")
+                        Text("\(relationship.friendOne.name) & \(relationship.friendTwo.name) = \(relationship.friendshipPoint)")
                     }
                 }
                 
@@ -56,7 +56,6 @@ struct DebugDatabaseView: View {
             }
             .navigationTitle("Debug Database")
             .onAppear {
-                // Otomatis seed saat halaman debug dibuka (jika kosong)
                 SeederDatabase.seedDatabaseIfNeeded(context: context)
             }
         }
@@ -66,9 +65,9 @@ struct DebugDatabaseView: View {
 #Preview {
     DebugDatabaseView()
         .modelContainer(for: [
-            AnimalFriend.self,
-            AnimalFriendRelationship.self,
+            Animal.self,
+            AnimalRelationship.self,
             Collectible.self,
-            Requests.self
+            Request.self
         ], inMemory: true)
 }

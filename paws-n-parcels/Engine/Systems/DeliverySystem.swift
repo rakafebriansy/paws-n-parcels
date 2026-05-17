@@ -30,7 +30,7 @@ class DeliverySystem: GKComponentSystem<DeliveryComponent> {
         if !deliveryComp.isHoldingPackage {
             deliveryComp.activeRequest = request
             self.activePackage = request
-            print("[DeliverySystem] Package picked up successfully. Sender: \(request.senderName), Receiver: \(request.receiverName).")
+            print("[DeliverySystem] Package picked up successfully. Sender: \(request.sender.name), Receiver: \(request.receiver.name).")
         } else {
             print("[DeliverySystem] Warning: Entity is already holding a package. Cannot pick up another one.")
         }
@@ -56,8 +56,8 @@ class DeliverySystem: GKComponentSystem<DeliveryComponent> {
         request.isCompleted = true
         
         if let relationship = relationships.first(where: {
-            ($0.friendOneName == request.senderName && $0.friendTwoName == request.receiverName) ||
-            ($0.friendOneName == request.receiverName && $0.friendTwoName == request.senderName)
+            ($0.friendOne.name == request.sender.name && $0.friendTwo.name == request.receiver.name) ||
+            ($0.friendOne.name == request.receiver.name && $0.friendTwo.name == request.sender.name)
         }) {
             let oldLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoint)
             
@@ -68,7 +68,7 @@ class DeliverySystem: GKComponentSystem<DeliveryComponent> {
             
             if oldLevel != newLevel {
                 isLevelUp = true
-                print("[DeliverySystem] Level Up! Friendship between \(relationship.friendOneName) and \(relationship.friendTwoName) reached level \(newLevel.intValue).")
+                print("[DeliverySystem] Level Up! Friendship between \(relationship.friendOne.name) and \(relationship.friendTwo.name) reached level \(newLevel.intValue).")
             }
             
             do {
@@ -78,7 +78,7 @@ class DeliverySystem: GKComponentSystem<DeliveryComponent> {
                 print("[DeliverySystem] Error: Failed to save relationship data after delivery. Details: \(error.localizedDescription)")
             }
         } else {
-            print("[DeliverySystem] Warning: No relationship found between \(request.senderName) and \(request.receiverName). Package delivered but no points awarded.")
+            print("[DeliverySystem] Warning: No relationship found between \(request.sender.name) and \(request.receiver.name). Package delivered but no points awarded.")
         }
         
         deliveryComp.activeRequest = nil

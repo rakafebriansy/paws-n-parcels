@@ -10,14 +10,13 @@ import SwiftData
 
 @Model
 final class AnimalRelationship {
-    var friendOneName: String
-    var friendTwoName: String
-    var friendshipLevel: Int
+    var friendOne: Animal
+    var friendTwo: Animal
+    var friendshipLevel: Int = 0
     var friendshipPoint: Int = 0
     
-    init(friendOneName: String, friendTwoName: String, friendshipLevel: Int) {
-        self.friendOneName = friendOneName
-        self.friendTwoName = friendTwoName
-        self.friendshipLevel = friendshipLevel
+    init(friendOne: Animal, friendTwo: Animal) {
+        self.friendOne = friendOne
+        self.friendTwo = friendTwo
     }
 }

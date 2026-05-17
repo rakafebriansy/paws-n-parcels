@@ -31,7 +31,7 @@ class SeederDatabase {
             print("[SeederDatabase] Database is empty. Starting the seeding process...")
             
             let animals = CharacterRegistry.all.map {
-                Animal(name: $0.name, assetName: $0.assetName)
+                Animal(name: $0.name, assetName: $0.assetName, pickupDialog: "Tolong antarkan paket ini dengan aman ya! Terima kasih!")
             }
             
             for animal in animals {
@@ -42,9 +42,8 @@ class SeederDatabase {
             for i in 0..<animals.count {
                 for j in (i + 1)..<animals.count {
                     let relation = AnimalRelationship(
-                        friendOneName: animals[i].name,
-                        friendTwoName: animals[j].name,
-                        friendshipLevel: 1
+                        friendOne: animals[i],
+                        friendTwo: animals[j],
                     )
                     context.insert(relation)
                     relationCount += 1

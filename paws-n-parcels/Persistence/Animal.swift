@@ -12,9 +12,11 @@ import SwiftData
 final class Animal {
     @Attribute(.unique) var name: String
     var assetName: String
+    var pickupDialog: String
     
-    init(name: String, assetName: String) {
+    init(name: String, assetName: String, pickupDialog: String) {
         self.name = name
         self.assetName = assetName
+        self.pickupDialog = pickupDialog
     }
 }

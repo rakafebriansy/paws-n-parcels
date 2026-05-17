@@ -68,7 +68,7 @@ class GameScene: SKScene {
         reqSys.houses = builder.environmentEntities.compactMap { $0 as? HouseEntity }
         print("[GameScene] Successfully registered \(reqSys.houses.count) houses into the system.")
         
-        reqSys.fetchRelationships()
+        reqSys.fetchData()
         reqSys.initialBurstSpawn()
     }
     
@@ -286,7 +286,7 @@ class GameScene: SKScene {
                 print("[GameScene] \(houseName)'s house has no package to pick up.")
             }
         } else if let heldPackage = deliverySys.activePackage {
-            let receiverName = heldPackage.receiverName
+            let receiverName = heldPackage.receiver.name
             if receiverName == houseName {
                 let result = deliverySys.deliverPackage(for: playerEntity, relationships: requestSys.relationships)
                 print("[GameScene] Package successfully delivered to \(houseName)! Reward: \(result.pointsAdded) Points.")
@@ -303,7 +303,7 @@ class GameScene: SKScene {
             return
         }
         
-        let targetReceiverName = deliverySystem?.activePackage?.receiverName
+        let targetReceiverName = deliverySystem?.activePackage?.receiver.name
         
         for entity in mapBuilder.environmentEntities {
             if let house = entity as? HouseEntity,
@@ -417,7 +417,7 @@ class GameScene: SKScene {
         let ovalRadiusY = (screenHeight / 2) - padding
         
         if let activePackage = deliverySystem?.activePackage {
-            let receiverName = activePackage.receiverName
+            let receiverName = activePackage.receiver.name
             if let targetHouse = mapBuilder.environmentEntities.first(where: {
                 ($0 as? HouseEntity)?.characterName == receiverName
             }) as? HouseEntity, let houseNode = targetHouse.component(ofType: RenderComponent.self)?.node {

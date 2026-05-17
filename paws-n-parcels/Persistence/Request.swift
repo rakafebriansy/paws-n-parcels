@@ -10,14 +10,14 @@ import Foundation
 
 @Model
 class Request {
-    var senderName: String
-    var receiverName: String
+    var sender: Animal
+    var receiver: Animal
     var isCompleted: Bool
     var letter: PackageLetter
     
-    init(senderName: String, receiverName: String, letter: PackageLetter, isCompleted: Bool = false) {
-        self.senderName = senderName
-        self.receiverName = receiverName
+    init(sender: Animal, receiver: Animal, letter: PackageLetter, isCompleted: Bool = false) {
+        self.sender = sender
+        self.receiver = receiver
         self.letter = letter
         self.isCompleted = isCompleted
     }
