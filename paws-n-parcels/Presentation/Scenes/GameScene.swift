@@ -28,6 +28,9 @@ class GameScene: SKScene {
     
     var previousTime: TimeInterval = 0
     
+    var onPickUpSuccess: ((String) -> Void)?
+    var onDeliverySuccess: (() -> Void)?
+    
     private let bounceAction: SKAction = {
         let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
         let moveDown = moveUp.reversed()
@@ -56,86 +59,10 @@ class GameScene: SKScene {
         print("[GameScene] Initialization complete. Game is ready to play!")
     }
     
-    private func registerHousesAndStartSpawning() {
-        guard let builder = mapBuilder, let reqSys = requestSystem else {
-            print("[GameScene] Failed to register houses: mapBuilder or requestSystem is nil.")
-            return
-        }
-        guard reqSys.houses.isEmpty else {
-            return
-        }
-        
-        reqSys.houses = builder.environmentEntities.compactMap { $0 as? HouseEntity }
-        print("[GameScene] Successfully registered \(reqSys.houses.count) houses into the system.")
-        
-        reqSys.fetchData()
-        reqSys.initialBurstSpawn()
-    }
-    
-    // MARK: - Grid support line
-    func drawDebugGrid(gridSize: CGFloat) {
-        let path = CGMutablePath()
-        
-        let worldRadius: CGFloat = GameConfig.worldSize.width
-        let start = 0.0
-        let end = worldRadius
-        
-        for x in stride(from: start, through: end, by: gridSize) {
-            path.move(to: CGPoint(x: x, y: start))
-            path.addLine(to: CGPoint(x: x, y: end))
-        }
-        
-        for y in stride(from: start, through: end, by: gridSize) {
-            path.move(to: CGPoint(x: start, y: y))
-            path.addLine(to: CGPoint(x: end, y: y))
-        }
-        
-        let gridNode = SKShapeNode(path: path)
-        
-        gridNode.strokeColor = UIColor.white.withAlphaComponent(0.3)
-        gridNode.lineWidth = 2
-        gridNode.zPosition = 90
-        addChild(gridNode)
-        
-        let centerPath = CGMutablePath()
-        centerPath.move(to: CGPoint(x: -50, y: 0))
-        centerPath.addLine(to: CGPoint(x: 50, y: 0))
-        centerPath.move(to: CGPoint(x: 0, y: -50))
-        centerPath.addLine(to: CGPoint(x: 0, y: 50))
-        
-        let centerNode = SKShapeNode(path: centerPath)
-        centerNode.strokeColor = .red
-        centerNode.lineWidth = 5
-        centerNode.zPosition = 91
-        addChild(centerNode)
-    }
-    
-    // MARK: - Setup character & ECS
-    func setupPlayer() {
-        
-        let playerNode = SKShapeNode(circleOfRadius: 25)
-        playerNode.fillColor = .systemYellow
-        playerNode.strokeColor = .white
-        playerNode.lineWidth = 3
-        playerNode.zPosition = 5
-        playerNode.position = CGPoint(x: 400, y: 400)
-        
-        playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
-        playerNode.physicsBody?.affectedByGravity = false
-        playerNode.physicsBody?.allowsRotation = false
-        playerNode.physicsBody?.restitution = 0.0
-
-        addChild(playerNode)
-        
-        playerEntity = PlayerEntity(node: playerNode)
-        movementSystem.addComponent(foundIn: playerEntity)
-    }
-    
-    // MARK: - Handling Joystick
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else {
-            return
-        }
+        guard let touch = touches.first
+        else { return }
+        
         let location = touch.location(in: cameraNode)
         let treshold = -(self.size.height / 4)
         
@@ -143,9 +70,9 @@ class GameScene: SKScene {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else {
-            return
-        }
+        guard let touch = touches.first
+        else { return }
+        
         let locationInBase = touch.location(in: joystick.baseNode)
         
         joystick.processTouchMoved(locationInBase: locationInBase)
@@ -162,9 +89,8 @@ class GameScene: SKScene {
             movement.velocity = joystick.currentVelocity
         }
         
-        guard let touch = touches.first else {
-            return
-        }
+        guard let touch = touches.first
+        else { return }
         
         let locationInMap = touch.location(in: self)
         let tappedNodes = nodes(at: locationInMap)
@@ -181,15 +107,14 @@ class GameScene: SKScene {
         if previousTime == 0 {
             previousTime = currentTime
         }
+        
         let deltaTime = currentTime - previousTime
         previousTime = currentTime
-        
         movementSystem.update(deltaTime: deltaTime)
         
         updateIndicators()
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
-            
             let viewWidth = self.size.width * cameraNode.xScale
             let viewHeight = self.size.height * cameraNode.yScale
             
@@ -229,6 +154,63 @@ class GameScene: SKScene {
         }
     }
     
+    
+    func drawDebugGrid(gridSize: CGFloat) {
+        let path = CGMutablePath()
+        
+        let worldRadius: CGFloat = GameConfig.worldSize.width
+        let start = 0.0
+        let end = worldRadius
+        
+        for x in stride(from: start, through: end, by: gridSize) {
+            path.move(to: CGPoint(x: x, y: start))
+            path.addLine(to: CGPoint(x: x, y: end))
+        }
+        
+        for y in stride(from: start, through: end, by: gridSize) {
+            path.move(to: CGPoint(x: start, y: y))
+            path.addLine(to: CGPoint(x: end, y: y))
+        }
+        
+        let gridNode = SKShapeNode(path: path)
+        
+        gridNode.strokeColor = UIColor.white.withAlphaComponent(0.3)
+        gridNode.lineWidth = 2
+        gridNode.zPosition = 90
+        addChild(gridNode)
+        
+        let centerPath = CGMutablePath()
+        centerPath.move(to: CGPoint(x: -50, y: 0))
+        centerPath.addLine(to: CGPoint(x: 50, y: 0))
+        centerPath.move(to: CGPoint(x: 0, y: -50))
+        centerPath.addLine(to: CGPoint(x: 0, y: 50))
+        
+        let centerNode = SKShapeNode(path: centerPath)
+        centerNode.strokeColor = .red
+        centerNode.lineWidth = 5
+        centerNode.zPosition = 91
+        addChild(centerNode)
+    }
+    
+    func setupPlayer() {
+        let playerNode = SKShapeNode(circleOfRadius: 25)
+        playerNode.fillColor = .systemYellow
+        playerNode.strokeColor = .white
+        playerNode.lineWidth = 3
+        playerNode.zPosition = 5
+        playerNode.position = CGPoint(x: 400, y: 400)
+        
+        playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
+        playerNode.physicsBody?.affectedByGravity = false
+        playerNode.physicsBody?.allowsRotation = false
+        playerNode.physicsBody?.restitution = 0.0
+
+        addChild(playerNode)
+        
+        playerEntity = PlayerEntity(node: playerNode)
+        movementSystem.addComponent(foundIn: playerEntity)
+    }
+    
     private func setupInvisibleWalls() {
         let mapSize = worldMap.groundSize
         
@@ -255,7 +237,9 @@ class GameScene: SKScene {
     private func interactWithHouse(_ house: HouseEntity) {
         let houseName = house.characterName ?? "Unknown"
         
-        guard let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node, let houseNode = house.component(ofType: RenderComponent.self)?.node else {
+        guard let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node,
+              let houseNode = house.component(ofType: RenderComponent.self)?.node
+        else {
             print("[GameScene] Error: Player or house visual component not found.")
             return
         }
@@ -271,7 +255,8 @@ class GameScene: SKScene {
         }
         
         guard let deliverySys = deliverySystem,
-              let requestSys = requestSystem else {
+              let requestSys = requestSystem
+        else {
             print("[GameScene] Error: Delivery System or Request System has not been injected!")
             return
         }
@@ -281,6 +266,8 @@ class GameScene: SKScene {
                 if let request = requestSys.pickupRequest(house) {
                     deliverySys.pickUpPackage(request: request, for: playerEntity)
                     print("[GameScene] Successfully picked up package from \(houseName)'s house.")
+                    
+                    onPickUpSuccess?(request.sender.pickupDialog)
                 }
             } else {
                 print("[GameScene] \(houseName)'s house has no package to pick up.")
@@ -292,16 +279,35 @@ class GameScene: SKScene {
                 print("[GameScene] Package successfully delivered to \(houseName)! Reward: \(result.pointsAdded) Points.")
                 
                 requestSys.triggerNewPackageSpawn()
+                
+                onDeliverySuccess?()
             } else {
                 print("[GameScene] Wrong address! This package is for \(receiverName), not for \(houseName).")
             }
         }
     }
     
-    private func updateIndicators() {
-        guard let mapBuilder = mapBuilder, let playerNode =  playerEntity.component(ofType: RenderComponent.self)?.node else {
+    private func registerHousesAndStartSpawning() {
+        guard let builder = mapBuilder,
+              let reqSys = requestSystem
+        else {
+            print("[GameScene] Failed to register houses: mapBuilder or requestSystem is nil.")
             return
         }
+        guard reqSys.houses.isEmpty
+        else { return }
+        
+        reqSys.houses = builder.environmentEntities.compactMap { $0 as? HouseEntity }
+        print("[GameScene] Successfully registered \(reqSys.houses.count) houses into the system.")
+        
+        reqSys.fetchData()
+        reqSys.initialBurstSpawn()
+    }
+    
+    private func updateIndicators() {
+        guard let mapBuilder = mapBuilder,
+              let playerNode =  playerEntity.component(ofType: RenderComponent.self)?.node
+        else { return }
         
         let targetReceiverName = deliverySystem?.activePackage?.receiver.name
         
@@ -331,7 +337,7 @@ class GameScene: SKScene {
                     highlight?.strokeColor = .systemYellow
                     highlight?.lineWidth = 6
                     highlight?.fillColor = .clear
-                    highlight?.zPosition = -1 // Render di belakang gambar rumah
+                    highlight?.zPosition = -1
                     
                     if let h = highlight { houseNode.addChild(h) }
                 }
@@ -451,7 +457,7 @@ class GameScene: SKScene {
         arrowNode.size = CGSize(width: 45, height: 45)
         arrowNode.position = CGPoint(x: arrowX, y: arrowY)
         
-        arrowNode.zRotation = angle - (.pi / 2)
+        arrowNode.zRotation = angle - GameConfig.arrowAssetDirection
         arrowNode.zPosition = 90_000
         
         cameraNode.addChild(arrowNode)

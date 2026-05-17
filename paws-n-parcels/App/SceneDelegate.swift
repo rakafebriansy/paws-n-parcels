@@ -61,11 +61,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let context = ModelContext(container)
         print("[SceneDelegate] Main ModelContext created.")
         
+        GameDataManager.shared.setup(with: context)
         SeederDatabase.seedDatabaseIfNeeded(context: context)
         
-        let requestSystem = RequestSystem(modelContext: context)
-        
-        let mainGameView = GameView(requestSystem: requestSystem)
+        let mainGameView = GameView()
             .modelContainer(container)
         
         if let windowScene = scene as? UIWindowScene {

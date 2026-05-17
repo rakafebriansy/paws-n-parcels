@@ -13,7 +13,6 @@ final class Collectible {
     @Attribute(.unique) var id: UUID = UUID()
     var name: String
     var desc: String
-  //  var rarity: String
     var isUnlocked: Bool = false
     var dateUnlocked: Date?
     
@@ -22,6 +21,5 @@ final class Collectible {
     init(name: String, desc: String) {
         self.name = name
         self.desc = desc
-   //     self.rarity = rarity
     }
 }

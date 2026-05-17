@@ -122,32 +122,3 @@ struct DeliveryView: View {
         }
     }
 }
-
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Animal.self, AnimalRelationship.self, Collectible.self, Request.self, configurations: config)
-    let context = container.mainContext
-    
-    let kelinci = Animal(name: "Kelinci", assetName: "rabbit", pickupDialog: "Wow, thanks a ton! Please deliver it in a flash!")
-    let beruang = Animal(name: "Beruang", assetName: "bear", pickupDialog: "Thanks for picking this up! Make sure it arrives safely.")
-    let suratPalsu = PackageLetter(
-        sender: kelinci.name,
-        recipient: beruang.name,
-        messageBody: "Hai Beruang, ini ada sedikit madu hutan segar untukmu. Semoga kamu suka ya!"
-    )
-    let relasiPalsu = AnimalRelationship(friendOne: kelinci, friendTwo: beruang)
-    let requestPalsu = Request(sender: kelinci, receiver: beruang, letter: suratPalsu)
-    
-    context.insert(kelinci)
-    context.insert(beruang)
-    context.insert(relasiPalsu)
-    context.insert(requestPalsu)
-    
-    // Entitas dan Sistem palsu
-    let dummyGoldie = GoldieEntity()
-    let dummySystem = DeliverySystem()
-    dummySystem.setup(context: context)
-    
-    return DeliveryView(playerEntity: dummyGoldie, deliverySystem: dummySystem, req: requestPalsu, activeRelationship: relasiPalsu)
-            .modelContainer(container)
-}

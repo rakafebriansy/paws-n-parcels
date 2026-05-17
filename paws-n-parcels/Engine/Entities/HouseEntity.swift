@@ -17,17 +17,6 @@ class HouseEntity: GKEntity {
         
         addComponent(RenderComponent(node: node))
     }
-
-    // testing usage
-    init(name: String? = nil, position: CGPoint) {
-        self.characterName = name
-        super.init()
-        
-        let logicalNode = SKNode()
-        logicalNode.position = position
-        
-        addComponent(RenderComponent(node: logicalNode))
-    }
     
     required init?(coder: NSCoder) { fatalError() }
 }

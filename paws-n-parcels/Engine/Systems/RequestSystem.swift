@@ -10,21 +10,19 @@ import SwiftData
 
 @MainActor
 class RequestSystem {
-    let system = GKComponentSystem(
-        componentClass: RequestComponent.self
-    )
+    let system = GKComponentSystem(componentClass: RequestComponent.self)
     
     var houses: [HouseEntity] = []
-    var modelContext: ModelContext
-    
     var relationships: [AnimalRelationship] = []
-    var animals: [Animal] = []
-
+    
+    private var animalsMap: [String: Animal] = [:]
     private var reservedHouseNamesToSpawn: Set<String> = []
-
-    init(modelContext: ModelContext) {
-        self.modelContext = modelContext
+    
+    private var activeRequestsCount: Int {
+        houses.count(where: { $0.component(ofType: RequestComponent.self) != nil })
     }
+    
+    init() { }
     
     func triggerNewPackageSpawn() {
         scheduleNextPackageSpawn(delaySeconds: 0)
@@ -32,29 +30,30 @@ class RequestSystem {
     
     func deliverRequest(_ request: Request) {
         request.isCompleted = true
-        try? modelContext.save()
+        GameDataManager.shared.save()
         
         scheduleNextPackageSpawn(delaySeconds: 10)
     }
     
     func pickupRequest(_ house: HouseEntity) -> Request? {
-        if let component = house.component(ofType: RequestComponent.self) {
-            let request = component.request
-            
-            house.removeComponent(ofType: RequestComponent.self)
-            system.removeComponent(component)
-            
-            return request
-        }
-        return nil
+        guard let component = house.component(ofType: RequestComponent.self)
+        else { return nil }
+                
+        let request = component.request
+        house.removeComponent(ofType: RequestComponent.self)
+        system.removeComponent(component)
+        
+        return request
     }
     
     func fetchData() {
-        let relDescriptor = FetchDescriptor<AnimalRelationship>()
-        self.relationships = (try? modelContext.fetch(relDescriptor)) ?? []
+        self.relationships = GameDataManager.shared.fetchRelationships()
         
-        let animalDescriptor = FetchDescriptor<Animal>()
-        self.animals = (try? modelContext.fetch(animalDescriptor)) ?? []
+        let fetchedAnimals = GameDataManager.shared.fetchAnimals()
+        self.animalsMap = fetchedAnimals.reduce(into: [:]) {
+            dict, animal in
+            dict[animal.name] = animal
+        }
     }
     
     func initialBurstSpawn() {
@@ -71,40 +70,26 @@ class RequestSystem {
     }
     
     private func generateAndSpawnRequestAsync() async {
-        let eligibleHouses = houses.filter { house in
-            guard let name = house.characterName else { return false }
-            let hasComponent = house.component(ofType: RequestComponent.self) != nil
-            return !hasComponent && !reservedHouseNamesToSpawn.contains(name)
-        }
-
-        guard let senderHouse = eligibleHouses.randomElement(),
-              let senderName = senderHouse.characterName else { return }
-
-        let validRelationships = relationships.filter { rel in
-            return rel.friendOne.name == senderName || rel.friendTwo.name == senderName
-        }
-
-        guard let chosenRel = validRelationships.randomElement() else { return }
-
-        reservedHouseNamesToSpawn.insert(senderName)
+        guard let senderHouse = getRandomEligibleHouse(),
+              let senderName = senderHouse.characterName,
+              let chosenRel = getRandomRelationship(for: senderName),
+              let recipientName = chosenRel.partner(of: senderName)
+        else { return }
         
-        defer {
-            reservedHouseNamesToSpawn.remove(senderName)
-        }
-
-        let recipientName = (chosenRel.friendOne.name == senderName) ? chosenRel.friendTwo.name : chosenRel.friendOne.name
-        let friendshipLevel = chosenRel.friendshipLevel
-        
-        guard let senderAnimal = animals.first(where: { $0.name == senderName }),
-              let receiverAnimal = animals.first(where: { $0.name == recipientName }) else {
+        guard let senderAnimal = animalsMap[senderName],
+              let receiverAnimal = animalsMap[recipientName]
+        else {
             print("[RequestSystem] Failed to find Animal objects for \(senderName) or \(recipientName)")
             return
         }
-
-        if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: friendshipLevel) {
+        
+        reservedHouseNamesToSpawn.insert(senderName)
+        defer { reservedHouseNamesToSpawn.remove(senderName) }
+        
+        if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: chosenRel.friendshipLevel) {
             let newRequest = Request(sender: senderAnimal, receiver: receiverAnimal, letter: letterData)
             let component = RequestComponent(request: newRequest)
-
+            
             senderHouse.addComponent(component)
             system.addComponent(component)
         }
@@ -112,7 +97,9 @@ class RequestSystem {
     
     private func scheduleNextPackageSpawn(delaySeconds: Int) {
         let activeCount = houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count
-        guard activeCount < GameConfig.maxRequests else { return }
+        
+        guard activeCount < GameConfig.maxRequests
+        else { return }
         
         Task {
             if delaySeconds > 0 {
@@ -121,46 +108,27 @@ class RequestSystem {
             await generateAndSpawnRequestAsync()
         }
     }
-
-//    func syncToDatabase() {
-//        let deleteDescriptor = FetchDescriptor<Request>()
-//        let oldRequests = (try? modelContext.fetch(deleteDescriptor)) ?? []
-//
-//        for oldRequest in oldRequests {
-//            modelContext.delete(oldRequest)
-//        }
-//
-//        for house in houses {
-//            if let component = house.component(ofType: RequestComponent.self) {
-//                let requestToSave = component.request
-//                requestToSave.isCompleted = false
-//                modelContext.insert(requestToSave)
-//            }
-//        }
-//
-//        try? modelContext.save()
-//        print("Sync complete.")
-//    }
-//    
-//    func loadFromDatabase() {
-//        let descriptor = FetchDescriptor<Request>(
-//            predicate: #Predicate { $0.isCompleted == false }
-//        )
-//        let savedRequests = (try? modelContext.fetch(descriptor)) ?? []
-//
-//        for request in savedRequests {
-//            let senderName = friends.first(where: { $0.id == request.senderId })?.name ?? ""
-//
-//            if let targetHouse = houses.first(where: {
-//                $0.characterName == senderName
-//            }) {
-//                let component = RequestComponent(request: request)
-//                targetHouse.addComponent(component)
-//
-//                system.addComponent(component)
-//            }
-//        }
-//        print("Restored \(savedRequests.count) active requests.")
-//    }
+    
+    private func getRandomEligibleHouse() -> HouseEntity? {
+        let eligibleHouses = houses.filter {
+            house in
+            
+            guard let name = house.characterName
+            else {
+                return false
+            }
+            
+            let isHoldingRequest = house.component(ofType: RequestComponent.self) != nil
+            
+            return !isHoldingRequest && !reservedHouseNamesToSpawn.contains(name)
+        }
+        return eligibleHouses.randomElement()
+    }
+    
+    private func getRandomRelationship(for characterName: String) -> AnimalRelationship? {
+        let validRelationships = relationships.filter {
+            $0.friendOne.name == characterName || $0.friendTwo.name == characterName
+        }
+        return validRelationships.randomElement()
+    }
 }
-

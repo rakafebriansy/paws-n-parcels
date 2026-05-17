@@ -12,7 +12,9 @@ import SwiftData
 import GameplayKit
 
 struct GameView: View {
-    let requestSystem: RequestSystem
+    @Environment(\.modelContext) private var modelContext
+    
+    private let requestSystem = RequestSystem()
     @State private var deliverySystem = DeliverySystem()
         
     @State private var gameScene: GameScene = {
@@ -23,43 +25,82 @@ struct GameView: View {
         return scene
     }()
     
+    @State private var showPickUpAlert: Bool = false
+    @State private var showDeliveryAlert: Bool = false
+    @State private var currentDialogMessage: String = ""
+    
     var body: some View {
         ZStack {
             SpriteView(scene: gameScene)
                 .ignoresSafeArea()
+            
+            if showPickUpAlert || showDeliveryAlert {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+            
+            ZStack {
+                if showPickUpAlert {
+                    PickUpSuccessAlertView(message: currentDialogMessage)
+                        .transition(
+                            .scale
+                            .combined(with: .opacity)
+                        )
+                }
+                
+                if showDeliveryAlert {
+                    DeliverySuccessAlertView()
+                        .transition(
+                            .scale
+                            .combined(with: .opacity)
+                        )
+                }
+            }
+            .zIndex(2)
         }
         .onAppear {
-            print("[GameView] View appeared. Injecting dependencies into GameScene...")
-                        
-            deliverySystem.setup(context: requestSystem.modelContext)
-            
-            gameScene.requestSystem = requestSystem
-            gameScene.deliverySystem = deliverySystem
-            
-            print("[GameView] Dependencies injected successfully.")        }
+            GameDataManager.shared.setup(with: modelContext)
+            setupGameDependencies()
+            setupGameSceneCallbacks()
+        }
     }
-}
-
-#Preview {
-    do {
-        let schema = Schema([
-            Request.self,
-            Animal.self,
-            AnimalRelationship.self,
-            Collectible.self,
-            PlayerProfile.self
-        ])
+    
+    private func setupGameDependencies() {
+        print("[GameView] View appeared. Injecting dependencies into GameScene...")
         
-        let container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let context = ModelContext(container)
-        let dummyRequestSystem = RequestSystem(modelContext: context)
+        gameScene.requestSystem = requestSystem
+        gameScene.deliverySystem = deliverySystem
+        print("[GameView] Dependencies injected successfully.")
+    }
+    
+    private func setupGameSceneCallbacks() {
+        gameScene.onPickUpSuccess = { dialogMessage in
+            currentDialogMessage = dialogMessage
+            
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                showPickUpAlert = true
+            }
+            
+            dismissAlertsAutomatically()
+        }
         
-        print("[GameView] Preview environment loaded successfully.")
-        
-        return GameView(requestSystem: dummyRequestSystem)
-            .modelContainer(container)
-    } catch {
-        print("[GameView] Preview Error: Failed to load ModelContainer. Details: \(error.localizedDescription)")
-        return Text("Failed to load Preview: \(error.localizedDescription)")
+        gameScene.onDeliverySuccess = {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                showDeliveryAlert = true
+            }
+            
+            dismissAlertsAutomatically()
+        }
+    }
+    
+    private func dismissAlertsAutomatically() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.alertDisplayDuration) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showPickUpAlert = false
+                showDeliveryAlert = false
+            }
+        }
     }
 }

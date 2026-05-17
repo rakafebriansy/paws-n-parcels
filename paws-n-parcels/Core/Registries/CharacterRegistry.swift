@@ -22,7 +22,6 @@ struct CharacterRegistry {
         CharacterInfo(name: "Capybara", assetName: "capybara", housePosition: CGPoint(x: 19, y: 23))
     ]
     
-    // Helper function untuk mencari nama aset berdasarkan nama hewan
     static func getAsset(for name: String) -> String? {
         return all.first(where: { $0.name == name })?.assetName
     }

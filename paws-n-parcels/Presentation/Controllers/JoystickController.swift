@@ -59,7 +59,8 @@ class JoystickController {
     }
     
     func processTouchMoved(locationInBase: CGPoint) {
-        guard isActive else { return }
+        guard isActive
+        else { return }
         
         let distance = hypot(locationInBase.x, locationInBase.y)
         var newPosition = locationInBase
