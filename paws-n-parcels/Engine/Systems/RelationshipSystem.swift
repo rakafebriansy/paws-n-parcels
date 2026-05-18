@@ -17,13 +17,12 @@ class RelationshipSystem {
         self.modelContext = modelContext
     }
     
-    /// Finds the existing relationship between two characters.
-    /// Logic: Checks both ID slots so the order of IDs doesn't matter.
-    func getRelationship(between idA: UUID, and idB: UUID) -> AnimalFriendRelationship? {
-        let descriptor = FetchDescriptor<AnimalFriendRelationship>(
-            predicate: #Predicate<AnimalFriendRelationship> { rel in
-                (rel.friendOneId == idA && rel.friendTwoId == idB) ||
-                (rel.friendOneId == idB && rel.friendTwoId == idA)
+    /// Finds the existing relationship between two characters by their unique names.
+    func getRelationship(between nameA: String, and nameB: String) -> AnimalRelationship? {
+        let descriptor = FetchDescriptor<AnimalRelationship>(
+            predicate: #Predicate<AnimalRelationship> { rel in
+                (rel.friendOne.name == nameA && rel.friendTwo.name == nameB) ||
+                (rel.friendOne.name == nameB && rel.friendTwo.name == nameA)
             }
         )
         

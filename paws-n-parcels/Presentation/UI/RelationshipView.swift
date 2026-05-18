@@ -1,5 +1,5 @@
 //
-//  RelationshipPage.swift
+//  RelationshipView.swift
 //  paws-n-parcels
 //
 //  Created by Felicia Joshlyn Purnomo on 15/05/26.
@@ -10,17 +10,13 @@ import SwiftData
 import SwiftUI
 
 // MARK: - Main View
-struct RelationshipPage: View {
-    @Environment(\.modelContext) private var modelContext
-
-    // Fetches all characters from SwiftData
-    @Query(sort: \AnimalFriend.name) var characters: [AnimalFriend]
-
+struct RelationshipView: View {
+    @State private var characters: [Animal] = []
+    @State private var relationships: [AnimalRelationship] = []
+    
     @State private var selectedIndex: Int = 0
 
     var body: some View {
-        let system = RelationshipSystem(modelContext: modelContext)
-
         ZStack {
             // 1. Background Board Asset
             Image("buat menu")
@@ -40,16 +36,12 @@ struct RelationshipPage: View {
                         )
                         .padding(.top, 45)
 
-                    // Profile Picture Placeholder
-                    // You can replace this with Image(currentCharacter.assetName) later
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.blue.opacity(0.4))
+                    Image(currentCharacter.assetName)
+                        .resizable()
+                        .scaledToFit()
                         .frame(width: 100, height: 100)
-                        .overlay(
-                            Text(currentCharacter.name.prefix(1))
-                                .foregroundColor(.white)
-                                .font(.largeTitle)
-                        )
+                        .background(Color.blue.opacity(0.15))
+                        .cornerRadius(10)
 
                     Spacer().frame(height: 10)
 
@@ -57,23 +49,24 @@ struct RelationshipPage: View {
                     VStack(spacing: 12) {
                         // Show every character EXCEPT the currently selected one
                         let otherCharacters = characters.filter {
-                            $0.id != currentCharacter.id
+                            $0.name != currentCharacter.name
                         }
 
-                        ForEach(otherCharacters) { other in
-                            if let rel = system.getRelationship(
-                                between: currentCharacter.id,
-                                and: other.id
-                            ) {
+                        ForEach(otherCharacters, id: \.name) { other in
+                            if let rel = relationships.first(where: {
+                                $0.involves(currentCharacter.name, and: other.name)
+                            }) {
                                 RelationshipRow(
-                                    iconName: other.name,
+                                    characterName: other.name,
+                                    iconName: other.assetName,
                                     level: rel.friendshipLevel,
-                                    points: rel.friendshipPoints
+                                    points: rel.friendshipPoint
                                 )
                             } else {
                                 // Fallback row if no relationship data exists yet
                                 RelationshipRow(
-                                    iconName: other.name,
+                                    characterName: other.name,
+                                    iconName: other.assetName,
                                     level: 0,
                                     points: 0
                                 )
@@ -123,11 +116,16 @@ struct RelationshipPage: View {
                     .foregroundColor(.gray)
             }
         }
+        .onAppear {
+            self.characters = GameDataManager.shared.fetchAnimals().sorted { $0.name < $1.name }
+            self.relationships = GameDataManager.shared.fetchRelationships()
+        }
     }
 }
 
 // MARK: - Reusable Row View
 struct RelationshipRow: View {
+    let characterName: String
     let iconName: String
     let level: Int
     let points: Int
@@ -149,49 +147,55 @@ struct RelationshipRow: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.blue.opacity(0.15))  // Light background tile for the icon
 
-                Image(iconName)  // Uses "rabbit", "cat", etc. from your AnimalFriend model
+                Image(iconName)  // Uses "rabbit", "cat", etc. from your Animal model
                     .resizable()
                     .scaledToFit()
                     .padding(4)
             }
             .frame(width: 40, height: 40)  // Square icon boundary
 
-            // heart progress Bar
+            // heart progress Bar & Character Name
             VStack(alignment: .leading, spacing: 2) {
+                Text(characterName)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(.primary)
+                
                 HStack(spacing: 4) {
                     ForEach(1...5, id: \.self) { index in
                         if index <= level {
                             // filled
                             Image(systemName: "heart.fill")
                                 .foregroundColor(.pink)
-                                .font(.system(size: 16))
+                                .font(.system(size: 12))
                         } else {
                             // empty state
                             Image(systemName: "heart")
                                 .foregroundColor(.gray.opacity(0.6))
-                                .font(.system(size: 16))
+                                .font(.system(size: 12))
                         }
-
-                        /* NOTE: When you get your pixel art assets, replace the system images above with:
-                                                Image(index <= level ? "heart_filled_asset_name" : "heart_empty_asset_name")
-                                                    .resizable()
-                                                    .frame(width: 18, height: 16)
-                                                */
                     }
                 }
+                
                 Text(statusText)
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundColor(.gray)
-
             }
 
             Spacer()
         }
         .padding(.horizontal, 40)
-        .frame(height: 40)
+        .frame(height: 60)
     }
 }
 
 #Preview {
-    RelationshipPage()
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: Animal.self, AnimalRelationship.self, Collectible.self, Request.self, PlayerProfile.self, configurations: config)
+    let context = container.mainContext
+    
+    GameDataManager.shared.setup(with: context)
+    SeederDatabase.seedDatabaseIfNeeded(context: context)
+    
+    return RelationshipView()
+        .modelContainer(container)
 }
