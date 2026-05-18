@@ -27,6 +27,8 @@ struct GameView: View {
     
     @State private var showPickUpAlert: Bool = false
     @State private var showDeliveryAlert: Bool = false
+    @State private var showRelationshipPointsAlert: Bool = false
+    @State private var relationshipPointsEarned: Int = 0
     @State private var currentDialogMessage: String = ""
     
     var body: some View {
@@ -59,6 +61,14 @@ struct GameView: View {
                 }
             }
             .zIndex(2)
+            
+            if showRelationshipPointsAlert {
+                VStack {
+                    RelationshipPointsAlertView(points: relationshipPointsEarned)
+                    Spacer()
+                }
+                .zIndex(3)
+            }
         }
         .onAppear {
             GameDataManager.shared.setup(with: modelContext)
@@ -86,9 +96,12 @@ struct GameView: View {
             dismissAlertsAutomatically()
         }
         
-        gameScene.onDeliverySuccess = {
+        gameScene.onDeliverySuccess = { points in
+            relationshipPointsEarned = points
+            
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 showDeliveryAlert = true
+                showRelationshipPointsAlert = true
             }
             
             dismissAlertsAutomatically()
@@ -100,6 +113,14 @@ struct GameView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 showPickUpAlert = false
                 showDeliveryAlert = false
+            }
+        }
+        
+        if showRelationshipPointsAlert {
+            DispatchQueue.main.asyncAfter(deadline: .now() + (GameConfig.alertDisplayDuration * 2.0)) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showRelationshipPointsAlert = false
+                }
             }
         }
     }

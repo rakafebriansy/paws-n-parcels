@@ -41,6 +41,8 @@ class MapBuilder {
                 buildIrregularPond(at: item.pos)
             case .tree:
                 buildTree(at: actualPos)
+            case .fence:
+                buildFence(at: actualPos, rotation: item.rotation)
             }
         }
         
@@ -250,6 +252,33 @@ class MapBuilder {
         
         let treeEntity = EnvironmentEntity(node: treeNode)
         environmentEntities.append(treeEntity)
+    }
+    
+    private func buildFence(at point: CGPoint, rotation: CGFloat? = nil) {
+        let fenceNode = SKSpriteNode(imageNamed: "fence")
+        let grid = GameConfig.gridSize
+        let fenceSize = CGSize(width: grid, height: grid * 0.5)
+        
+        fenceNode.size = fenceSize
+        fenceNode.position = point
+        
+        let baseOfTheFenceY = point.y - (fenceSize.height / 2)
+        fenceNode.zPosition = 10000 - baseOfTheFenceY
+        
+        if let degrees = rotation {
+            let angleInRadians = degrees * .pi / 180
+            fenceNode.zRotation = angleInRadians
+        }
+        
+        fenceNode.physicsBody = SKPhysicsBody(rectangleOf: fenceSize)
+        fenceNode.physicsBody?.isDynamic = false
+        fenceNode.physicsBody?.restitution = 0.0
+        fenceNode.physicsBody?.friction = 0.0
+        
+        scene.addChild(fenceNode)
+        
+        let fenceEntity = EnvironmentEntity(node: fenceNode)
+        environmentEntities.append(fenceEntity)
     }
     
     private func buildIrregularPond(at origin: CGPoint) {

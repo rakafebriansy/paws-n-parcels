@@ -29,7 +29,7 @@ class GameScene: SKScene {
     var previousTime: TimeInterval = 0
     
     var onPickUpSuccess: ((String) -> Void)?
-    var onDeliverySuccess: (() -> Void)?
+    var onDeliverySuccess: ((Int) -> Void)?
     
     private let bounceAction: SKAction = {
         let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
@@ -290,7 +290,7 @@ class GameScene: SKScene {
                 
                 requestSys.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
                 
-                onDeliverySuccess?()
+                onDeliverySuccess?(result.pointsAdded)
             } else {
                 print("[GameScene] Wrong address! This package is for \(receiverName), not for \(houseName).")
             }

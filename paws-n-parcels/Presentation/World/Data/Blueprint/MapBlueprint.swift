@@ -73,7 +73,7 @@ let worldMap = MapBlueprint(
         
         ItemBlueprint(type: .house, pos: CGPoint(x: 21, y: 25), assetName: "house_5"),
         ItemBlueprint(type: .house, pos: CGPoint(x: 23, y: 23), assetName: "house_5"),
-        
+
         ItemBlueprint(type: .pond(size: CGSize(width: 3, height: 2)), pos: CGPoint(x: 12.7, y: 13.7), rotation: 180),
     ]
     +
@@ -85,7 +85,9 @@ let worldMap = MapBlueprint(
     ItemBlueprint.generateForest(origin: CGPoint(x: 5, y: 6), columns: 8, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
     ItemBlueprint.generateForest(origin: CGPoint(x: 0, y: 26), columns: 5, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
     ItemBlueprint.generateForest(origin: CGPoint(x: 0, y: 22), columns: 2, rows: 8, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
-    ItemBlueprint.generateForest(origin: CGPoint(x: 24, y: 14), columns: 6, rows: 16, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5),
+    ItemBlueprint.generateForest(origin: CGPoint(x: 24, y: 14), columns: 6, rows: 16, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
+    ItemBlueprint.generateFence(origin: CGPoint(x: 5, y: 4), count: 8, spacingX: 1.0) +
+    ItemBlueprint.generateFence(origin: CGPoint(x: 15, y: 4), count: 20, spacingX: 1.0),
 )
 
 #Preview {

@@ -12,6 +12,7 @@ enum ItemType {
     case house
     case pond(size: CGSize)
     case tree
+    case fence
 }
 
 struct ItemBlueprint {
@@ -38,6 +39,9 @@ extension ItemBlueprint {
         case .tree:
             width = 1
             height = 1
+        case .fence:
+            width = 1
+            height = 0.5
         }
         
         let exactX = (pos.x * grid) + ((width * grid) / 2)
@@ -69,5 +73,21 @@ extension ItemBlueprint {
         }
         
         return trees
+    }
+    
+    static func generateFence(
+        origin: CGPoint,
+        count: Int,
+        spacingX: CGFloat,
+        rotation: CGFloat = 0
+    ) -> [ItemBlueprint] {
+        var fences: [ItemBlueprint] = []
+        
+        for col in 0..<count {
+            let currentX = origin.x + (CGFloat(col) * spacingX)
+            fences.append(ItemBlueprint(type: .fence, pos: CGPoint(x: currentX, y: origin.y), rotation: rotation))
+        }
+        
+        return fences
     }
 }
