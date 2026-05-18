@@ -93,8 +93,8 @@ class PlayerInteractingState: PlayerBaseState {
         
         // Show a brief premium pop pulse during interactions
         if let node = playerNode {
-            let pulseUp = SKAction.scale(to: 1.15, duration: 0.1)
-            let pulseDown = SKAction.scale(to: 1.0, duration: 0.1)
+            let pulseUp = SKAction.scale(to: GameConfig.playerInteractionPulseUp, duration: GameConfig.playerInteractionPulseUpDuration)
+            let pulseDown = SKAction.scale(to: GameConfig.playerInteractionPulseDown, duration: GameConfig.playerInteractionPulseDownDuration)
             node.run(SKAction.sequence([pulseUp, pulseDown]))
         }
     }
@@ -168,12 +168,12 @@ class PlayerStateComponent: GKComponent {
                 lastHolding = isHolding
                 
                 // Smooth transition effect when carrying state changes (fade out, change texture, fade back in)
-                let fadeOut = SKAction.fadeAlpha(to: 0.4, duration: 0.1)
-                let scaleDown = SKAction.scale(to: 0.8, duration: 0.1)
+                let fadeOut = SKAction.fadeAlpha(to: GameConfig.playerCarryingTransitionAlpha, duration: GameConfig.playerCarryingTransitionDuration)
+                let scaleDown = SKAction.scale(to: GameConfig.playerCarryingTransitionScale, duration: GameConfig.playerCarryingTransitionDuration)
                 let transitionOut = SKAction.group([fadeOut, scaleDown])
                 
-                let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.1)
-                let scaleUp = SKAction.scale(to: 1.0, duration: 0.1)
+                let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: GameConfig.playerCarryingTransitionDuration)
+                let scaleUp = SKAction.scale(to: 1.0, duration: GameConfig.playerCarryingTransitionDuration)
                 let transitionIn = SKAction.group([fadeIn, scaleUp])
                 
                 let changeTextureAction = SKAction.run { [weak self] in
@@ -203,7 +203,7 @@ class PlayerStateComponent: GKComponent {
         
         // Dynamic base size according to movement direction (up/down are vertical)
         let isVertical = (dirStr == "up" || dirStr == "down")
-        node.size = isVertical ? CGSize(width: 32, height: 64) : CGSize(width: 64, height: 32)
+        node.size = isVertical ? GameConfig.playerVerticalSize : GameConfig.playerHorizontalSize
         
         if isWalking {
             // Load 3 walk textures for dynamic 4-directional walking
@@ -213,18 +213,18 @@ class PlayerStateComponent: GKComponent {
             
             // Loop pattern: 1 -> 2 -> 3 -> 2
             let textures = [tex1, tex2, tex3, tex2]
-            let walkAnim = SKAction.animate(with: textures, timePerFrame: 0.12)
+            let walkAnim = SKAction.animate(with: textures, timePerFrame: GameConfig.playerWalkFrameDuration)
             let walkAnimLoop = SKAction.repeatForever(walkAnim)
             
             // Gentle bouncy squash and stretch animation for walking
-            let squashX: CGFloat = isVertical ? 1.05 : 1.08
-            let squashY: CGFloat = isVertical ? 0.95 : 0.92
-            let stretchX: CGFloat = isVertical ? 0.95 : 0.92
-            let stretchY: CGFloat = isVertical ? 1.05 : 1.08
+            let squashX = isVertical ? GameConfig.playerWalkVerticalSquash.x : GameConfig.playerWalkHorizontalSquash.x
+            let squashY = isVertical ? GameConfig.playerWalkVerticalSquash.y : GameConfig.playerWalkHorizontalSquash.y
+            let stretchX = isVertical ? GameConfig.playerWalkVerticalStretch.x : GameConfig.playerWalkHorizontalStretch.x
+            let stretchY = isVertical ? GameConfig.playerWalkVerticalStretch.y : GameConfig.playerWalkHorizontalStretch.y
             
-            let squash = SKAction.scaleX(to: squashX, y: squashY, duration: 0.12)
+            let squash = SKAction.scaleX(to: squashX, y: squashY, duration: GameConfig.playerWalkBounceDuration)
             squash.timingMode = .easeInEaseOut
-            let stretch = SKAction.scaleX(to: stretchX, y: stretchY, duration: 0.12)
+            let stretch = SKAction.scaleX(to: stretchX, y: stretchY, duration: GameConfig.playerWalkBounceDuration)
             stretch.timingMode = .easeInEaseOut
             let bounce = SKAction.repeatForever(SKAction.sequence([squash, stretch]))
             
@@ -235,14 +235,14 @@ class PlayerStateComponent: GKComponent {
             node.texture = idleTex
             
             // Gentle flat breathing squash effect for idle
-            let breatheSquashX: CGFloat = isVertical ? 1.02 : 1.04
-            let breatheSquashY: CGFloat = isVertical ? 0.98 : 0.96
-            let breatheStretchX: CGFloat = isVertical ? 0.98 : 0.96
-            let breatheStretchY: CGFloat = isVertical ? 1.02 : 1.04
+            let breatheSquashX = isVertical ? GameConfig.playerIdleVerticalSquash.x : GameConfig.playerIdleHorizontalSquash.x
+            let breatheSquashY = isVertical ? GameConfig.playerIdleVerticalSquash.y : GameConfig.playerIdleHorizontalSquash.y
+            let breatheStretchX = isVertical ? GameConfig.playerIdleVerticalStretch.x : GameConfig.playerIdleHorizontalStretch.x
+            let breatheStretchY = isVertical ? GameConfig.playerIdleVerticalStretch.y : GameConfig.playerIdleHorizontalStretch.y
             
-            let breatheSquash = SKAction.scaleX(to: breatheSquashX, y: breatheSquashY, duration: 0.8)
+            let breatheSquash = SKAction.scaleX(to: breatheSquashX, y: breatheSquashY, duration: GameConfig.playerIdleBreatheDuration)
             breatheSquash.timingMode = .easeInEaseOut
-            let breatheStretch = SKAction.scaleX(to: breatheStretchX, y: breatheStretchY, duration: 0.8)
+            let breatheStretch = SKAction.scaleX(to: breatheStretchX, y: breatheStretchY, duration: GameConfig.playerIdleBreatheDuration)
             breatheStretch.timingMode = .easeInEaseOut
             let breathe = SKAction.repeatForever(SKAction.sequence([breatheSquash, breatheStretch]))
             
