@@ -75,9 +75,8 @@ struct RelationshipView: View {
                     }
                     Spacer()
                 }
-                .frame(width: 280, height: 500)
-                .offset(x: -25)
-
+                .frame(width: 380, height: 500)
+                
                 // 4. Tab Buttons (The side switchers)
                 HStack {
                     Spacer()
@@ -92,8 +91,8 @@ struct RelationshipView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(
                                             selectedIndex == index
-                                                ? Color.white.opacity(0.3)
-                                                : Color.clear
+                                            ? Color.white.opacity(0.7)
+                                            : Color.white
                                         )
 
                                     Text(
@@ -101,15 +100,16 @@ struct RelationshipView: View {
                                     )
                                     .font(.caption)
                                     .fontWeight(.bold)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.black)
                                 }
-                                .frame(width: 45, height: 70)
+                                .frame(width: 38, height: 70)
                             }
                         }
                     }
                     .padding(.trailing, 15)
                 }
                 .frame(width: 400, height: 500)
+                .offset(x:30)
             } else {
                 Text("No characters found.")
                     .font(.caption)
@@ -141,7 +141,7 @@ struct RelationshipRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 25) {
             // 1. Character Icon Slot
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
