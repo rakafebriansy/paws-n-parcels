@@ -295,18 +295,6 @@ class MapBuilder {
         
         let houseEntity = HouseEntity(name: ownerName, node: houseNode)
         environmentEntities.append(houseEntity)
-        
-        if let name = ownerName, let animalAsset = getAnimalAsset(for: name) {
-            // Spawn NPC 80 units below the house in front of the door
-            let npcPos = CGPoint(x: point.x, y: point.y - 80)
-            let npc = NPCEntity(name: name, assetName: animalAsset, position: npcPos, house: houseEntity, scene: scene as! GameScene)
-            npc.addComponent(NPCStateComponent(scene: scene as! GameScene))
-            environmentEntities.append(npc)
-            
-            if let gameScene = scene as? GameScene {
-                gameScene.movementSystem.addComponent(foundIn: npc)
-            }
-        }
     }
     
     private func buildTree(at point: CGPoint) {
