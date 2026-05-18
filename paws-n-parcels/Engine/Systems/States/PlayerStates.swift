@@ -91,7 +91,6 @@ class PlayerInteractingState: PlayerBaseState {
             component.updateVisuals(isWalking: false)
         }
         
-        // Show a brief premium pop pulse during interactions
         if let node = playerNode {
             let pulseUp = SKAction.scale(to: GameConfig.playerInteractionPulseUp, duration: GameConfig.playerInteractionPulseUpDuration)
             let pulseDown = SKAction.scale(to: GameConfig.playerInteractionPulseDown, duration: GameConfig.playerInteractionPulseDownDuration)

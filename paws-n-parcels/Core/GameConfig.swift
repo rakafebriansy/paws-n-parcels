@@ -38,38 +38,31 @@ struct GameConfig {
     static let alertDisplayDuration: TimeInterval = 1.5
     static let newRequestSpawnDelay: Int = 5
     
-    // MARK: - Player Configuration
     static let playerInitialPosition = CGPoint(x: 400, y: 400)
     static let playerPhysicsRadius: CGFloat = 14
     static let playerZPosition: CGFloat = 5
     
-    // Player base dimensions (penyet/squashed base sizes)
-    static let playerVerticalSize = CGSize(width: 32, height: 64)
-    static let playerHorizontalSize = CGSize(width: 64, height: 32)
+    static let playerVerticalSize = CGSize(width: 64, height: 128)
+    static let playerHorizontalSize = CGSize(width: 128, height: 64)
     
-    // Animation frame rates
     static let playerWalkFrameDuration: TimeInterval = 0.12
     
-    // Carriage state change transition parameters
     static let playerCarryingTransitionDuration: TimeInterval = 0.1
     static let playerCarryingTransitionScale: CGFloat = 0.8
     static let playerCarryingTransitionAlpha: CGFloat = 0.4
     
-    // Walk bounce (squash and stretch) parameters
     static let playerWalkVerticalSquash = (x: CGFloat(1.05), y: CGFloat(0.95))
     static let playerWalkVerticalStretch = (x: CGFloat(0.95), y: CGFloat(1.05))
     static let playerWalkHorizontalSquash = (x: CGFloat(1.08), y: CGFloat(0.92))
     static let playerWalkHorizontalStretch = (x: CGFloat(0.92), y: CGFloat(1.08))
     static let playerWalkBounceDuration: TimeInterval = 0.12
     
-    // Idle breathing parameters
     static let playerIdleVerticalSquash = (x: CGFloat(1.02), y: CGFloat(0.98))
     static let playerIdleVerticalStretch = (x: CGFloat(0.98), y: CGFloat(1.02))
     static let playerIdleHorizontalSquash = (x: CGFloat(1.04), y: CGFloat(0.96))
     static let playerIdleHorizontalStretch = (x: CGFloat(0.96), y: CGFloat(1.04))
     static let playerIdleBreatheDuration: TimeInterval = 0.8
     
-    // Player interaction pulse parameters
     static let playerInteractionPulseUp: CGFloat = 1.15
     static let playerInteractionPulseDown: CGFloat = 1.0
     static let playerInteractionPulseUpDuration: TimeInterval = 0.1
