@@ -108,6 +108,7 @@ class PlayerStateComponent: GKComponent {
     private var lastDirection: String = "down"
     private var lastHolding: Bool = false
     private var lastWalking: Bool = false
+    private var isFirstUpdate: Bool = true
     
     init(scene: GameScene) {
         self.scene = scene
@@ -155,12 +156,14 @@ class PlayerStateComponent: GKComponent {
             }
         }
         
-        // Check if carrying state, direction, or movement state changed
+        // Check if carrying state, direction, or movement state changed, or if it is the first update
         let holdingChanged = (isHolding != lastHolding)
         let directionChanged = (currentDirection != lastDirection)
         let walkingStateChanged = (isWalking != lastWalking)
         
-        if holdingChanged || directionChanged || walkingStateChanged {
+        if holdingChanged || directionChanged || walkingStateChanged || isFirstUpdate {
+            isFirstUpdate = false
+            
             if holdingChanged {
                 lastHolding = isHolding
                 
@@ -198,7 +201,7 @@ class PlayerStateComponent: GKComponent {
         node.xScale = 1.0
         node.yScale = 1.0
         
-        // Dynamic base size according to movement direction
+        // Dynamic base size according to movement direction (up/down are vertical)
         let isVertical = (dirStr == "up" || dirStr == "down")
         node.size = isVertical ? CGSize(width: 32, height: 64) : CGSize(width: 64, height: 32)
         
@@ -211,12 +214,13 @@ class PlayerStateComponent: GKComponent {
             // Loop pattern: 1 -> 2 -> 3 -> 2
             let textures = [tex1, tex2, tex3, tex2]
             let walkAnim = SKAction.animate(with: textures, timePerFrame: 0.12)
+            let walkAnimLoop = SKAction.repeatForever(walkAnim)
             
-            // Exaggerated bouncy squash and stretch animation for walking
-            let squashX: CGFloat = isVertical ? 1.3 : 1.45
-            let squashY: CGFloat = isVertical ? 0.7 : 0.5
-            let stretchX: CGFloat = isVertical ? 0.7 : 1.15
-            let stretchY: CGFloat = isVertical ? 1.25 : 0.7
+            // Gentle bouncy squash and stretch animation for walking
+            let squashX: CGFloat = isVertical ? 1.05 : 1.08
+            let squashY: CGFloat = isVertical ? 0.95 : 0.92
+            let stretchX: CGFloat = isVertical ? 0.95 : 0.92
+            let stretchY: CGFloat = isVertical ? 1.05 : 1.08
             
             let squash = SKAction.scaleX(to: squashX, y: squashY, duration: 0.12)
             squash.timingMode = .easeInEaseOut
@@ -224,17 +228,17 @@ class PlayerStateComponent: GKComponent {
             stretch.timingMode = .easeInEaseOut
             let bounce = SKAction.repeatForever(SKAction.sequence([squash, stretch]))
             
-            node.run(SKAction.group([walkAnim, bounce]), withKey: "player_anim")
+            node.run(SKAction.group([walkAnimLoop, bounce]), withKey: "player_anim")
         } else {
             // Idle state: set static first frame of the direction
             let idleTex = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
             node.texture = idleTex
             
-            // Hilarious flat breathing squash effect for idle
-            let breatheSquashX: CGFloat = isVertical ? 1.1 : 1.15
-            let breatheSquashY: CGFloat = isVertical ? 0.9 : 0.85
-            let breatheStretchX: CGFloat = isVertical ? 0.9 : 0.95
-            let breatheStretchY: CGFloat = isVertical ? 1.1 : 1.05
+            // Gentle flat breathing squash effect for idle
+            let breatheSquashX: CGFloat = isVertical ? 1.02 : 1.04
+            let breatheSquashY: CGFloat = isVertical ? 0.98 : 0.96
+            let breatheStretchX: CGFloat = isVertical ? 0.98 : 0.96
+            let breatheStretchY: CGFloat = isVertical ? 1.02 : 1.04
             
             let breatheSquash = SKAction.scaleX(to: breatheSquashX, y: breatheSquashY, duration: 0.8)
             breatheSquash.timingMode = .easeInEaseOut
