@@ -13,9 +13,11 @@ final class Collectible {
     @Attribute(.unique) var id: UUID = UUID()
     var name: String
     var isUnlocked: Bool = false
+//    var dateUnlocked: Date?
     
     var player: PlayerProfile?
     
+    init(name: String) {
     init(name: String) {
         self.name = name
     }
