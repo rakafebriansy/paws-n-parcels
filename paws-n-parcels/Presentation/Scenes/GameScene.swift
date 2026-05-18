@@ -235,14 +235,13 @@ class GameScene: SKScene {
     }
     
     func setupPlayer() {
-        let playerNode = SKShapeNode(circleOfRadius: 25)
-        playerNode.fillColor = .systemYellow
-        playerNode.strokeColor = .white
-        playerNode.lineWidth = 3
+        let texture = SKTexture(imageNamed: "goldie_down_1")
+        let playerNode = SKSpriteNode(texture: texture, size: CGSize(width: 48, height: 48))
         playerNode.zPosition = 5
         playerNode.position = CGPoint(x: 400, y: 400)
         
-        playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
+        // Circular physics body matching Goldie's size
+        playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 16)
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
         playerNode.physicsBody?.restitution = 0.0
