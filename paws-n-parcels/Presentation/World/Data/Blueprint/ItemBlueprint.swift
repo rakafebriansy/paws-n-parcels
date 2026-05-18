@@ -19,6 +19,7 @@ struct ItemBlueprint {
     let pos: CGPoint
     var rotation: CGFloat = 0
     var characterName: String? = nil
+    var assetName: String? = nil
 }
 
 extension ItemBlueprint {

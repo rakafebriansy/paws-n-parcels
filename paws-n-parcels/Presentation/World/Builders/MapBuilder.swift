@@ -36,7 +36,7 @@ class MapBuilder {
             
             switch item.type {
             case .house:
-                buildHouse(at: actualPos, rotation: item.rotation, ownerName: item.characterName)
+                buildHouse(at: actualPos, rotation: item.rotation, ownerName: item.characterName, assetName: item.assetName)
             case .pond(_):
                 buildIrregularPond(at: item.pos)
             case .tree:
@@ -175,14 +175,15 @@ class MapBuilder {
         }
     }
     
-    private func buildHouse(at point: CGPoint, rotation: CGFloat?, ownerName: String? = nil) {
+    private func buildHouse(at point: CGPoint, rotation: CGFloat?, ownerName: String? = nil, assetName: String? = nil) {
         let houseId = ownerName ?? "Unknown"
         print("[MapBuilder] Spawning house for \(houseId) at \(point).")
         
         let grid = GameConfig.gridSize
         let houseSize = CGSize(width: grid * 2, height: grid * 2)
         
-        let houseNode = SKSpriteNode(imageNamed: "house")
+        let houseImage = assetName ?? "house_1"
+        let houseNode = SKSpriteNode(imageNamed: houseImage)
         houseNode.size = houseSize
         houseNode.position = point
         houseNode.zPosition = 1

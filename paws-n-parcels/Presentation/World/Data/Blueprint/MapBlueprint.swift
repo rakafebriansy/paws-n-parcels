@@ -58,28 +58,28 @@ let worldMap = MapBlueprint(
         ],
     ],
     items: [
-        ItemBlueprint(type: .house, pos: CGPoint(x: 1, y: 6)), //goldie's house
+        ItemBlueprint(type: .house, pos: CGPoint(x: 1, y: 6), assetName: "house_1"), //goldie's house
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 15, y: 7)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 15, y: 7), assetName: "house_2"),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 11), assetName: "house_2"),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 7), assetName: "house_2"),
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 11)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 25, y: 7)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 25), assetName: "house_3"),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 27), assetName: "house_3"),
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 25)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 27)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 15), assetName: "house_4"),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 17), assetName: "house_4"),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 15), assetName: "house_4"),
         
-        ItemBlueprint(type: .house, pos: CGPoint(x: 6, y: 15)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 8, y: 17)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 10, y: 15)),
-        
-        ItemBlueprint(type: .house, pos: CGPoint(x: 21, y: 25)),
-        ItemBlueprint(type: .house, pos: CGPoint(x: 23, y: 23)),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 21, y: 25), assetName: "house_5"),
+        ItemBlueprint(type: .house, pos: CGPoint(x: 23, y: 23), assetName: "house_5"),
         
         ItemBlueprint(type: .pond(size: CGSize(width: 3, height: 2)), pos: CGPoint(x: 12.7, y: 13.7), rotation: 180),
     ]
     +
-    CharacterRegistry.all.map {
-        ItemBlueprint(type: .house, pos: $0.housePosition, characterName: $0.name)
+    CharacterRegistry.all.enumerated().map { index, char in
+        let houseNum = (index % 5) + 1
+        return ItemBlueprint(type: .house, pos: char.housePosition, characterName: char.name, assetName: "house_\(houseNum)")
     }
     +
     ItemBlueprint.generateForest(origin: CGPoint(x: 5, y: 6), columns: 8, rows: 5, spacingX: 1.0, spacingY: 0.5, staggerOffsetX: 0.5) +
