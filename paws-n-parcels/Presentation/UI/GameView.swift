@@ -33,23 +33,27 @@ struct GameView: View {
     
     @State private var isPaused: Bool = false
     
+    enum PauseMenuScreen {
+        case main
+        case collectibles
+        case relationships
+    }
+    
+    @State private var activePauseScreen: PauseMenuScreen = .main
+    
     var body: some View {
         ZStack {
             SpriteView(scene: gameScene)
                 .ignoresSafeArea()
-            
-            // HUD Overlay (Top-Right Action Buttons)
             VStack {
                 HStack(spacing: 12) {
-                    Spacer()
-                    
-                    // Pause Toggle Button
                     Button(action: {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                             if isPaused {
                                 gameScene.gameStateMachine?.enter(GamePlayingState.self)
                                 isPaused = false
                             } else {
+                                activePauseScreen = .main
                                 gameScene.gameStateMachine?.enter(GamePausedState.self)
                                 isPaused = true
                             }
@@ -66,9 +70,10 @@ struct GameView: View {
                             )
                             .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                     }
+                    Spacer()
                 }
-                .padding(.top, 60)
-                .padding(.trailing, 20)
+                .padding(.top, 16)
+                .padding(.leading, 16)
                 
                 Spacer()
             }
@@ -108,81 +113,64 @@ struct GameView: View {
                 .zIndex(3)
             }
             
-
-            
-            // Full Screen Glassmorphic Pause Overlay
             if isPaused {
                 ZStack {
                     Color.black.opacity(0.55)
                         .ignoresSafeArea()
                     
-                    VStack(spacing: 24) {
-                        Image(systemName: "pawprint.fill")
-                            .font(.system(size: 64))
-                            .foregroundColor(.orange)
-                            .shadow(radius: 8)
-                            .padding(.bottom, 8)
-                        
-                        Text("PAWS-N-PARCELS")
-                            .font(.system(size: 28, weight: .black))
-                            .foregroundColor(.white)
-                            .tracking(3)
-                        
-                        Text("Game Paused")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
-                        
-                        VStack(spacing: 16) {
-                            Button(action: {
+                    switch activePauseScreen {
+                    case .main:
+                        MainMenuModalView(
+                            onResume: {
                                 withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                                     gameScene.gameStateMachine?.enter(GamePlayingState.self)
                                     isPaused = false
                                 }
-                            }) {
-                                Text("RESUME PLAY")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.black)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 52)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color.orange)
-                                    )
-                                    .shadow(radius: 4)
+                            },
+                            onCollectibles: {
+                                withAnimation(.easeInOut) {
+                                    activePauseScreen = .collectibles
+                                }
+                            },
+                            onRelationships: {
+                                withAnimation(.easeInOut) {
+                                    activePauseScreen = .relationships
+                                }
                             }
-                            
-                            Button(action: {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                                    gameScene.gameStateMachine?.enter(GamePlayingState.self)
-                                    isPaused = false
-                                    gameScene.resumeGameplay()
+                        )
+                    case .collectibles:
+                        CollectibleView(
+                            onClose: {
+                                withAnimation(.easeInOut) {
+                                    activePauseScreen = .main
                                 }
-                            }) {
-                                Text("RESTART LEVEL")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 52)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(Color.white.opacity(0.4), lineWidth: 2)
-                                            .background(Color.black.opacity(0.2))
-                                    )
+                            }
+                        )
+                    case .relationships:
+                        ZStack {
+                            RelationshipView()
+                                                       // Close button for RelationshipView to return to Pause Main Menu
+                            VStack {
+                                HStack {
+                                    Button(action: {
+                                        withAnimation(.easeInOut) {
+                                            activePauseScreen = .main
+                                        }
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 32))
+                                            .foregroundColor(.red)
+                                            .background(Circle().fill(Color.cream))
+                                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                                    }
+                                    .padding(.top, 40)
+                                    .padding(.leading, 45)
+                                    Spacer()
+                                }
+                                Spacer()
                             }
                         }
-                        .frame(width: 260)
-                        .padding(.top, 16)
                     }
-                    .padding(32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 30)
-                            .fill(Color(red: 0.1, green: 0.1, blue: 0.12).opacity(0.85))
-                            .background(
-                                RoundedRectangle(cornerRadius: 30)
-                                    .stroke(Color.white.opacity(0.15), lineWidth: 1.5)
-                            )
-                    )
-                    .shadow(radius: 20)
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 .zIndex(10)

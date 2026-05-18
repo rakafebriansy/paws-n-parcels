@@ -14,6 +14,10 @@ struct MainMenuModalView: View {
     @AppStorage("isVibrationOn") private var isVibrationOn = true
     @State private var isEditing = false
     
+    var onResume: (() -> Void)? = nil
+    var onCollectibles: (() -> Void)? = nil
+    var onRelationships: (() -> Void)? = nil
+    
     var body: some View {
         ZStack {
             Image("modal").resizable().scaledToFit().padding(24)
@@ -26,7 +30,7 @@ struct MainMenuModalView: View {
                 
                 VStack(spacing: 15) {
                     Button(action: {
-                        
+                        onCollectibles?()
                     }){
                         HStack {
                             Image(systemName: "book.fill")
@@ -42,7 +46,7 @@ struct MainMenuModalView: View {
                     }
                     
                     Button(action: {
-                        
+                        onRelationships?()
                     }){
                         HStack {
                             Image(systemName: "person.2.fill")
@@ -97,6 +101,24 @@ struct MainMenuModalView: View {
                 }
             }
             .offset(y: -25)
+            
+            VStack {
+                HStack {
+                    Button(action: {
+                        onResume?()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(.red)
+                            .background(Circle().fill(Color.cream))
+                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                    }
+                    .padding(.top, 40)
+                    .padding(.leading, 45)
+                    Spacer()
+                }
+                Spacer()
+            }
         }
         .transition(.scale.combined(with: .opacity))
     }
