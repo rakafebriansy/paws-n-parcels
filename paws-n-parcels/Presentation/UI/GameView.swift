@@ -114,6 +114,7 @@ struct GameView: View {
                 showPickUpAlert = false
                 showDeliveryAlert = false
             }
+            gameScene.resumeGameplay()
         }
         
         if showRelationshipPointsAlert {

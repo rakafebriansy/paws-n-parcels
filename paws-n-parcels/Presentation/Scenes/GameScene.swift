@@ -65,6 +65,9 @@ class GameScene: SKScene {
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
+        guard !isInteracting else { return }
+
         guard let touch = touches.first
         else { return }
         
@@ -75,6 +78,9 @@ class GameScene: SKScene {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
+        guard !isInteracting else { return }
+
         guard let touch = touches.first
         else { return }
         
@@ -90,6 +96,14 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         joystick.processTouchEnded()
         
+        let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
+        if isInteracting {
+            if let movement = playerEntity.component(ofType: MovementComponent.self) {
+                movement.velocity = .zero
+            }
+            return
+        }
+
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
             movement.velocity = joystick.currentVelocity
         }
@@ -117,6 +131,7 @@ class GameScene: SKScene {
         previousTime = currentTime
         movementSystem.update(deltaTime: deltaTime)
         deliverySystem?.update(deltaTime: deltaTime)
+        playerEntity.update(deltaTime: deltaTime)
         
         updateIndicators()
         
@@ -214,6 +229,7 @@ class GameScene: SKScene {
         addChild(playerNode)
         
         playerEntity = PlayerEntity(node: playerNode)
+        playerEntity.addComponent(PlayerStateComponent(scene: self))
         movementSystem.addComponent(foundIn: playerEntity)
     }
     
@@ -325,6 +341,13 @@ class GameScene: SKScene {
         if deliverySys.stateMachine == nil {
             deliverySys.setupStateMachine(requestSystem: reqSys, scene: self)
             print("[GameScene] Delivery State Machine setup completed successfully.")
+        }
+    }
+    
+    func resumeGameplay() {
+        if let stateComponent = playerEntity.component(ofType: PlayerStateComponent.self) {
+            stateComponent.stateMachine?.enter(PlayerIdleState.self)
+            print("[GameScene] Gameplay resumed, entering PlayerIdleState.")
         }
     }
     
