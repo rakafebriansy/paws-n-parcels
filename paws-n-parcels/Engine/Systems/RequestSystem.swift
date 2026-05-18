@@ -24,8 +24,8 @@ class RequestSystem {
     
     init() { }
     
-    func triggerNewPackageSpawn() {
-        scheduleNextPackageSpawn(delaySeconds: 0)
+    func triggerNewPackageSpawn(delaySeconds: Int = 0) {
+        scheduleNextPackageSpawn(delaySeconds: delaySeconds)
     }
     
     func deliverRequest(_ request: Request) {

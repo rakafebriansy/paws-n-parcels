@@ -38,6 +38,7 @@ class DeliverySystem {
         }
         
         component.activeRequest = request
+        self.activePackage = request
         print("[DeliverySystem] Package picked up successfully. Sender: \(request.sender.name), Receiver: \(request.receiver.name).")
     }
     
@@ -54,6 +55,7 @@ class DeliverySystem {
         let rewardResult = processDeliveryReward(for: request, in: relationships)
         
         component.activeRequest = nil
+        self.activePackage = nil
         
         return rewardResult
     }

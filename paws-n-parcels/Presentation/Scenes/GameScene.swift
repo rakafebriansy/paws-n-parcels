@@ -237,6 +237,16 @@ class GameScene: SKScene {
     private func interactWithHouse(_ house: HouseEntity) {
         let houseName = house.characterName ?? "Unknown"
         
+        let isHoldingPackage = deliverySystem?.activePackage != nil
+        let isSender = house.component(ofType: RequestComponent.self) != nil
+        let isTarget = (deliverySystem?.activePackage?.receiver.name != nil) && (deliverySystem?.activePackage?.receiver.name == house.characterName)
+        
+        if isHoldingPackage {
+            guard isTarget else { return }
+        } else {
+            guard isSender else { return }
+        }
+        
         guard let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node,
               let houseNode = house.component(ofType: RenderComponent.self)?.node
         else {
@@ -278,7 +288,7 @@ class GameScene: SKScene {
                 let result = deliverySys.deliverPackage(for: playerEntity, relationships: requestSys.relationships)
                 print("[GameScene] Package successfully delivered to \(houseName)! Reward: \(result.pointsAdded) Points.")
                 
-                requestSys.triggerNewPackageSpawn()
+                requestSys.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
                 
                 onDeliverySuccess?()
             } else {
@@ -310,6 +320,7 @@ class GameScene: SKScene {
         else { return }
         
         let targetReceiverName = deliverySystem?.activePackage?.receiver.name
+        let isHoldingPackage = deliverySystem?.activePackage != nil
         
         for entity in mapBuilder.environmentEntities {
             if let house = entity as? HouseEntity,
@@ -342,12 +353,20 @@ class GameScene: SKScene {
                     if let h = highlight { houseNode.addChild(h) }
                 }
                 
-                highlight?.isHidden = !(isSender && isWithinRange)
+                if isSender && isWithinRange && !isHoldingPackage {
+                    highlight?.strokeColor = .systemYellow
+                    highlight?.isHidden = false
+                } else if isTarget && isWithinRange {
+                    highlight?.strokeColor = .systemRed
+                    highlight?.isHidden = false
+                } else {
+                    highlight?.isHidden = true
+                }
                 
                 let senderIcon = houseNode.childNode(withName: "indicator_sender")
                 let receiverIcon = houseNode.childNode(withName: "indicator_receiver")
                 
-                senderIcon?.isHidden = !isSender
+                senderIcon?.isHidden = !isSender || isHoldingPackage
                 receiverIcon?.isHidden = !isTarget
                 
                 senderIcon?.zRotation = -houseNode.zRotation
