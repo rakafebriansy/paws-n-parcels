@@ -36,4 +36,9 @@ class GameDataManager {
         let descriptor = FetchDescriptor<Animal>()
         return (try? context?.fetch(descriptor)) ?? []
     }
+    
+    func fetchCollectibles() -> [Collectible] {
+        let descriptor = FetchDescriptor<Collectible>()
+        return (try? context?.fetch(descriptor)) ?? []
+    }
 }
