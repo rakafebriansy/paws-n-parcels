@@ -171,6 +171,14 @@ class GameScene: SKScene {
         playerEntity.update(deltaTime: deltaTime)
         gameStateMachine?.update(deltaTime: deltaTime)
         
+        if let builder = mapBuilder {
+            for entity in builder.environmentEntities {
+                if let npc = entity as? NPCEntity {
+                    npc.update(deltaTime: deltaTime)
+                }
+            }
+        }
+        
         updateIndicators()
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {

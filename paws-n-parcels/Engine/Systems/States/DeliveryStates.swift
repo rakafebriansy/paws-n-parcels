@@ -95,6 +95,18 @@ class DeliveryCompletedState: DeliveryBaseState {
             return
         }
         
+        // Trigger NPC Celebration
+        if let activePackage = deliverySystem.activePackage,
+           let mapBuilder = scene.mapBuilder {
+            let receiverName = activePackage.receiver.name
+            for entity in mapBuilder.environmentEntities {
+                if let npc = entity as? NPCEntity, npc.name == receiverName {
+                    npc.component(ofType: NPCStateComponent.self)?.stateMachine?.enter(NPCCelebratingState.self)
+                    print("[DeliveryFSM] Triggered NPCCelebratingState for receiver: \(receiverName)")
+                }
+            }
+        }
+        
         // Process reward calculations
         let result = deliverySystem.deliverPackage(for: scene.playerEntity, relationships: requestSystem.relationships)
         
