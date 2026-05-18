@@ -15,10 +15,15 @@ class GameScene: SKScene {
     var playerEntity: PlayerEntity!
     
     var movementSystem = GKComponentSystem<MovementComponent>(componentClass: MovementComponent.self)
-    weak var deliverySystem: DeliverySystem?
+    weak var deliverySystem: DeliverySystem? {
+        didSet {
+            setupStateMachineIfNeeded()
+        }
+    }
     weak var requestSystem: RequestSystem? {
         didSet {
             registerHousesAndStartSpawning()
+            setupStateMachineIfNeeded()
         }
     }
     
@@ -111,6 +116,7 @@ class GameScene: SKScene {
         let deltaTime = currentTime - previousTime
         previousTime = currentTime
         movementSystem.update(deltaTime: deltaTime)
+        deliverySystem?.update(deltaTime: deltaTime)
         
         updateIndicators()
         
@@ -271,10 +277,10 @@ class GameScene: SKScene {
             return
         }
         
-        if deliverySys.activePackage == nil {
+        if let waitingState = deliverySys.stateMachine?.currentState as? WaitingForPickupState {
             if house.component(ofType: RequestComponent.self) != nil {
                 if let request = requestSys.pickupRequest(house) {
-                    deliverySys.pickUpPackage(request: request, for: playerEntity)
+                    waitingState.pickUp(request: request, player: playerEntity)
                     print("[GameScene] Successfully picked up package from \(houseName)'s house.")
                     
                     onPickUpSuccess?(request.sender.pickupDialog)
@@ -282,15 +288,12 @@ class GameScene: SKScene {
             } else {
                 print("[GameScene] \(houseName)'s house has no package to pick up.")
             }
-        } else if let heldPackage = deliverySys.activePackage {
+        } else if let carryingState = deliverySys.stateMachine?.currentState as? CarryingState {
+            guard let heldPackage = deliverySys.activePackage else { return }
             let receiverName = heldPackage.receiver.name
             if receiverName == houseName {
-                let result = deliverySys.deliverPackage(for: playerEntity, relationships: requestSys.relationships)
-                print("[GameScene] Package successfully delivered to \(houseName)! Reward: \(result.pointsAdded) Points.")
-                
-                requestSys.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
-                
-                onDeliverySuccess?(result.pointsAdded)
+                print("[GameScene] Delivering package to \(houseName)...")
+                carryingState.deliver()
             } else {
                 print("[GameScene] Wrong address! This package is for \(receiverName), not for \(houseName).")
             }
@@ -312,6 +315,17 @@ class GameScene: SKScene {
         
         reqSys.fetchData()
         reqSys.initialBurstSpawn()
+    }
+    
+    private func setupStateMachineIfNeeded() {
+        guard let deliverySys = deliverySystem,
+              let reqSys = requestSystem
+        else { return }
+        
+        if deliverySys.stateMachine == nil {
+            deliverySys.setupStateMachine(requestSystem: reqSys, scene: self)
+            print("[GameScene] Delivery State Machine setup completed successfully.")
+        }
     }
     
     private func updateIndicators() {
