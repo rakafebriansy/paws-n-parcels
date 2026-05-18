@@ -20,7 +20,6 @@ class DeliveryBaseState: GKState {
     }
 }
 
-/// State: Player has no active request en-route, waiting for requests to be available.
 @MainActor
 class NoActiveRequestState: DeliveryBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
@@ -39,7 +38,6 @@ class NoActiveRequestState: DeliveryBaseState {
     }
 }
 
-/// State: At least one package request has spawned on the map. Waiting for player pickup.
 @MainActor
 class WaitingForPickupState: DeliveryBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
@@ -63,7 +61,6 @@ class WaitingForPickupState: DeliveryBaseState {
     }
 }
 
-/// State: Player has picked up a package and is en-route carrying it to the recipient.
 @MainActor
 class CarryingState: DeliveryBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
@@ -79,7 +76,6 @@ class CarryingState: DeliveryBaseState {
     }
 }
 
-/// State: Player has successfully delivered the package. Awards relationships points and triggers UI alerts.
 @MainActor
 class DeliveryCompletedState: DeliveryBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
@@ -95,16 +91,11 @@ class DeliveryCompletedState: DeliveryBaseState {
             return
         }
         
-        // Process reward calculations
         let result = deliverySystem.deliverPackage(for: scene.playerEntity, relationships: requestSystem.relationships)
-        
-        // Trigger delivery success callback on the scene to show UI
         scene.onDeliverySuccess?(result.pointsAdded)
         
-        // Trigger background scheduler to spawn next package
         requestSystem.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
         
-        // Go back to idle/no active request state
         stateMachine?.enter(NoActiveRequestState.self)
     }
 }

@@ -16,7 +16,6 @@ class DeliverySystem {
     var activePackage: Request? = nil
     var nearbyHouse: HouseEntity? = nil
     
-    // Finite State Machine
     var stateMachine: GKStateMachine?
     weak var scene: GameScene?
     

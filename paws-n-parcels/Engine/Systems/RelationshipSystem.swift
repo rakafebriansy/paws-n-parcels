@@ -8,7 +8,6 @@
 import Foundation
 import SwiftData
 
-// MARK: - Relationship Logic System
 @MainActor
 class RelationshipSystem {
     private var modelContext: ModelContext
@@ -17,7 +16,6 @@ class RelationshipSystem {
         self.modelContext = modelContext
     }
     
-    /// Finds the existing relationship between two characters by their unique names.
     func getRelationship(between nameA: String, and nameB: String) -> AnimalRelationship? {
         let descriptor = FetchDescriptor<AnimalRelationship>(
             predicate: #Predicate<AnimalRelationship> { rel in

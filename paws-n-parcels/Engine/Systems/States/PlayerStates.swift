@@ -29,7 +29,6 @@ class PlayerBaseState: GKState {
     }
 }
 
-/// State: Player character is idle. Displays a breathing bounce animation.
 @MainActor
 class PlayerIdleState: PlayerBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
@@ -58,7 +57,6 @@ class PlayerIdleState: PlayerBaseState {
     }
 }
 
-/// State: Player character is walking based on joystick input. Displays a dynamic rotation wiggle walk animation.
 @MainActor
 class PlayerWalkingState: PlayerBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
@@ -84,8 +82,6 @@ class PlayerWalkingState: PlayerBaseState {
     }
 }
 
-/// State: Player character is currently interacting (carrying out pickup or delivery alerts).
-/// Bypasses/ignores joystick inputs and anchors the player temporarily.
 @MainActor
 class PlayerInteractingState: PlayerBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
@@ -105,7 +101,6 @@ class PlayerInteractingState: PlayerBaseState {
     }
 }
 
-/// ECS Component: Holds the Player's state machine to control active movement/animation states.
 @MainActor
 class PlayerStateComponent: GKComponent {
     var stateMachine: GKStateMachine?
