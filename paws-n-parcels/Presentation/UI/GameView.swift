@@ -32,7 +32,6 @@ struct GameView: View {
     @State private var currentDialogMessage: String = ""
     
     @State private var isPaused: Bool = false
-    @State private var isViewingMap: Bool = false
     
     var body: some View {
         ZStack {
@@ -44,33 +43,6 @@ struct GameView: View {
                 HStack(spacing: 12) {
                     Spacer()
                     
-                    // Map Toggle Button
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                            if isViewingMap {
-                                gameScene.gameStateMachine?.enter(GamePlayingState.self)
-                                isViewingMap = false
-                            } else {
-                                if isPaused {
-                                    isPaused = false
-                                }
-                                gameScene.gameStateMachine?.enter(GameViewingMapState.self)
-                                isViewingMap = true
-                            }
-                        }
-                    }) {
-                        Image(systemName: isViewingMap ? "map.fill" : "map")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                Circle()
-                                    .fill(Color.black.opacity(0.45))
-                                    .background(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1.5))
-                            )
-                            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                    }
-                    
                     // Pause Toggle Button
                     Button(action: {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
@@ -78,9 +50,6 @@ struct GameView: View {
                                 gameScene.gameStateMachine?.enter(GamePlayingState.self)
                                 isPaused = false
                             } else {
-                                if isViewingMap {
-                                    isViewingMap = false
-                                }
                                 gameScene.gameStateMachine?.enter(GamePausedState.self)
                                 isPaused = true
                             }
@@ -139,27 +108,7 @@ struct GameView: View {
                 .zIndex(3)
             }
             
-            // Map Viewing Helper Hint
-            if isViewingMap {
-                VStack {
-                    Spacer()
-                    
-                    Text("Drag to explore the island • Tap 🗺️ again to return")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 24)
-                        .background(
-                            Capsule()
-                                .fill(Color.black.opacity(0.65))
-                                .background(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
-                        )
-                        .shadow(radius: 4)
-                        .padding(.bottom, 50)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .zIndex(8)
-            }
+
             
             // Full Screen Glassmorphic Pause Overlay
             if isPaused {

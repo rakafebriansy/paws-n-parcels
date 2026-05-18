@@ -64,8 +64,7 @@ class GameScene: SKScene {
         
         let states = [
             GamePlayingState(scene: self),
-            GamePausedState(scene: self),
-            GameViewingMapState(scene: self)
+            GamePausedState(scene: self)
         ]
         gameStateMachine = GKStateMachine(states: states)
         gameStateMachine?.enter(GamePlayingState.self)
@@ -90,22 +89,6 @@ class GameScene: SKScene {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if gameStateMachine?.currentState is GameViewingMapState {
-            guard let touch = touches.first else { return }
-            let location = touch.location(in: self)
-            let previousLocation = touch.previousLocation(in: self)
-            
-            let dx = previousLocation.x - location.x
-            let dy = previousLocation.y - location.y
-            
-            let mapWidth = worldMap.groundSize.width
-            let mapHeight = worldMap.groundSize.height
-            let newX = max(0, min(cameraNode.position.x + dx, mapWidth))
-            let newY = max(0, min(cameraNode.position.y + dy, mapHeight))
-            cameraNode.position = CGPoint(x: newX, y: newY)
-            return
-        }
-        
         guard gameStateMachine?.currentState is GamePlayingState else { return }
         
         let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
@@ -166,9 +149,9 @@ class GameScene: SKScene {
         
         let deltaTime = currentTime - previousTime
         previousTime = currentTime
-        movementSystem.update(deltaTime: deltaTime)
         deliverySystem?.update(deltaTime: deltaTime)
         playerEntity.update(deltaTime: deltaTime)
+        movementSystem.update(deltaTime: deltaTime)
         gameStateMachine?.update(deltaTime: deltaTime)
         
         if let builder = mapBuilder {
@@ -188,12 +171,10 @@ class GameScene: SKScene {
             let mapWidth = worldMap.groundSize.width
             let mapHeight = worldMap.groundSize.height
             
-            if !(gameStateMachine?.currentState is GameViewingMapState) {
-                let xPos = max(viewWidth / 2, min(playerNode.position.x, mapWidth - viewWidth / 2))
-                let yPos = max(viewHeight / 2, min(playerNode.position.y, mapHeight - viewHeight / 2))
-                
-                cameraNode.position = CGPoint(x: xPos, y: yPos)
-            }
+            let xPos = max(viewWidth / 2, min(playerNode.position.x, mapWidth - viewWidth / 2))
+            let yPos = max(viewHeight / 2, min(playerNode.position.y, mapHeight - viewHeight / 2))
+            
+            cameraNode.position = CGPoint(x: xPos, y: yPos)
             playerNode.zPosition = 10000 - playerNode.position.y
             
             updateScreenEdgeArrows(viewWidth: viewWidth, viewHeight: viewHeight)
