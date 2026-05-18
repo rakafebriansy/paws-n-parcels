@@ -15,10 +15,16 @@ class GameScene: SKScene {
     var playerEntity: PlayerEntity!
     
     var movementSystem = GKComponentSystem<MovementComponent>(componentClass: MovementComponent.self)
-    weak var deliverySystem: DeliverySystem?
+    var gameStateMachine: GKStateMachine?
+    weak var deliverySystem: DeliverySystem? {
+        didSet {
+            setupStateMachineIfNeeded()
+        }
+    }
     weak var requestSystem: RequestSystem? {
         didSet {
             registerHousesAndStartSpawning()
+            setupStateMachineIfNeeded()
         }
     }
     
@@ -56,10 +62,23 @@ class GameScene: SKScene {
         drawDebugGrid(gridSize: 100)
         registerHousesAndStartSpawning()
         
+        let states = [
+            GamePlayingState(scene: self),
+            GamePausedState(scene: self)
+        ]
+        gameStateMachine = GKStateMachine(states: states)
+        gameStateMachine?.enter(GamePlayingState.self)
+        print("[GameScene] Game Flow State Machine initialized in GamePlayingState.")
+        
         print("[GameScene] Initialization complete. Game is ready to play!")
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard gameStateMachine?.currentState is GamePlayingState else { return }
+        
+        let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
+        guard !isInteracting else { return }
+
         guard let touch = touches.first
         else { return }
         
@@ -70,6 +89,11 @@ class GameScene: SKScene {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard gameStateMachine?.currentState is GamePlayingState else { return }
+        
+        let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
+        guard !isInteracting else { return }
+
         guard let touch = touches.first
         else { return }
         
@@ -85,6 +109,21 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         joystick.processTouchEnded()
         
+        let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
+        if isInteracting {
+            if let movement = playerEntity.component(ofType: MovementComponent.self) {
+                movement.velocity = .zero
+            }
+            return
+        }
+
+        guard gameStateMachine?.currentState is GamePlayingState else {
+            if let movement = playerEntity.component(ofType: MovementComponent.self) {
+                movement.velocity = .zero
+            }
+            return
+        }
+
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
             movement.velocity = joystick.currentVelocity
         }
@@ -110,7 +149,10 @@ class GameScene: SKScene {
         
         let deltaTime = currentTime - previousTime
         previousTime = currentTime
+        deliverySystem?.update(deltaTime: deltaTime)
+        playerEntity.update(deltaTime: deltaTime)
         movementSystem.update(deltaTime: deltaTime)
+        gameStateMachine?.update(deltaTime: deltaTime)
         
         updateIndicators()
         
@@ -193,14 +235,13 @@ class GameScene: SKScene {
     }
     
     func setupPlayer() {
-        let playerNode = SKShapeNode(circleOfRadius: 25)
-        playerNode.fillColor = .systemYellow
-        playerNode.strokeColor = .white
-        playerNode.lineWidth = 3
-        playerNode.zPosition = 5
-        playerNode.position = CGPoint(x: 400, y: 400)
+        let texture = SKTexture(imageNamed: "goldie_down_1")
+        let playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerVerticalSize)
+        playerNode.zPosition = GameConfig.playerZPosition
+        playerNode.position = GameConfig.playerInitialPosition
         
-        playerNode.physicsBody = SKPhysicsBody(circleOfRadius: 25)
+        // Circular physics body matching Goldie's footprint
+        playerNode.physicsBody = SKPhysicsBody(circleOfRadius: GameConfig.playerPhysicsRadius)
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
         playerNode.physicsBody?.restitution = 0.0
@@ -208,6 +249,7 @@ class GameScene: SKScene {
         addChild(playerNode)
         
         playerEntity = PlayerEntity(node: playerNode)
+        playerEntity.addComponent(PlayerStateComponent(scene: self))
         movementSystem.addComponent(foundIn: playerEntity)
     }
     
@@ -271,10 +313,10 @@ class GameScene: SKScene {
             return
         }
         
-        if deliverySys.activePackage == nil {
+        if let waitingState = deliverySys.stateMachine?.currentState as? WaitingForPickupState {
             if house.component(ofType: RequestComponent.self) != nil {
                 if let request = requestSys.pickupRequest(house) {
-                    deliverySys.pickUpPackage(request: request, for: playerEntity)
+                    waitingState.pickUp(request: request, player: playerEntity)
                     print("[GameScene] Successfully picked up package from \(houseName)'s house.")
                     
                     onPickUpSuccess?(request.sender.pickupDialog)
@@ -282,15 +324,12 @@ class GameScene: SKScene {
             } else {
                 print("[GameScene] \(houseName)'s house has no package to pick up.")
             }
-        } else if let heldPackage = deliverySys.activePackage {
+        } else if let carryingState = deliverySys.stateMachine?.currentState as? CarryingState {
+            guard let heldPackage = deliverySys.activePackage else { return }
             let receiverName = heldPackage.receiver.name
             if receiverName == houseName {
-                let result = deliverySys.deliverPackage(for: playerEntity, relationships: requestSys.relationships)
-                print("[GameScene] Package successfully delivered to \(houseName)! Reward: \(result.pointsAdded) Points.")
-                
-                requestSys.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
-                
-                onDeliverySuccess?(result.pointsAdded)
+                print("[GameScene] Delivering package to \(houseName)...")
+                carryingState.deliver()
             } else {
                 print("[GameScene] Wrong address! This package is for \(receiverName), not for \(houseName).")
             }
@@ -312,6 +351,24 @@ class GameScene: SKScene {
         
         reqSys.fetchData()
         reqSys.initialBurstSpawn()
+    }
+    
+    private func setupStateMachineIfNeeded() {
+        guard let deliverySys = deliverySystem,
+              let reqSys = requestSystem
+        else { return }
+        
+        if deliverySys.stateMachine == nil {
+            deliverySys.setupStateMachine(requestSystem: reqSys, scene: self)
+            print("[GameScene] Delivery State Machine setup completed successfully.")
+        }
+    }
+    
+    func resumeGameplay() {
+        if let stateComponent = playerEntity.component(ofType: PlayerStateComponent.self) {
+            stateComponent.stateMachine?.enter(PlayerIdleState.self)
+            print("[GameScene] Gameplay resumed, entering PlayerIdleState.")
+        }
     }
     
     private func updateIndicators() {

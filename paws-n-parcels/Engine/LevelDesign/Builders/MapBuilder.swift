@@ -9,17 +9,6 @@ import Foundation
 import SpriteKit
 import GameplayKit
 import SwiftUI
-
-enum ZPositionStrategy {
-    case flat(CGFloat)
-    case ySorted(offset: CGFloat)
-}
-
-enum PhysicsShape {
-    case rectangle(size: CGSize)
-    case circle(radius: CGFloat, offset: CGPoint)
-}
-
 class MapBuilder {
     let scene: SKScene
     var environmentEntities: [GKEntity] = []

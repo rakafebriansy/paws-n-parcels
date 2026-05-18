@@ -16,12 +16,30 @@ class DeliverySystem {
     var activePackage: Request? = nil
     var nearbyHouse: HouseEntity? = nil
     
+    var stateMachine: GKStateMachine?
+    weak var scene: GameScene?
+    
+    func setupStateMachine(requestSystem: RequestSystem, scene: GameScene) {
+        self.scene = scene
+        
+        let states = [
+            NoActiveRequestState(deliverySystem: self, requestSystem: requestSystem),
+            WaitingForPickupState(deliverySystem: self, requestSystem: requestSystem),
+            CarryingState(deliverySystem: self, requestSystem: requestSystem),
+            DeliveryCompletedState(deliverySystem: self, requestSystem: requestSystem)
+        ]
+        
+        self.stateMachine = GKStateMachine(states: states)
+        self.stateMachine?.enter(NoActiveRequestState.self)
+    }
+    
     func registerEntity(_ entity: GKEntity) {
         system.addComponent(foundIn: entity)
     }
     
     func update(deltaTime: TimeInterval) {
         system.update(deltaTime: deltaTime)
+        stateMachine?.update(deltaTime: deltaTime)
     }
     
     func pickUpPackage(request: Request, for entity: GKEntity) {
