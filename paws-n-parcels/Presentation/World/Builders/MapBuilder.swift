@@ -10,6 +10,16 @@ import SpriteKit
 import GameplayKit
 import SwiftUI
 
+enum ZPositionStrategy {
+    case flat(CGFloat)
+    case ySorted(offset: CGFloat)
+}
+
+enum PhysicsShape {
+    case rectangle(size: CGSize)
+    case circle(radius: CGFloat, offset: CGPoint)
+}
+
 class MapBuilder {
     let scene: SKScene
     var environmentEntities: [GKEntity] = []
@@ -29,7 +39,7 @@ class MapBuilder {
         print("[MapBuilder] Starting map generation...")
         
         buildTerrain(mapSize: blueprint.groundSize, oceanGrids: blueprint.oceanGridHeight, beachGrids: blueprint.beachGridHeight)
-        buildRoads(blueprint.roads)
+        buildRoads(blueprint.roads, mapSize: blueprint.groundSize)
         
         for item in blueprint.items {
             let actualPos = item.scenePosition()
@@ -73,11 +83,16 @@ class MapBuilder {
         scene.addChild(waterPhysicsNode)
         environmentEntities.append(EnvironmentEntity(node: waterPhysicsNode))
         
+        let tileNames = ["sea", "sea_1", "sea_2", "sea_3", "ocean_1", "ocean_2", "ocean_3", "beach_1", "beach_2", "beach_3", "grass"]
+        let tileSet = createTileSet(for: tileNames)
+        let tileMap = SKTileMapNode(tileSet: tileSet, columns: maxGridX, rows: maxGridY, tileSize: CGSize(width: grid, height: grid))
+        tileMap.anchorPoint = .zero
+        tileMap.position = .zero
+        tileMap.zPosition = -10
+        
         for x in 0..<maxGridX {
             let repeatingIndex = x % 3
-            
             for y in 0..<maxGridY {
-                let cell = CGPoint(x: x, y: y)
                 var tileName = ""
                
                 switch y {
@@ -88,19 +103,27 @@ class MapBuilder {
                 default: tileName = "grass"
                 }
                 
-                let tileNode = SKSpriteNode(imageNamed: tileName)
-                tileNode.size = CGSize(width: grid, height: grid)
-                tileNode.position = gridCenter(forBottomLeft: cell, widthInGrids: 1, heightInGrids: 1)
-                tileNode.zPosition = -10
-                scene.addChild(tileNode)
+                if let group = tileSet.tileGroups.first(where: { $0.name == tileName }) {
+                    tileMap.setTileGroup(group, forColumn: x, row: y)
+                }
             }
         }
+        scene.addChild(tileMap)
     }
     
-    private func buildRoads(_ roads: [[CGPoint]]) {
+    private func buildRoads(_ roads: [[CGPoint]], mapSize: CGSize) {
         print("[MapBuilder] Generating roads network...")
         var roadCells = Set<GridPoint>()
         let grid = GameConfig.gridSize
+        let maxGridX = Int(mapSize.width / grid)
+        let maxGridY = Int(mapSize.height / grid)
+        
+        let tileNames = ["gravel_corner_bl", "gravel_corner_tl", "gravel_vertical_l", "gravel_corner_br", "gravel_horizontal_b", "gravel_corner_tr", "gravel_vertical_r", "gravel_horizontal_t", "gravel_bend_tl", "gravel_bend_tr", "gravel_bend_bl", "gravel_bend_br"]
+        let tileSet = createTileSet(for: tileNames)
+        let tileMap = SKTileMapNode(tileSet: tileSet, columns: maxGridX, rows: maxGridY, tileSize: CGSize(width: grid, height: grid))
+        tileMap.anchorPoint = .zero
+        tileMap.position = .zero
+        tileMap.zPosition = -5
         
         for path in roads {
             for (p1, p2) in zip(path, path.dropFirst()) {
@@ -166,15 +189,65 @@ class MapBuilder {
                 tileName = "gravel_horizontal_t"
             }
             
-            let tileNode = SKSpriteNode(texture: getTexture(named: tileName))
-            tileNode.size = CGSize(width: grid, height: grid)
-            
-            let posCell = CGPoint(x: CGFloat(x), y: CGFloat(y))
-            tileNode.position = gridCenter(forBottomLeft: posCell, widthInGrids: 1, heightInGrids: 1)
-            tileNode.zPosition = -5
-            
-            scene.addChild(tileNode)
+            if let group = tileSet.tileGroups.first(where: { $0.name == tileName }) {
+                tileMap.setTileGroup(group, forColumn: x, row: y)
+            }
         }
+        scene.addChild(tileMap)
+    }
+    
+    private func createTileSet(for names: [String]) -> SKTileSet {
+        var groups: [SKTileGroup] = []
+        let grid = GameConfig.gridSize
+        for name in names {
+            let texture = getTexture(named: name)
+            let def = SKTileDefinition(texture: texture, size: CGSize(width: grid, height: grid))
+            let group = SKTileGroup(tileDefinition: def)
+            group.name = name
+            groups.append(group)
+        }
+        return SKTileSet(tileGroups: groups)
+    }
+    
+    private func buildGeneralEntity(
+        imageNamed: String,
+        size: CGSize,
+        at point: CGPoint,
+        rotation: CGFloat?,
+        physicsShape: PhysicsShape?,
+        zPositionStrategy: ZPositionStrategy
+    ) -> SKSpriteNode {
+        let node = SKSpriteNode(imageNamed: imageNamed)
+        node.size = size
+        node.position = point
+        
+        if let degrees = rotation {
+            let angleInRadians = degrees * .pi / 180
+            node.zRotation = angleInRadians
+        }
+        
+        switch zPositionStrategy {
+        case .flat(let val):
+            node.zPosition = val
+        case .ySorted(let offset):
+            let baseOfTheItemY = point.y - (size.height / 2) + offset
+            node.zPosition = 10000 - baseOfTheItemY
+        }
+        
+        if let shape = physicsShape {
+            switch shape {
+            case .rectangle(let rectSize):
+                node.physicsBody = SKPhysicsBody(rectangleOf: rectSize)
+            case .circle(let radius, let centerOffset):
+                node.physicsBody = SKPhysicsBody(circleOfRadius: radius, center: centerOffset)
+            }
+            node.physicsBody?.isDynamic = false
+            node.physicsBody?.restitution = 0.0
+            node.physicsBody?.friction = 0.0
+        }
+        
+        scene.addChild(node)
+        return node
     }
     
     private func buildHouse(at point: CGPoint, rotation: CGFloat?, ownerName: String? = nil, assetName: String? = nil) {
@@ -183,21 +256,16 @@ class MapBuilder {
         
         let grid = GameConfig.gridSize
         let houseSize = CGSize(width: grid * 2, height: grid * 2)
-        
         let houseImage = assetName ?? "house_1"
-        let houseNode = SKSpriteNode(imageNamed: houseImage)
-        houseNode.size = houseSize
-        houseNode.position = point
-        houseNode.zPosition = 1
         
-        if let degrees = rotation {
-            let angleInRadians = degrees * .pi / 180
-            houseNode.zRotation = angleInRadians
-        }
-        
-        houseNode.physicsBody = SKPhysicsBody(rectangleOf: houseSize)
-        houseNode.physicsBody?.isDynamic = false
-        houseNode.physicsBody?.restitution = 0.0
+        let houseNode = buildGeneralEntity(
+            imageNamed: houseImage,
+            size: houseSize,
+            at: point,
+            rotation: rotation,
+            physicsShape: .rectangle(size: houseSize),
+            zPositionStrategy: .flat(1)
+        )
         
         let senderIndicator = SKSpriteNode(texture: getTexture(named: "conversation_bubble"))
         senderIndicator.name = "indicator_sender"
@@ -224,60 +292,48 @@ class MapBuilder {
         receiverIndicator.zPosition = 100
         receiverIndicator.isHidden = true
         houseNode.addChild(receiverIndicator)
-
-        scene.addChild(houseNode)
         
         let houseEntity = HouseEntity(name: ownerName, node: houseNode)
         environmentEntities.append(houseEntity)
     }
     
     private func buildTree(at point: CGPoint) {
-        let treeNode = SKSpriteNode(imageNamed: "tree")
-        let scaleFactor = GameConfig.gridSize / treeNode.size.width
-        let actualHeight = treeNode.size.height * scaleFactor
+        let grid = GameConfig.gridSize
+        let dummyNode = SKSpriteNode(imageNamed: "tree")
+        let scaleFactor = grid / dummyNode.size.width
+        let actualHeight = dummyNode.size.height * scaleFactor
+        let treeSize = CGSize(width: grid, height: actualHeight)
+        
         let trunkYPosition = -(actualHeight / 2) + 15
         let trunkOffset = CGPoint(x: 0, y: trunkYPosition)
         
-        treeNode.setScale(scaleFactor)
-        treeNode.position = point
-        let baseOfTheTreeY = point.y - (actualHeight / 2)
-        treeNode.zPosition = 10000 - baseOfTheTreeY
+        let node = buildGeneralEntity(
+            imageNamed: "tree",
+            size: treeSize,
+            at: point,
+            rotation: nil,
+            physicsShape: .circle(radius: 15, offset: trunkOffset),
+            zPositionStrategy: .ySorted(offset: 0)
+        )
         
-        treeNode.physicsBody = SKPhysicsBody(circleOfRadius: 15, center: trunkOffset)
-        treeNode.physicsBody?.isDynamic = false
-        treeNode.physicsBody?.restitution = 0.0
-        treeNode.physicsBody?.friction = 0.0
-        
-        scene.addChild(treeNode)
-        
-        let treeEntity = EnvironmentEntity(node: treeNode)
+        let treeEntity = EnvironmentEntity(node: node)
         environmentEntities.append(treeEntity)
     }
     
     private func buildFence(at point: CGPoint, rotation: CGFloat? = nil) {
-        let fenceNode = SKSpriteNode(imageNamed: "fence")
         let grid = GameConfig.gridSize
         let fenceSize = CGSize(width: grid, height: grid * 0.5)
         
-        fenceNode.size = fenceSize
-        fenceNode.position = point
+        let node = buildGeneralEntity(
+            imageNamed: "fence",
+            size: fenceSize,
+            at: point,
+            rotation: rotation,
+            physicsShape: .rectangle(size: fenceSize),
+            zPositionStrategy: .ySorted(offset: 0)
+        )
         
-        let baseOfTheFenceY = point.y - (fenceSize.height / 2)
-        fenceNode.zPosition = 10000 - baseOfTheFenceY
-        
-        if let degrees = rotation {
-            let angleInRadians = degrees * .pi / 180
-            fenceNode.zRotation = angleInRadians
-        }
-        
-        fenceNode.physicsBody = SKPhysicsBody(rectangleOf: fenceSize)
-        fenceNode.physicsBody?.isDynamic = false
-        fenceNode.physicsBody?.restitution = 0.0
-        fenceNode.physicsBody?.friction = 0.0
-        
-        scene.addChild(fenceNode)
-        
-        let fenceEntity = EnvironmentEntity(node: fenceNode)
+        let fenceEntity = EnvironmentEntity(node: node)
         environmentEntities.append(fenceEntity)
     }
     
@@ -292,34 +348,45 @@ class MapBuilder {
         ]
         let grid = GameConfig.gridSize
         let totalRows = pondLayout.count
+        let totalCols = pondLayout[0].count
         
-        let tileSize = CGSize(width: grid, height: grid)
-        let gridHalf = grid / 2.0
-
-        let startX = (origin.x * grid) + gridHalf
-        let startY = ((origin.y + CGFloat(totalRows - 1)) * grid) + gridHalf
+        let tileNames = ["pond", "pond_corner_tl", "pond_horizontal_t", "pond_corner_tr", "pond_vertical_l", "pond_vertical_r", "pond_corner_bl", "pond_horizontal_b", "pond_corner_br", "pond_bend_bl"]
+        let tileSet = createTileSet(for: tileNames)
+        
+        let tileMap = SKTileMapNode(tileSet: tileSet, columns: totalCols, rows: totalRows, tileSize: CGSize(width: grid, height: grid))
+        tileMap.anchorPoint = .zero
+        tileMap.position = CGPoint(x: origin.x * grid, y: origin.y * grid)
+        tileMap.zPosition = -8
+        
+        let physicsNode = SKNode()
+        physicsNode.position = tileMap.position
         
         for (rowIndex, rowArray) in pondLayout.enumerated() {
-            let currentY = startY - (CGFloat(rowIndex) * grid)
-            
+            let rowInTileMap = totalRows - 1 - rowIndex
             for (colIndex, tileName) in rowArray.enumerated() {
                 guard let tileName = tileName else { continue }
-                
-                let tileNode = SKSpriteNode(texture: getTexture(named: tileName))
-                tileNode.size = tileSize                
-                tileNode.position = CGPoint(x: startX + (CGFloat(colIndex) * grid), y: currentY)
-                tileNode.zPosition = -8
-                
-                let physics = SKPhysicsBody(rectangleOf: tileSize)
-                physics.isDynamic = false
-                physics.restitution = 0.0
-                physics.friction = 0.0
-                tileNode.physicsBody = physics
-                
-                scene.addChild(tileNode)
-                environmentEntities.append(EnvironmentEntity(node: tileNode))
+                if let group = tileSet.tileGroups.first(where: { $0.name == tileName }) {
+                    tileMap.setTileGroup(group, forColumn: colIndex, row: rowInTileMap)
+                    
+                    let dummyNode = SKNode()
+                    dummyNode.position = CGPoint(x: (CGFloat(colIndex) * grid) + (grid / 2.0), y: (CGFloat(rowInTileMap) * grid) + (grid / 2.0))
+                    
+                    let physics = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: grid))
+                    physics.isDynamic = false
+                    physics.restitution = 0.0
+                    physics.friction = 0.0
+                    dummyNode.physicsBody = physics
+                    
+                    physicsNode.addChild(dummyNode)
+                }
             }
         }
+        
+        scene.addChild(tileMap)
+        scene.addChild(physicsNode)
+        
+        let pondEntity = EnvironmentEntity(node: physicsNode)
+        environmentEntities.append(pondEntity)
     }
     
     private func getTexture(named name: String) -> SKTexture {

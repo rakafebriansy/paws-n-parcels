@@ -9,13 +9,13 @@ import GameplayKit
 import SpriteKit
 
 class HouseEntity: GKEntity {
-    let characterName: String?
-
     init(name: String? = nil, node: SKNode) {
-        self.characterName = name
         super.init()
         
         addComponent(RenderComponent(node: node))
+        if let ownerName = name {
+            addComponent(OwnerComponent(characterName: ownerName))
+        }
     }
     
     required init?(coder: NSCoder) { fatalError() }

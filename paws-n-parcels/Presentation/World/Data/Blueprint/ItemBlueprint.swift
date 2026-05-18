@@ -8,19 +8,85 @@
 import Foundation
 import SwiftUI
 
-enum ItemType {
+enum ItemType: Codable {
     case house
     case pond(size: CGSize)
     case tree
     case fence
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case width
+        case height
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let typeStr = try container.decode(String.self, forKey: .type)
+        switch typeStr {
+        case "house":
+            self = .house
+        case "tree":
+            self = .tree
+        case "fence":
+            self = .fence
+        case "pond":
+            let width = try container.decode(CGFloat.self, forKey: .width)
+            let height = try container.decode(CGFloat.self, forKey: .height)
+            self = .pond(size: CGSize(width: width, height: height))
+        default:
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown type")
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .house:
+            try container.encode("house", forKey: .type)
+        case .tree:
+            try container.encode("tree", forKey: .type)
+        case .fence:
+            try container.encode("fence", forKey: .type)
+        case .pond(let size):
+            try container.encode("pond", forKey: .type)
+            try container.encode(size.width, forKey: .width)
+            try container.encode(size.height, forKey: .height)
+        }
+    }
 }
 
-struct ItemBlueprint {
+struct ItemBlueprint: Codable {
     let type: ItemType
     let pos: CGPoint
     var rotation: CGFloat = 0
     var characterName: String? = nil
     var assetName: String? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case pos
+        case rotation
+        case characterName
+        case assetName
+    }
+
+    init(type: ItemType, pos: CGPoint, rotation: CGFloat = 0, characterName: String? = nil, assetName: String? = nil) {
+        self.type = type
+        self.pos = pos
+        self.rotation = rotation
+        self.characterName = characterName
+        self.assetName = assetName
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.type = try container.decode(ItemType.self, forKey: .type)
+        self.pos = try container.decode(CGPoint.self, forKey: .pos)
+        self.rotation = try container.decodeIfPresent(CGFloat.self, forKey: .rotation) ?? 0.0
+        self.characterName = try container.decodeIfPresent(String.self, forKey: .characterName)
+        self.assetName = try container.decodeIfPresent(String.self, forKey: .assetName)
+    }
 }
 
 extension ItemBlueprint {

@@ -235,11 +235,11 @@ class GameScene: SKScene {
     }
     
     private func interactWithHouse(_ house: HouseEntity) {
-        let houseName = house.characterName ?? "Unknown"
+        let houseName = house.component(ofType: OwnerComponent.self)?.characterName ?? "Unknown"
         
         let isHoldingPackage = deliverySystem?.activePackage != nil
         let isSender = house.component(ofType: RequestComponent.self) != nil
-        let isTarget = (deliverySystem?.activePackage?.receiver.name != nil) && (deliverySystem?.activePackage?.receiver.name == house.characterName)
+        let isTarget = (deliverySystem?.activePackage?.receiver.name != nil) && (deliverySystem?.activePackage?.receiver.name == house.component(ofType: OwnerComponent.self)?.characterName)
         
         if isHoldingPackage {
             guard isTarget else { return }
@@ -326,7 +326,7 @@ class GameScene: SKScene {
             if let house = entity as? HouseEntity,
                let houseNode = house.component(ofType: RenderComponent.self)?.node as? SKSpriteNode {
                 let isSender = house.component(ofType: RequestComponent.self) != nil
-                let isTarget = (targetReceiverName != nil) && (targetReceiverName == house.characterName)
+                let isTarget = (targetReceiverName != nil) && (targetReceiverName == house.component(ofType: OwnerComponent.self)?.characterName)
                 
                 let dx = playerNode.position.x - houseNode.position.x
                 let dy = playerNode.position.y - houseNode.position.y
@@ -444,7 +444,7 @@ class GameScene: SKScene {
         if let activePackage = deliverySystem?.activePackage {
             let receiverName = activePackage.receiver.name
             if let targetHouse = mapBuilder.environmentEntities.first(where: {
-                ($0 as? HouseEntity)?.characterName == receiverName
+                ($0 as? HouseEntity)?.component(ofType: OwnerComponent.self)?.characterName == receiverName
             }) as? HouseEntity, let houseNode = targetHouse.component(ofType: RenderComponent.self)?.node {
                 createArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
             }

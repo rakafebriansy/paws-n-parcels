@@ -71,7 +71,7 @@ class RequestSystem {
     
     private func generateAndSpawnRequestAsync() async {
         guard let senderHouse = getRandomEligibleHouse(),
-              let senderName = senderHouse.characterName,
+              let senderName = senderHouse.component(ofType: OwnerComponent.self)?.characterName,
               let chosenRel = getRandomRelationship(for: senderName),
               let recipientName = chosenRel.partner(of: senderName)
         else { return }
@@ -113,7 +113,7 @@ class RequestSystem {
         let eligibleHouses = houses.filter {
             house in
             
-            guard let name = house.characterName
+            guard let name = house.component(ofType: OwnerComponent.self)?.characterName
             else {
                 return false
             }
