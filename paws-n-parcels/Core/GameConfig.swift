@@ -16,7 +16,7 @@ struct GameConfig {
     static let pointsForBestFriend: Int = 1000
     
     static let maxRequests = 5
-    static let playerSpeedMultiplier: CGFloat = 3
+    static let playerSpeedMultiplier: CGFloat = 1
     
     /// - Rightward (3): 0
     /// - Upward (12): .pi / 2
@@ -24,7 +24,7 @@ struct GameConfig {
     /// - Downward (6): -.pi / 2
     static let arrowAssetDirection: CGFloat = .pi / 2
     
-    static let cameraScale: CGFloat = 3
+    static let cameraScale: CGFloat = 1
     static let gridSize: CGFloat = 100.0
     static let interactionRadius: CGFloat = 150.0
     static var interactionRadiusSquared: CGFloat {

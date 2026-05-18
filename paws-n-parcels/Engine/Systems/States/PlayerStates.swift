@@ -194,6 +194,9 @@ class PlayerStateComponent: GKComponent {
         let prefix = isHolding ? "goldie_package_" : "goldie_"
         let dirStr = direction
         
+        // Squashed "penyet" base size: wider and much flatter!
+        node.size = CGSize(width: 64, height: 32)
+        
         if isWalking {
             // Load 3 walk textures for dynamic 4-directional walking
             let tex1 = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
@@ -203,18 +206,31 @@ class PlayerStateComponent: GKComponent {
             // Loop pattern: 1 -> 2 -> 3 -> 2
             let textures = [tex1, tex2, tex3, tex2]
             let walkAnim = SKAction.animate(with: textures, timePerFrame: 0.12)
-            node.run(SKAction.repeatForever(walkAnim), withKey: "player_anim")
+            
+            // Exaggerated bouncy squash and stretch animation for walking
+            let squash = SKAction.scaleX(to: 1.45, y: 0.5, duration: 0.12)
+            squash.timingMode = .easeInEaseOut
+            let stretch = SKAction.scaleX(to: 1.15, y: 0.7, duration: 0.12)
+            stretch.timingMode = .easeInEaseOut
+            let bounce = SKAction.repeatForever(SKAction.sequence([squash, stretch]))
+            
+            node.run(SKAction.group([walkAnim, bounce]), withKey: "player_anim")
         } else {
             // Idle state: set static first frame of the direction
             let idleTex = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
             node.texture = idleTex
             
-            // Subtle premium breathing float effect for idle
-            let floatUp = SKAction.moveBy(x: 0, y: 4, duration: 0.8)
-            floatUp.timingMode = .easeInEaseOut
-            let floatDown = SKAction.moveBy(x: 0, y: -4, duration: 0.8)
-            floatDown.timingMode = .easeInEaseOut
-            let breathe = SKAction.repeatForever(SKAction.sequence([floatUp, floatDown]))
+            // Reset base flat penyet scales
+            node.xScale = 1.3
+            node.yScale = 0.65
+            
+            // Hilarious flat breathing squash effect for idle
+            let breatheSquash = SKAction.scaleX(to: 1.35, y: 0.6, duration: 0.8)
+            breatheSquash.timingMode = .easeInEaseOut
+            let breatheStretch = SKAction.scaleX(to: 1.25, y: 0.7, duration: 0.8)
+            breatheStretch.timingMode = .easeInEaseOut
+            let breathe = SKAction.repeatForever(SKAction.sequence([breatheSquash, breatheStretch]))
+            
             node.run(breathe, withKey: "player_anim")
         }
     }
