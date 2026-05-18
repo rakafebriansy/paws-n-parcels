@@ -59,11 +59,11 @@ class SeederDatabase {
             
             // Seed 5 Collectibles
             let collectibles = [
-                Collectible(name: "Wortel Emas", desc: "Ditemukan di kebun Kelinci."),
-                Collectible(name: "Pita Merah", desc: "Pita favorit Kucing."),
-                Collectible(name: "Ranting Kuat", desc: "Bahan bangunan Berang-berang."),
-                Collectible(name: "Batu Lumut", desc: "Tempat kura-kura bersantai."),
-                Collectible(name: "Jeruk Hangat", desc: "Cemilan Capybara saat mandi.")
+                Collectible(name: "Necklace"),
+                Collectible(name: "Scarf"),
+                Collectible(name: "Clover Lucky Charm"),
+                Collectible(name: "Sunflower"),
+                Collectible(name: "Photostrip")
             ]
             for item in collectibles {
                 context.insert(item)

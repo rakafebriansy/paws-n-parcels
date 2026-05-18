@@ -12,16 +12,12 @@ import SwiftData
 final class Collectible {
     var id: UUID = UUID()
     var name: String
-    var desc: String
-  //  var rarity: String
     var isUnlocked: Bool = false
-    var dateUnlocked: Date?
+//    var dateUnlocked: Date?
     
     var player: PlayerProfile?
     
-    init(name: String, desc: String) {
+    init(name: String) {
         self.name = name
-        self.desc = desc
-   //     self.rarity = rarity
     }
 }
