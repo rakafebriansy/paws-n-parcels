@@ -31,10 +31,79 @@ struct GameView: View {
     @State private var relationshipPointsEarned: Int = 0
     @State private var currentDialogMessage: String = ""
     
+    @State private var isPaused: Bool = false
+    @State private var isViewingMap: Bool = false
+    
     var body: some View {
         ZStack {
             SpriteView(scene: gameScene)
                 .ignoresSafeArea()
+            
+            // HUD Overlay (Top-Right Action Buttons)
+            VStack {
+                HStack(spacing: 12) {
+                    Spacer()
+                    
+                    // Map Toggle Button
+                    Button(action: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                            if isViewingMap {
+                                gameScene.gameStateMachine?.enter(GamePlayingState.self)
+                                isViewingMap = false
+                            } else {
+                                if isPaused {
+                                    isPaused = false
+                                }
+                                gameScene.gameStateMachine?.enter(GameViewingMapState.self)
+                                isViewingMap = true
+                            }
+                        }
+                    }) {
+                        Image(systemName: isViewingMap ? "map.fill" : "map")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(
+                                Circle()
+                                    .fill(Color.black.opacity(0.45))
+                                    .background(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1.5))
+                            )
+                            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                    }
+                    
+                    // Pause Toggle Button
+                    Button(action: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                            if isPaused {
+                                gameScene.gameStateMachine?.enter(GamePlayingState.self)
+                                isPaused = false
+                            } else {
+                                if isViewingMap {
+                                    isViewingMap = false
+                                }
+                                gameScene.gameStateMachine?.enter(GamePausedState.self)
+                                isPaused = true
+                            }
+                        }
+                    }) {
+                        Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 44)
+                            .background(
+                                Circle()
+                                    .fill(Color.black.opacity(0.45))
+                                    .background(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1.5))
+                            )
+                            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                    }
+                }
+                .padding(.top, 60)
+                .padding(.trailing, 20)
+                
+                Spacer()
+            }
+            .zIndex(5)
             
             if showPickUpAlert || showDeliveryAlert {
                 Color.black.opacity(0.3)
@@ -68,6 +137,106 @@ struct GameView: View {
                     Spacer()
                 }
                 .zIndex(3)
+            }
+            
+            // Map Viewing Helper Hint
+            if isViewingMap {
+                VStack {
+                    Spacer()
+                    
+                    Text("Drag to explore the island • Tap 🗺️ again to return")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 24)
+                        .background(
+                            Capsule()
+                                .fill(Color.black.opacity(0.65))
+                                .background(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1))
+                        )
+                        .shadow(radius: 4)
+                        .padding(.bottom, 50)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(8)
+            }
+            
+            // Full Screen Glassmorphic Pause Overlay
+            if isPaused {
+                ZStack {
+                    Color.black.opacity(0.55)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 24) {
+                        Image(systemName: "pawprint.fill")
+                            .font(.system(size: 64))
+                            .foregroundColor(.orange)
+                            .shadow(radius: 8)
+                            .padding(.bottom, 8)
+                        
+                        Text("PAWS-N-PARCELS")
+                            .font(.system(size: 28, weight: .black))
+                            .foregroundColor(.white)
+                            .tracking(3)
+                        
+                        Text("Game Paused")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        VStack(spacing: 16) {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                    gameScene.gameStateMachine?.enter(GamePlayingState.self)
+                                    isPaused = false
+                                }
+                            }) {
+                                Text("RESUME PLAY")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 52)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color.orange)
+                                    )
+                                    .shadow(radius: 4)
+                            }
+                            
+                            Button(action: {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                    gameScene.gameStateMachine?.enter(GamePlayingState.self)
+                                    isPaused = false
+                                    gameScene.resumeGameplay()
+                                }
+                            }) {
+                                Text("RESTART LEVEL")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 52)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.4), lineWidth: 2)
+                                            .background(Color.black.opacity(0.2))
+                                    )
+                            }
+                        }
+                        .frame(width: 260)
+                        .padding(.top, 16)
+                    }
+                    .padding(32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30)
+                            .fill(Color(red: 0.1, green: 0.1, blue: 0.12).opacity(0.85))
+                            .background(
+                                RoundedRectangle(cornerRadius: 30)
+                                    .stroke(Color.white.opacity(0.15), lineWidth: 1.5)
+                            )
+                    )
+                    .shadow(radius: 20)
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .zIndex(10)
             }
         }
         .onAppear {
