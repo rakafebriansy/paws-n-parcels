@@ -62,7 +62,7 @@ struct DeliveryView: View {
                     hasPickedUp = false
                 }
                 .disabled(!hasPickedUp)
-
+                
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -72,6 +72,13 @@ struct DeliveryView: View {
             }
             
             ZStack {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        closeAllModals()
+                    }
+                
                 if showPickUpSuccessAlert {
                     PickUpSuccessAlertView(message: req.sender.dialog)
                 }
@@ -124,6 +131,14 @@ struct DeliveryView: View {
             }
         }
     }
+    
+    private func closeAllModals() {
+            withAnimation(.easeInOut) {
+                showPickUpSuccessAlert = false
+                showDeliverySuccessAlert = false
+                showNewCollectibleAlert = false
+            }
+        }
 }
 
 #Preview {
