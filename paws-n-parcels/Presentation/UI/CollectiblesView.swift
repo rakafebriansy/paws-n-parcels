@@ -12,6 +12,7 @@ struct CollectiblesView: View {
     @Environment(\.dismiss) private var dismiss
     
     var collectibles: [Collectible] = Collectible.dummyData
+    var onClose: (() -> Void)?
     
     let columns = [
         GridItem(.flexible(), spacing: 20),
@@ -28,7 +29,6 @@ struct CollectiblesView: View {
                         .comicRelief(size: 45, isBold: true)
                         .foregroundColor(.darkGray)
                         .multilineTextAlignment(.center)
-                        .padding(.top, 15)
                     
                     ScrollView(showsIndicators: false){
                         LazyVGrid(columns: columns, spacing: 20) {
@@ -42,6 +42,14 @@ struct CollectiblesView: View {
                         .padding(.bottom, 40)
                     }
                 }
+        }
+    }
+    
+    private func close() {
+        if let onClose {
+            onClose()
+        } else {
+            dismiss()
         }
     }
 }
@@ -115,5 +123,7 @@ extension Collectible {
 }
 
 #Preview {
-    CollectiblesView()
+    NavigationStack{
+        CollectiblesView()
+    }
 }
