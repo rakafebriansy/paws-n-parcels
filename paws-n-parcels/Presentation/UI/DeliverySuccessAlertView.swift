@@ -10,25 +10,28 @@ import SwiftUI
 struct DeliverySuccessAlertView: View {
     var body: some View {
         ZStack {
-            Image("modal").resizable().scaledToFit().padding(24)
-            
-            VStack(spacing: 40) {
-                Text("Package has been delivered!")
-                    .comicRelief(size: 35, isBold: true)     .foregroundColor(.darkGray)
-                    .multilineTextAlignment(.center)
+            Image("modal").resizable().scaledToFit().padding(24).overlay(
                 
-                Image(systemName: "checkmark")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
-                    .bold()
-                
-                
-            }
-            .padding(40)
+                VStack(spacing: 20) {
+                    Text("Package delivered!")
+                        .comicRelief(size: 40, isBold: true)     .foregroundColor(.darkGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
+                        .frame(maxWidth: 270)
+                        .lineLimit(2)
+                        .padding(.top,10)
+                                        
+                    Image("paket")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 130, maxHeight: 130)
+                        .padding(.bottom,140)
+                        .padding(.top,20)
+                }
+                    .padding(40)
+            )
         }
-            .transition(.scale.combined(with: .opacity))
+        .transition(.scale.combined(with: .opacity))
     }
 }
 

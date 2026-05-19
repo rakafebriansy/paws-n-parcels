@@ -22,7 +22,7 @@ struct DeliveryView: View {
     @State private var showNewCollectibleAlert: Bool = false
     
     @State private var hasPickedUp: Bool = false
-    
+    @State private var pendingNextLevel: Bool = false
     @State private var pointsEarned: Int = 0
     
     var body: some View {
@@ -48,12 +48,6 @@ struct DeliveryView: View {
                         showPickUpSuccessAlert = true
                     }
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        withAnimation(.easeInOut) {
-                            showPickUpSuccessAlert = false
-                        }
-                        
-                    }
                 }
                 .disabled(hasPickedUp)
                 
@@ -67,32 +61,28 @@ struct DeliveryView: View {
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            if showPickUpSuccessAlert || showDeliverySuccessAlert || showNewCollectibleAlert {
-                Color.black.opacity(0.3).ignoresSafeArea().transition(.opacity).zIndex(1)
-            }
-            
-            ZStack {
-                Color.black.opacity(0.3)
-                    .ignoresSafeArea()
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        closeAllModals()
+            ZStack{
+                if showPickUpSuccessAlert || showDeliverySuccessAlert || showNewCollectibleAlert {
+                    Color.black.opacity(0.3).ignoresSafeArea().transition(.opacity).zIndex(1)
+                    
+                    ZStack {
+                        if showPickUpSuccessAlert {
+                            PickUpSuccessAlertView(message: req.sender.dialog)
+                        }
+                        
+                        if showDeliverySuccessAlert {
+                            DeliverySuccessAlertView()
+                        }
+                        
+                        if showNewCollectibleAlert {
+                            NewCollectibleAlertView(isPresented: $showNewCollectibleAlert)
+                        }
                     }
-                
-                if showPickUpSuccessAlert {
-                    PickUpSuccessAlertView(message: req.sender.dialog)
-                }
-                
-                if showDeliverySuccessAlert {
-                    DeliverySuccessAlertView()
-                }
-                
-                if showNewCollectibleAlert {
-                    NewCollectibleAlertView(isPresented: $showNewCollectibleAlert)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .zIndex(2)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .zIndex(2)
+            .onTapGesture { closeAllModals() }
             
             if showRelationshipPointsAlert {
                 RelationshipPointsAlertView(points: pointsEarned)
@@ -113,33 +103,33 @@ struct DeliveryView: View {
                 showDeliverySuccessAlert = true
             }
             
-            // 2. Hilangkan keduanya setelah 1.5 detik
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation(.easeInOut) {
-                    showRelationshipPointsAlert = false
-                    showDeliverySuccessAlert = false
-                }
-                
-                // 3. Jika naik level, tunggu modal pengantaran hilang, baru munculkan Alert New Collectible
-                if result.isLevelUp {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                            showNewCollectibleAlert = true
-                        }
-                    }
-                }
+            // 2. Cek apakah naik level
+            if result.isLevelUp {
+                pendingNextLevel = true
             }
+            
         }
     }
     
     private func closeAllModals() {
-            withAnimation(.easeInOut) {
-                showPickUpSuccessAlert = false
+        withAnimation(.easeInOut) {
+            showPickUpSuccessAlert = false
+            if showDeliverySuccessAlert{
                 showDeliverySuccessAlert = false
-                showNewCollectibleAlert = false
+                showRelationshipPointsAlert = false
+                
+                // Jika naik level, tunggu modal delivery success hilang, baru munculkan alert New Collectible
+                if pendingNextLevel{
+                    withAnimation(.spring()) {
+                        showNewCollectibleAlert = true
+                    }
+                }
+                pendingNextLevel = false
             }
         }
+    }
 }
+
 
 #Preview {
     // database palsu

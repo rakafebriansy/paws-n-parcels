@@ -34,7 +34,6 @@ struct PickUpSuccessAlertView: View {
             .padding(40)
             .offset(y:-10)
         }
-        .transition(.scale.combined(with: .opacity))
     }
     
     init(message: String) {

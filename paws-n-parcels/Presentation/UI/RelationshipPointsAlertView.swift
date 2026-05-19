@@ -11,7 +11,7 @@ struct RelationshipPointsAlertView: View {
     var points: Int
    
     var body: some View {
-        Text("+\(points) Relationship Points")
+        Text("+\(points) Relationship Point")
             .comicRelief(size: 20, isBold: true)
             .multilineTextAlignment(.center)
             .foregroundColor(.brown)
