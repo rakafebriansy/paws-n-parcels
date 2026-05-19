@@ -9,45 +9,37 @@ import SwiftUI
 
 struct NewCollectibleAlertView: View {
     @Binding var isPresented: Bool
+    var item: Collectible
     
     var body: some View {
         ZStack{
-            Image("modal").resizable().scaledToFit().padding(24).overlay(
-                VStack(spacing: 60) {
-                    Text("New Collectible Unlocked!")
-                        .comicRelief(size: 32, isBold: true)     .foregroundColor(.darkGray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal,30)
-                        .frame(maxWidth: 300)
-                    
-                    Image(systemName: "checkmark")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 80, height: 80)
-                        .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
-                        .bold()
-                    
-                    Button(action: {
-                        withAnimation(.easeInOut) {
-                            isPresented = false
-                        }
-                    }){
-                        HStack{
-                            Text("Yay!")
-                        }
-                        .comicRelief(size: 25, isBold: true)
-                        .tracking(1.5)
-                        .foregroundColor(Color.cream)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 20)
-                        .background(Color.darkGray)
-                        .cornerRadius(35)
+            Image("modal").resizable().scaledToFit().padding(24)
+            VStack(spacing: 20) {
+                Text("New Collectible Unlocked!")
+                    .comicRelief(size: 30, isBold: true)     .foregroundColor(.brown)
+                    .multilineTextAlignment(.center)
+                
+                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
+                
+                Image(assetName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                
+                Text(item.name)
+                    .comicRelief(size: 25, isBold: true)     .foregroundColor(.darkGray)
+                    .multilineTextAlignment(.center)
+            
+                Button("Tutup") {
+                    withAnimation(.easeInOut) {
+                        isPresented = false
                     }
                 }
-            )
+                .padding(.top, 10)
+            }
+            .padding(30)
         }
-        .padding(5)
-        .transition(.scale.combined(with: .opacity))
+            .transition(.scale.combined(with: .opacity))
     }
 }
 
@@ -55,6 +47,8 @@ struct NewCollectibleAlertView: View {
     
     ZStack {
         Color.black.opacity(0.3).ignoresSafeArea()
-        NewCollectibleAlertView(isPresented: .constant(true))
+        let item = Collectible(name: "sunflower")
+        
+        NewCollectibleAlertView(isPresented: .constant(true), item: item)
     }
 }
