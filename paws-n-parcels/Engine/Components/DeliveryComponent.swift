@@ -9,10 +9,11 @@ import Foundation
 import GameplayKit
 
 class DeliveryComponent: GKComponent {
-    // Menyimpan request yang sedang dibawa, kalau nil berarti sedang tidak membawa paket
-    var activeRequest: Requests? = nil
-    var isHoldingPackage: Bool {
-        return activeRequest != nil
-    }
+    var activeRequest: Request?
     
+    var isHoldingPackage: Bool { activeRequest != nil }
+        
+    override func update(deltaTime seconds: TimeInterval) {
+        super.update(deltaTime: seconds)
+    }
 }

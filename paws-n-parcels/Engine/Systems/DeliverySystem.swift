@@ -8,68 +8,101 @@
 import Foundation
 import GameplayKit
 import SwiftData
-class DeliverySystem: GKComponentSystem<DeliveryComponent> {
-    private var context: ModelContext?
-    
-    func setup(context: ModelContext) {
-        self.context = context
-    }
-    
-    // Fungsi untuk mengambil paket
-    func pickUpPackage(request: Requests, for entity: GKEntity) {
-        guard let deliveryComp = entity.component(ofType: DeliveryComponent.self) else { return }
+
+@MainActor
+class DeliverySystem {
+    let system = GKComponentSystem(componentClass: DeliveryComponent.self)
         
-        if !deliveryComp.isHoldingPackage {
-            deliveryComp.activeRequest = request
-            print("Paket dari \(request.sender.name) berhasil diambil!")
-        }
+    var activePackage: Request? = nil
+    var nearbyHouse: HouseEntity? = nil
+    
+    var stateMachine: GKStateMachine?
+    weak var scene: GameScene?
+    
+    func setupStateMachine(requestSystem: RequestSystem, scene: GameScene) {
+        self.scene = scene
+        
+        let states = [
+            NoActiveRequestState(deliverySystem: self, requestSystem: requestSystem),
+            WaitingForPickupState(deliverySystem: self, requestSystem: requestSystem),
+            CarryingState(deliverySystem: self, requestSystem: requestSystem),
+            DeliveryCompletedState(deliverySystem: self, requestSystem: requestSystem)
+        ]
+        
+        self.stateMachine = GKStateMachine(states: states)
+        self.stateMachine?.enter(NoActiveRequestState.self)
     }
     
-    // Fungsi untuk mengantar paket
-    func deliverPackage(for entity: GKEntity) -> (pointsAdded: Int, isLevelUp: Bool) {
-        guard let deliveryComp = entity.component(ofType: DeliveryComponent.self),
-              let request = deliveryComp.activeRequest,
-              let context = self.context else {
+    func registerEntity(_ entity: GKEntity) {
+        system.addComponent(foundIn: entity)
+    }
+    
+    func update(deltaTime: TimeInterval) {
+        system.update(deltaTime: deltaTime)
+        stateMachine?.update(deltaTime: deltaTime)
+    }
+    
+    func pickUpPackage(request: Request, for entity: GKEntity) {
+        guard let component = entity.component(ofType: DeliveryComponent.self)
+        else {
+            print("[DeliverySystem] Error: Entity does not have a DeliveryComponent. Pickup aborted.")
+            return
+        }
+        
+        guard !component.isHoldingPackage
+        else {
+            print("[DeliverySystem] Warning: Entity is already holding a package. Cannot pick up another one.")
+            return
+        }
+        
+        component.activeRequest = request
+        self.activePackage = request
+        print("[DeliverySystem] Package picked up successfully. Sender: \(request.sender.name), Receiver: \(request.receiver.name).")
+    }
+    
+    func deliverPackage(for entity: GKEntity, relationships: [AnimalRelationship]) -> (pointsAdded: Int, isLevelUp: Bool) {
+        guard let component = entity.component(ofType: DeliveryComponent.self),
+              let request = component.activeRequest
+        else {
+            print("[DeliverySystem] Error: Entity is not holding any active request to deliver.")
             return (0, false)
         }
         
-        var isLevelUp = false
-        
-        // Tandai request selesai
         request.isCompleted = true
         
-        let fetchDescriptor = FetchDescriptor<AnimalFriendRelationship>()
-        let allRelationships = (try? context.fetch(fetchDescriptor)) ?? []
+        let rewardResult = processDeliveryReward(for: request, in: relationships)
         
-        // Cari relasi di database
-        if let relationship = allRelationships.first(where: {
-            ($0.friendOne.id == request.sender.id && $0.friendTwo.id == request.receiver.id) ||
-            ($0.friendOne.id == request.receiver.id && $0.friendTwo.id == request.sender.id)
-        }) {
-            // Cek level lama
-            let oldLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoints)
-            
-            // Tambah poin
-            relationship.friendshipPoints += GameConfig.deliveryRewardPoints
-            
-            // Cek level baru
-            let newLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoints)
-            if oldLevel != newLevel {
-                isLevelUp = true
-            }
-            
-            // Save ke database
-            do {
-                try context.save()
-            } catch {
-                print("Gagal menyimpan data pengantaran: \(error)")
-            }
+        component.activeRequest = nil
+        self.activePackage = nil
+        
+        return rewardResult
+    }
+    
+    private func processDeliveryReward(for request: Request, in relationships: [AnimalRelationship]) -> (pointsAdded: Int, isLevelUp: Bool) {
+        guard let relationship = relationships.first(where: {
+            $0.involves(request.sender.name, and: request.receiver.name)
+        })
+        else {
+            print("[DeliverySystem] Warning: No relationship found between \(request.sender.name) and \(request.receiver.name). Package delivered but no points awarded.")
+            GameDataManager.shared.save()
+            return (0, false)
         }
         
-        // Hapus kondisi membawa paket
-        deliveryComp.activeRequest = nil
+        let oldLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoint)
+        relationship.friendshipPoint += GameConfig.deliveryRewardPoints
         
-        // Kembalikan hasil agar UI bisa memunculkan Alert yang sesuai
+        let newLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoint)
+        relationship.friendshipLevel = newLevel.intValue
+        
+        let isLevelUp = (oldLevel != newLevel)
+        
+        if isLevelUp {
+            print("[DeliverySystem] Level Up! Friendship between \(relationship.friendOne.name) and \(relationship.friendTwo.name) reached level \(newLevel.intValue).")
+        }
+        
+        GameDataManager.shared.save()
+        print("[DeliverySystem] Package delivered. \(GameConfig.deliveryRewardPoints) points added. Database saved.")
+        
         return (GameConfig.deliveryRewardPoints, isLevelUp)
     }
 }

@@ -14,7 +14,7 @@ struct PickUpSuccessAlertView: View {
             Image("modal").resizable().scaledToFit().padding(24)
             
             VStack(spacing: 40) {
-                Text("Package has been picked up!")
+                Text(message)
                     .comicRelief(size: 30, isBold: true)      .foregroundColor(.brown)
                     .multilineTextAlignment(.center)
                 
@@ -35,6 +35,10 @@ struct PickUpSuccessAlertView: View {
         }
         .shadow(radius: 10)
         .transition(.scale.combined(with: .opacity))
+    }
+    
+    init(message: String) {
+        self.message = message
     }
 }
 
