@@ -23,8 +23,8 @@ class GameScene: SKScene {
     }
     weak var requestSystem: RequestSystem? {
         didSet {
-            registerHousesAndStartSpawning()
             setupStateMachineIfNeeded()
+            registerHousesAndStartSpawning()
         }
     }
     
@@ -49,7 +49,7 @@ class GameScene: SKScene {
     var hasShownYellowArrowTutorialTimer: Bool = false
     var hasShownRedArrowTutorialTimer: Bool = false
     
-    var revealedYellowArrowHouseNames: Set<String> = []
+    var currentDialogMessage: String?
     
     var yellowTutorialStartTime: TimeInterval? = nil
     var yellowTutorialTargetHouseName: String? = nil
@@ -57,7 +57,6 @@ class GameScene: SKScene {
     let tutorialDuration: TimeInterval = 8.0
     
     var lastArrowDebugLogTime: TimeInterval = 0
-    var lastYellowArrowRevealTime: TimeInterval = 0
     
     private let bounceAction: SKAction = {
         let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
@@ -101,6 +100,9 @@ class GameScene: SKScene {
         if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
             print("[Tutorial] Joystick tutorial deferred until background story is dismissed.")
         }
+        
+        restoreGameState()
+        startAutoSaveTimer()
     }
     
     func startTutorialIfNeeded() {
@@ -408,6 +410,10 @@ class GameScene: SKScene {
         print("[GameScene] Successfully registered \(reqSys.houses.count) houses into the system.")
         
         reqSys.fetchData()
+        
+        // Restore any saved active requests before spawning new ones
+        restoreActiveRequests()
+        
         reqSys.initialBurstSpawn()
     }
     
@@ -430,19 +436,19 @@ class GameScene: SKScene {
     }
     
     func resetGame() {
-        // Reset UserDefaults tutorial flags
+        // Reset UserDefaults tutorial and story flags
         UserDefaults.standard.set(false, forKey: "hasSeenJoystickTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenYellowArrowTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenRedArrowTutorial")
+        UserDefaults.standard.set(false, forKey: "hasSeenBackgroundStory")
         
         // Reset tutorial timers and tracking state
         hasShownYellowArrowTutorialTimer = false
         hasShownRedArrowTutorialTimer = false
-        revealedYellowArrowHouseNames = []
+        currentDialogMessage = nil
         yellowTutorialStartTime = nil
         yellowTutorialTargetHouseName = nil
         redTutorialStartTime = nil
-        lastYellowArrowRevealTime = 0
         
         // Stop player movement
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
@@ -453,6 +459,24 @@ class GameScene: SKScene {
         // Reset player position
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
             playerNode.position = GameConfig.playerInitialPosition
+        }
+        
+        // Clear delivery carrying state
+        deliverySystem?.activePackage = nil
+        if let deliveryComp = playerEntity.component(ofType: DeliveryComponent.self) {
+            deliveryComp.activeRequest = nil
+        }
+        deliverySystem?.stateMachine?.enter(NoActiveRequestState.self)
+        
+        // Remove all RequestComponents from houses
+        if let mapBuilder = mapBuilder {
+            for entity in mapBuilder.environmentEntities {
+                if let house = entity as? HouseEntity,
+                   let reqComp = house.component(ofType: RequestComponent.self) {
+                    requestSystem?.system.removeComponent(reqComp)
+                    house.removeComponent(ofType: RequestComponent.self)
+                }
+            }
         }
         
         // Clear any too-far bubble
@@ -468,7 +492,118 @@ class GameScene: SKScene {
         // Resume state machine so game isn't stuck in paused state
         gameStateMachine?.enter(GamePlayingState.self)
         
+        // Clear persisted game state so next launch starts fresh
+        UserDefaults.standard.removeObject(forKey: "activeRequestSenderNames")
+        GameDataManager.shared.savePlayerPosition(
+            x: Double(GameConfig.playerInitialPosition.x),
+            y: Double(GameConfig.playerInitialPosition.y)
+        )
+        GameDataManager.shared.deleteAllPendingRequests()
+        
         print("[GameScene] Game reset to initial state.")
+    }
+    
+    // MARK: - Game State Persistence
+    
+    func saveGameState() {
+        guard let playerNode = playerEntity?.component(ofType: RenderComponent.self)?.node else {
+            print("[GameScene] Cannot save: player node not available.")
+            return
+        }
+        
+        let playerX = Double(playerNode.position.x)
+        let playerY = Double(playerNode.position.y)
+        
+        // Collect sender names from houses that currently have active requests
+        var activeRequestSenderNames: [String] = []
+        if let mapBuilder = mapBuilder {
+            for entity in mapBuilder.environmentEntities {
+                if let house = entity as? HouseEntity,
+                   let requestComp = house.component(ofType: RequestComponent.self),
+                   let ownerName = house.component(ofType: OwnerComponent.self)?.characterName {
+                    // Save the request to SwiftData (it's already a @Model, just ensure it's persisted)
+                    let request = requestComp.request
+                    if !request.isCompleted {
+                        activeRequestSenderNames.append(ownerName)
+                    }
+                }
+            }
+        }
+        
+        GameDataManager.shared.saveGameState(
+            playerX: playerX,
+            playerY: playerY,
+            activeRequestSenderNames: activeRequestSenderNames
+        )
+    }
+    
+    func restoreGameState() {
+        // Restore player position only — request restoration happens in registerHousesAndStartSpawning
+        if let profile = GameDataManager.shared.fetchPlayerProfile() {
+            let savedX = CGFloat(profile.positionX)
+            let savedY = CGFloat(profile.positionY)
+            
+            // Only restore if position was previously saved (not at origin default)
+            if savedX != 0 || savedY != 0 {
+                if let playerNode = playerEntity?.component(ofType: RenderComponent.self)?.node {
+                    playerNode.position = CGPoint(x: savedX, y: savedY)
+                    print("[GameScene] Player position restored to (\(savedX), \(savedY))")
+                }
+            }
+        }
+    }
+    
+    private func restoreActiveRequests() {
+        let pendingRequests = GameDataManager.shared.fetchPendingRequests()
+        let savedSenderNames = GameDataManager.shared.loadActiveRequestSenderNames()
+        
+        var restoredCount = 0
+        if let mapBuilder = mapBuilder, !pendingRequests.isEmpty {
+            for request in pendingRequests {
+                let senderName = request.sender.name
+                
+                // Only restore if this sender was in the active list when we last saved
+                guard savedSenderNames.contains(senderName) else {
+                    // This request is orphaned (e.g. from an ungraceful exit or previous session reset). Delete it.
+                    GameDataManager.shared.context?.delete(request)
+                    continue
+                }
+                
+                // Find the matching house
+                if let house = mapBuilder.environmentEntities.first(where: {
+                    ($0 as? HouseEntity)?.component(ofType: OwnerComponent.self)?.characterName == senderName
+                }) as? HouseEntity {
+                    // Don't re-attach if house already has a request
+                    guard house.component(ofType: RequestComponent.self) == nil else { continue }
+                    
+                    let component = RequestComponent(request: request)
+                    house.addComponent(component)
+                    requestSystem?.system.addComponent(component)
+                    restoredCount += 1
+                }
+            }
+            GameDataManager.shared.save()
+        }
+        
+        // Restore picked-up request if any
+        if let pickedUpRequest = GameDataManager.shared.fetchPickedUpRequests().first {
+            deliverySystem?.pickUpPackage(request: pickedUpRequest, for: playerEntity)
+            deliverySystem?.stateMachine?.enter(CarryingState.self)
+            print("[GameScene] Restored carried request from \(pickedUpRequest.sender.name) to \(pickedUpRequest.receiver.name).")
+        }
+        
+        print("[GameScene] Restored \(restoredCount) active requests from saved state.")
+    }
+    
+    func startAutoSaveTimer() {
+        let autoSaveAction = SKAction.sequence([
+            SKAction.wait(forDuration: 30.0),
+            SKAction.run { [weak self] in
+                self?.saveGameState()
+            }
+        ])
+        self.run(SKAction.repeatForever(autoSaveAction), withKey: "autoSave")
+        print("[GameScene] Auto-save timer started (every 30 seconds).")
     }
     
     private func updateIndicators() {
@@ -713,40 +848,18 @@ class GameScene: SKScene {
                 .compactMap { $0 as? HouseEntity }
                 .filter { $0.component(ofType: RequestComponent.self) != nil }
             
-            if !allRequestingHouses.isEmpty {
-                let activeHouseNames = Set(allRequestingHouses.compactMap {
-                    $0.component(ofType: OwnerComponent.self)?.characterName
-                })
-                revealedYellowArrowHouseNames = revealedYellowArrowHouseNames.intersection(activeHouseNames)
-            }
-            
             if shouldLog {
-                let elapsed = String(format: "%.1f", now - lastYellowArrowRevealTime)
-                print("[Arrow DEBUG] YELLOW: requestingHouses=\(allRequestingHouses.count), revealed=\(revealedYellowArrowHouseNames), timeSinceLastReveal=\(elapsed)")
+                print("[Arrow DEBUG] YELLOW: requestingHouses=\(allRequestingHouses.count)")
             }
             
-            if now - lastYellowArrowRevealTime >= 5.0 {
-                for house in allRequestingHouses {
-                    guard let name = house.component(ofType: OwnerComponent.self)?.characterName else { continue }
-                    if !revealedYellowArrowHouseNames.contains(name) {
-                        revealedYellowArrowHouseNames.insert(name)
-                        lastYellowArrowRevealTime = now
-                        print("[Arrow] YELLOW REVEAL: \(name) (total revealed: \(revealedYellowArrowHouseNames.count), total requests: \(allRequestingHouses.count))")
-                        
-                        if yellowTutorialTargetHouseName == nil {
-                            yellowTutorialTargetHouseName = name
-                        }
-                        
-                        break
-                    }
-                }
+            if yellowTutorialTargetHouseName == nil, let firstTarget = allRequestingHouses.first?.component(ofType: OwnerComponent.self)?.characterName {
+                yellowTutorialTargetHouseName = firstTarget
             }
             
             var didShowYellowTutorialBubble = false
             
             for house in allRequestingHouses {
                 guard let name = house.component(ofType: OwnerComponent.self)?.characterName,
-                      revealedYellowArrowHouseNames.contains(name),
                       let houseNode = house.component(ofType: RenderComponent.self)?.node else { continue }
                 
                 let arrowNode = createArrowNode(

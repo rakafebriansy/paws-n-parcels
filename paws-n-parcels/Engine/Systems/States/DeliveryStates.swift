@@ -23,7 +23,7 @@ class DeliveryBaseState: GKState {
 @MainActor
 class NoActiveRequestState: DeliveryBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
-        return stateClass == WaitingForPickupState.self
+        return stateClass == WaitingForPickupState.self || stateClass == CarryingState.self
     }
     
     override func didEnter(from previousState: GKState?) {

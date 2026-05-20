@@ -34,6 +34,8 @@ class RequestSystem {
     
     func deliverRequest(_ request: Request) {
         request.isCompleted = true
+        // Delete the completed request from SwiftData
+        GameDataManager.shared.context?.delete(request)
         GameDataManager.shared.save()
         
         scheduleNextPackageSpawn(delaySeconds: 10)
@@ -44,6 +46,9 @@ class RequestSystem {
         else { return nil }
                 
         let request = component.request
+        request.isPickedUp = true
+        GameDataManager.shared.save()
+        
         house.removeComponent(ofType: RequestComponent.self)
         system.removeComponent(component)
         
@@ -61,12 +66,14 @@ class RequestSystem {
     }
     
     func initialBurstSpawn() {
-        let activeCount = houses.lazy.filter { $0.component(ofType: RequestComponent.self) != nil }.count
-        let needed = max(0, GameConfig.maxRequests - activeCount)
+        let houseRequestCount = houses.lazy.filter { $0.component(ofType: RequestComponent.self) != nil }.count
+        let pickedUpCount = GameDataManager.shared.fetchPickedUpRequests().count
+        let totalActive = houseRequestCount + pickedUpCount
+        let needed = max(0, GameConfig.maxRequests - totalActive)
         
         guard needed > 0 else { return }
         
-        print("[RequestSystem] initialBurstSpawn: spawning \(needed) requests (active: \(activeCount), max: \(GameConfig.maxRequests))")
+        print("[RequestSystem] initialBurstSpawn: spawning \(needed) requests (active: \(totalActive), max: \(GameConfig.maxRequests))")
         
         Task {
             for i in 0..<needed {
@@ -103,6 +110,11 @@ class RequestSystem {
         print("[RequestSystem] Generating letter from \(senderName) to \(recipientName)...")
         if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: chosenRel.friendshipLevel) {
             let newRequest = Request(sender: senderAnimal, receiver: receiverAnimal, letter: letterData)
+            
+            // Persist the request to SwiftData
+            GameDataManager.shared.context?.insert(newRequest)
+            GameDataManager.shared.save()
+            
             let component = RequestComponent(request: newRequest)
             
             senderHouse.addComponent(component)
@@ -114,9 +126,12 @@ class RequestSystem {
     }
     
     private func scheduleNextPackageSpawn(delaySeconds: Int) {
-        let activeCount = houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count
+        // Count houses with requests + any picked-up (being carried) requests
+        let houseRequestCount = houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count
+        let pickedUpCount = GameDataManager.shared.fetchPickedUpRequests().count
+        let totalActive = houseRequestCount + pickedUpCount
         
-        guard activeCount < GameConfig.maxRequests
+        guard totalActive < GameConfig.maxRequests
         else { return }
         
         Task {

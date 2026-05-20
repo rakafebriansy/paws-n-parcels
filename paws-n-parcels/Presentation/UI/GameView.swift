@@ -13,6 +13,7 @@ import GameplayKit
 
 struct GameView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var requestSystem = RequestSystem()
     @State private var deliverySystem = DeliverySystem()
@@ -32,7 +33,15 @@ struct GameView: View {
     @State private var currentDialogMessage: String = ""
     
     @State private var isPaused: Bool = false
-    @State private var currentPhase: GamePhase = .backgroundStory
+    @State private var currentPhase: GamePhase = {
+        if !UserDefaults.standard.bool(forKey: "hasSeenBackgroundStory") {
+            return .backgroundStory
+        } else if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            return .tutorial
+        } else {
+            return .playing
+        }
+    }()
     
     enum PauseMenuScreen {
         case main
@@ -218,6 +227,7 @@ struct GameView: View {
                 
                 BackgroundStoryView {
                     withAnimation(.easeInOut(duration: 0.5)) {
+                        UserDefaults.standard.set(true, forKey: "hasSeenBackgroundStory")
                         currentPhase = .tutorial
                         gameScene.currentPhase = .tutorial
                         gameScene.startTutorialIfNeeded()
@@ -231,15 +241,31 @@ struct GameView: View {
             GameDataManager.shared.setup(with: modelContext)
             setupGameDependencies()
             setupGameSceneCallbacks()
-            gameScene.currentPhase = .backgroundStory
+            
+            // Set the correct phase based on saved state
+            let initialPhase = currentPhase
+            gameScene.currentPhase = initialPhase
+            
+            if initialPhase == .playing || initialPhase == .tutorial {
+                // Skip background story — start tutorial if needed or go to playing
+                if initialPhase == .tutorial {
+                    gameScene.startTutorialIfNeeded()
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .inactive || newPhase == .background {
+                gameScene.saveGameState()
+                print("[GameView] App went to background/inactive. Game state saved.")
+            }
         }
     }
     
     private func setupGameDependencies() {
         print("[GameView] View appeared. Injecting dependencies into GameScene...")
         
-        gameScene.requestSystem = requestSystem
         gameScene.deliverySystem = deliverySystem
+        gameScene.requestSystem = requestSystem
         print("[GameView] Dependencies injected successfully.")
     }
     
