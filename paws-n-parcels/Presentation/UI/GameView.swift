@@ -30,8 +30,11 @@ struct GameView: View {
     @State private var showDeliveryAlert: Bool = false
     @State private var showRelationshipPointsAlert: Bool = false
     @State private var showNewCollectibleAlert: Bool = false
+    @State private var showNewCollectibleAlert: Bool = false
     @State private var relationshipPointsEarned: Int = 0
     @State private var currentDialogMessage: String = ""
+    @State private var pendingLevelUp: Bool = false
+    @State private var unlockedItem: Collectible? = nil
     @State private var pendingLevelUp: Bool = false
     @State private var unlockedItem: Collectible? = nil
     
@@ -289,6 +292,7 @@ struct GameView: View {
                 gameScene.resumeGameplay()
             }
         }
+        }
     }
     
     private func setupGameDependencies() {
@@ -299,6 +303,39 @@ struct GameView: View {
         gameScene.deliverySystem = deliverySystem
         gameScene.requestSystem = requestSystem
         print("[GameView] Dependencies injected successfully.")
+    }
+    
+    private func handleModalTap() {
+        if showPickUpAlert {
+            withAnimation(.easeInOut) {
+                showPickUpAlert = false
+            }
+            gameScene.resumeGameplay()
+            return
+        }
+        
+        if showDeliveryAlert {
+            withAnimation(.easeInOut) {
+                showDeliveryAlert = false
+                showRelationshipPointsAlert = false
+            }
+            
+            if pendingLevelUp {
+                pendingLevelUp = false
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                    showNewCollectibleAlert = true
+                }
+            } else {
+                gameScene.resumeGameplay()
+            }
+            return
+        }
+        
+        if showNewCollectibleAlert {
+            withAnimation(.easeInOut) {
+                showNewCollectibleAlert = false
+            }
+        }
     }
     
     private func handleModalTap() {
