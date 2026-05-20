@@ -28,8 +28,11 @@ struct GameView: View {
     @State private var showPickUpAlert: Bool = false
     @State private var showDeliveryAlert: Bool = false
     @State private var showRelationshipPointsAlert: Bool = false
+    @State private var showNewCollectibleAlert: Bool = false
     @State private var relationshipPointsEarned: Int = 0
     @State private var currentDialogMessage: String = ""
+    @State private var pendingLevelUp: Bool = false
+    @State private var unlockedItem: Collectible? = nil
     
     @State private var isPaused: Bool = false
     
@@ -40,6 +43,10 @@ struct GameView: View {
     }
     
     @State private var activePauseScreen: PauseMenuScreen = .main
+    
+    private var isShowingAlert: Bool {
+        showPickUpAlert || showDeliveryAlert || showNewCollectibleAlert
+    }
     
     var body: some View {
         ZStack {
@@ -79,38 +86,59 @@ struct GameView: View {
             }
             .zIndex(5)
             
-            if showPickUpAlert || showDeliveryAlert {
+            if isShowingAlert {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
                     .transition(.opacity)
                     .zIndex(1)
-            }
-            
-            ZStack {
-                if showPickUpAlert {
-                    PickUpSuccessAlertView(message: currentDialogMessage)
-                        .transition(
-                            .scale
-                            .combined(with: .opacity)
-                        )
-                }
+                    .onTapGesture {
+                        handleModalTap()
+                    }
                 
-                if showDeliveryAlert {
-                    DeliverySuccessAlertView()
-                        .transition(
-                            .scale
-                            .combined(with: .opacity)
-                        )
+                ZStack {
+                    if showPickUpAlert {
+                        PickUpSuccessAlertView(message: currentDialogMessage)
+                            .transition(
+                                .scale
+                                .combined(with: .opacity)
+                            )
+                    }
+                    
+                    if showDeliveryAlert {
+                        DeliverySuccessAlertView()
+                            .transition(
+                                .scale
+                                .combined(with: .opacity)
+                            )
+                    }
+                    
+                    if showNewCollectibleAlert {
+                        if let itemToShow = unlockedItem {
+                            NewCollectibleAlertView(isPresented: $showNewCollectibleAlert, item: itemToShow)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .zIndex(2)
+                .transition(.scale.combined(with: .opacity))
+                .onTapGesture {
+                    handleModalTap()
                 }
             }
-            .zIndex(2)
             
             if showRelationshipPointsAlert {
                 VStack {
                     RelationshipPointsAlertView(points: relationshipPointsEarned)
                     Spacer()
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
                 .zIndex(3)
+                .transition(.scale.combined(with: .opacity))
+                .onTapGesture {
+                    handleModalTap()
+                }
             }
             
             if isPaused {
@@ -181,53 +209,82 @@ struct GameView: View {
             setupGameDependencies()
             setupGameSceneCallbacks()
         }
+        .onChange(of: showNewCollectibleAlert) { _, isPresented in
+            if !isPresented, unlockedItem != nil, !showDeliveryAlert {
+                unlockedItem = nil
+                gameScene.resumeGameplay()
+            }
+        }
     }
     
     private func setupGameDependencies() {
         print("[GameView] View appeared. Injecting dependencies into GameScene...")
+        
+        deliverySystem.modelContext = modelContext
         
         gameScene.requestSystem = requestSystem
         gameScene.deliverySystem = deliverySystem
         print("[GameView] Dependencies injected successfully.")
     }
     
+    private func handleModalTap() {
+        if showPickUpAlert {
+            withAnimation(.easeInOut) {
+                showPickUpAlert = false
+            }
+            gameScene.resumeGameplay()
+            return
+        }
+        
+        if showDeliveryAlert {
+            withAnimation(.easeInOut) {
+                showDeliveryAlert = false
+                showRelationshipPointsAlert = false
+            }
+            
+            if pendingLevelUp {
+                pendingLevelUp = false
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                    showNewCollectibleAlert = true
+                }
+            } else {
+                gameScene.resumeGameplay()
+            }
+            return
+        }
+        
+        if showNewCollectibleAlert {
+            withAnimation(.easeInOut) {
+                showNewCollectibleAlert = false
+            }
+        }
+    }
+    
     private func setupGameSceneCallbacks() {
         gameScene.onPickUpSuccess = { dialogMessage in
             currentDialogMessage = dialogMessage
+            gameScene.gameStateMachine?.enter(GamePausedState.self)
             
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 showPickUpAlert = true
             }
-            
-            dismissAlertsAutomatically()
         }
         
-        gameScene.onDeliverySuccess = { points in
+        gameScene.onDeliverySuccess = { points, isLevelUp, newItem in
             relationshipPointsEarned = points
+            gameScene.gameStateMachine?.enter(GamePausedState.self)
+            
+            if isLevelUp, let collectible = newItem {
+                unlockedItem = collectible
+                pendingLevelUp = true
+            } else {
+                unlockedItem = nil
+                pendingLevelUp = false
+            }
             
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 showDeliveryAlert = true
                 showRelationshipPointsAlert = true
-            }
-            
-            dismissAlertsAutomatically()
-        }
-    }
-    
-    private func dismissAlertsAutomatically() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.alertDisplayDuration) {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showPickUpAlert = false
-                showDeliveryAlert = false
-            }
-            gameScene.resumeGameplay()
-        }
-        
-        if showRelationshipPointsAlert {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (GameConfig.alertDisplayDuration * 2.0)) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showRelationshipPointsAlert = false
-                }
             }
         }
     }

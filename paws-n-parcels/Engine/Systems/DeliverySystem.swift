@@ -12,12 +12,14 @@ import SwiftData
 @MainActor
 class DeliverySystem {
     let system = GKComponentSystem(componentClass: DeliveryComponent.self)
-        
+    
     var activePackage: Request? = nil
     var nearbyHouse: HouseEntity? = nil
     
     var stateMachine: GKStateMachine?
     weak var scene: GameScene?
+    
+    var modelContext: ModelContext?
     
     func setupStateMachine(requestSystem: RequestSystem, scene: GameScene) {
         self.scene = scene
@@ -60,12 +62,12 @@ class DeliverySystem {
         print("[DeliverySystem] Package picked up successfully. Sender: \(request.sender.name), Receiver: \(request.receiver.name).")
     }
     
-    func deliverPackage(for entity: GKEntity, relationships: [AnimalRelationship]) -> (pointsAdded: Int, isLevelUp: Bool) {
+    func deliverPackage(for entity: GKEntity, relationships: [AnimalRelationship]) -> (pointsAdded: Int, isLevelUp: Bool, unlockedItem: Collectible?) {
         guard let component = entity.component(ofType: DeliveryComponent.self),
               let request = component.activeRequest
         else {
             print("[DeliverySystem] Error: Entity is not holding any active request to deliver.")
-            return (0, false)
+            return (0, false, nil)
         }
         
         request.isCompleted = true
@@ -78,14 +80,14 @@ class DeliverySystem {
         return rewardResult
     }
     
-    private func processDeliveryReward(for request: Request, in relationships: [AnimalRelationship]) -> (pointsAdded: Int, isLevelUp: Bool) {
+    private func processDeliveryReward(for request: Request, in relationships: [AnimalRelationship]) -> (pointsAdded: Int, isLevelUp: Bool, unlockedItem: Collectible?) {
         guard let relationship = relationships.first(where: {
             $0.involves(request.sender.name, and: request.receiver.name)
         })
         else {
             print("[DeliverySystem] Warning: No relationship found between \(request.sender.name) and \(request.receiver.name). Package delivered but no points awarded.")
             GameDataManager.shared.save()
-            return (0, false)
+            return (0, false, nil)
         }
         
         let oldLevel = FriendshipLevel.getLevel(from: relationship.friendshipPoint)
@@ -96,13 +98,29 @@ class DeliverySystem {
         
         let isLevelUp = (oldLevel != newLevel)
         
+        var newUnlockedItem: Collectible? = nil
+        
         if isLevelUp {
             print("[DeliverySystem] Level Up! Friendship between \(relationship.friendOne.name) and \(relationship.friendTwo.name) reached level \(newLevel.intValue).")
+            if let context = modelContext {
+                let descriptor = FetchDescriptor<Collectible>(predicate: #Predicate { $0.isUnlocked == false })
+                
+                if let lockedItems = try? context.fetch(descriptor),
+                   let nextItem = lockedItems.first {
+                    
+                    nextItem.isUnlocked = true
+                    newUnlockedItem = nextItem
+                    
+                    print("[DeliverySystem] New Collectible Unlocked: \(nextItem.name)")
+                }
+            } else {
+                print("[DeliverySystem] Warning: modelContext is nil. Cannot unlock collectible.")
+            }
         }
         
         GameDataManager.shared.save()
         print("[DeliverySystem] Package delivered. \(GameConfig.deliveryRewardPoints) points added. Database saved.")
         
-        return (GameConfig.deliveryRewardPoints, isLevelUp)
+        return (GameConfig.deliveryRewardPoints, isLevelUp, newUnlockedItem)
     }
 }

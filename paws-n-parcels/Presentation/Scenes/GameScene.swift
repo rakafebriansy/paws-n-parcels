@@ -35,7 +35,7 @@ class GameScene: SKScene {
     var previousTime: TimeInterval = 0
     
     var onPickUpSuccess: ((String) -> Void)?
-    var onDeliverySuccess: ((Int) -> Void)?
+    var onDeliverySuccess: ((Int, Bool, Collectible?) -> Void)?
     
     private let bounceAction: SKAction = {
         let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
@@ -365,6 +365,7 @@ class GameScene: SKScene {
     }
     
     func resumeGameplay() {
+        gameStateMachine?.enter(GamePlayingState.self)
         if let stateComponent = playerEntity.component(ofType: PlayerStateComponent.self) {
             stateComponent.stateMachine?.enter(PlayerIdleState.self)
             print("[GameScene] Gameplay resumed, entering PlayerIdleState.")
