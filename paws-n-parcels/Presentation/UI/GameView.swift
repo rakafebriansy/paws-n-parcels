@@ -30,8 +30,10 @@ struct GameView: View {
     @State private var showRelationshipPointsAlert: Bool = false
     @State private var relationshipPointsEarned: Int = 0
     @State private var currentDialogMessage: String = ""
+    @State private var showPostcard: Bool = false
     
     @State private var isPaused: Bool = false
+    @State private var deliveredRequest: Request? = nil
     
     enum PauseMenuScreen {
         case main
@@ -79,7 +81,7 @@ struct GameView: View {
             }
             .zIndex(5)
             
-            if showPickUpAlert || showDeliveryAlert {
+            if showPickUpAlert || showDeliveryAlert || showPostcard {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
                     .transition(.opacity)
@@ -105,12 +107,45 @@ struct GameView: View {
             }
             .zIndex(2)
             
+            if showPostcard {
+                    VStack {
+                        Spacer()
+                        
+                        if let request = deliveredRequest {
+                            LetterView(letter: request.letter)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                    removal: .move(edge: .bottom).combined(with: .opacity)
+                                ))
+                        }
+                        
+                        Spacer()
+                        
+                        // Tap anywhere outside or a clean close button to return to running around the map
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                showPostcard = false
+                            }
+                            gameScene.resumeGameplay()
+                        }) {
+                            Text("Close Postcard")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 24)
+                                .background(Capsule().fill(Color.white.opacity(0.8)))
+                        }
+                        .padding(.bottom, 40)
+                    }
+                    .zIndex(3)
+                }
+            
             if showRelationshipPointsAlert {
                 VStack {
                     RelationshipPointsAlertView(points: relationshipPointsEarned)
                     Spacer()
                 }
-                .zIndex(3)
+                .zIndex(4)
             }
             
             if isPaused {
@@ -202,8 +237,9 @@ struct GameView: View {
             dismissAlertsAutomatically()
         }
         
-        gameScene.onDeliverySuccess = { points in
+        gameScene.onDeliverySuccess = { points, request in
             relationshipPointsEarned = points
+            deliveredRequest = request
             
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 showDeliveryAlert = true
@@ -215,18 +251,34 @@ struct GameView: View {
     }
     
     private func dismissAlertsAutomatically() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.alertDisplayDuration) {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showPickUpAlert = false
-                showDeliveryAlert = false
+        // 1. Handle Pickup alert dismiss sequence safely
+        if showPickUpAlert {
+            DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.alertDisplayDuration) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showPickUpAlert = false
+                }
+                gameScene.resumeGameplay()
             }
-            gameScene.resumeGameplay()
         }
         
-        if showRelationshipPointsAlert {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (GameConfig.alertDisplayDuration * 2.0)) {
+        // 2. Handle the Delivery -> Postcard -> Relationship Points timeline
+        if showDeliveryAlert {
+            // Step A: Wait for the delivery alert duration to end
+            DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.alertDisplayDuration) {
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    showRelationshipPointsAlert = false
+                    showDeliveryAlert = false
+                }
+                
+                // Step B: Pop open your postcard letter view right after
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    showPostcard = true
+                }
+                
+                // Step C: Dismiss the Relationship points banner nicely after it has had its screen time
+                DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.alertDisplayDuration) {
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        showRelationshipPointsAlert = false
+                    }
                 }
             }
         }

@@ -18,6 +18,8 @@ class RequestSystem {
     private var animalsMap: [String: Animal] = [:]
     private var reservedHouseNamesToSpawn: Set<String> = []
     
+    weak var deliverySystem: DeliverySystem?
+    
     private var activeRequestsCount: Int {
         houses.count(where: { $0.component(ofType: RequestComponent.self) != nil })
     }
@@ -30,8 +32,19 @@ class RequestSystem {
     
     func deliverRequest(_ request: Request) {
         request.isCompleted = true
-        GameDataManager.shared.save()
         
+        // 1. Cleanly strip the RequestComponent away from whichever house sent it
+        if let senderHouse = houses.first(where: { $0.component(ofType: RequestComponent.self)?.request === request }) {
+            if let component = senderHouse.component(ofType: RequestComponent.self) {
+                senderHouse.removeComponent(ofType: RequestComponent.self)
+                system.removeComponent(component)
+            }
+        }
+        
+        // 2. REMOVED: self.activePackage = nil (DeliverySystem handles this internal property directly now!)
+        
+        // 3. Save to database context and queue the next interval sequence
+        GameDataManager.shared.save()
         scheduleNextPackageSpawn(delaySeconds: 10)
     }
     
@@ -42,7 +55,7 @@ class RequestSystem {
         let request = component.request
         house.removeComponent(ofType: RequestComponent.self)
         system.removeComponent(component)
-        
+                
         return request
     }
     
@@ -67,6 +80,11 @@ class RequestSystem {
                 await generateAndSpawnRequestAsync()
             }
         }
+    }
+
+    func getActiveRequest() -> Request? {
+        // Queries the delivery system directly so data is never duplicated
+        return deliverySystem?.activePackage
     }
     
     private func generateAndSpawnRequestAsync() async {
