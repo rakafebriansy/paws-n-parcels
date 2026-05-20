@@ -104,7 +104,7 @@ class PlayerStateComponent: GKComponent {
     var stateMachine: GKStateMachine?
     weak var scene: GameScene?
     
-    private var lastDirection: String = "down"
+    private var lastDirection: String = "front"
     private var lastHolding: Bool = false
     private var lastWalking: Bool = false
     private var isFirstUpdate: Bool = true
@@ -151,7 +151,7 @@ class PlayerStateComponent: GKComponent {
             if abs(velocity.x) > abs(velocity.y) {
                 currentDirection = velocity.x > 0 ? "right" : "left"
             } else {
-                currentDirection = velocity.y > 0 ? "up" : "down"
+                currentDirection = velocity.y > 0 ? "up" : "front"
             }
         }
         
@@ -196,13 +196,19 @@ class PlayerStateComponent: GKComponent {
         let prefix = isHolding ? "goldie_package_" : "goldie_"
         let dirStr = direction
         
-        // Reset scale factors to 1.0 first to cleanly apply the base size change
+        
         node.xScale = 1.0
         node.yScale = 1.0
         
-        // Dynamic base size according to movement direction (up/down are vertical)
-        let isVertical = (dirStr == "up" || dirStr == "down")
-        node.size = isVertical ? GameConfig.playerVerticalSize : GameConfig.playerHorizontalSize
+        
+        let isVertical = (dirStr == "up" || dirStr == "front")
+        if dirStr == "up" {
+            node.size = GameConfig.playerUpSize
+        } else if dirStr == "front" {
+            node.size = GameConfig.playerFrontSize
+        } else {
+            node.size = GameConfig.playerHorizontalSize
+        }
         
         if isWalking {
             // Load 3 walk textures for dynamic 4-directional walking

@@ -235,12 +235,11 @@ class GameScene: SKScene {
     }
     
     func setupPlayer() {
-        let texture = SKTexture(imageNamed: "goldie_down_1")
-        let playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerVerticalSize)
+        let texture = SKTexture(imageNamed: "goldie_front_1")
+        let playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerFrontSize)
         playerNode.zPosition = GameConfig.playerZPosition
         playerNode.position = GameConfig.playerInitialPosition
         
-        // Circular physics body matching Goldie's footprint
         playerNode.physicsBody = SKPhysicsBody(circleOfRadius: GameConfig.playerPhysicsRadius)
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
@@ -390,34 +389,73 @@ class GameScene: SKScene {
                 let distanceSquared = (dx * dx) + (dy * dy)
                 let isWithinRange = distanceSquared <= GameConfig.interactionRadiusSquared
                 
-                var highlight = houseNode.childNode(withName: "indicator_highlight") as? SKShapeNode
+                var highlight = houseNode.childNode(withName: "indicator_highlight") as? SKSpriteNode
                 if highlight == nil {
-                    let margin: CGFloat = 10
-                    let rect = CGRect(
-                        x: -(houseNode.size.width / 2) - (margin / 2),
-                        y: -(houseNode.size.height / 2) - (margin / 2),
-                        width: houseNode.size.width + margin,
-                        height: houseNode.size.height + margin
-                    )
+                    let houseTexture = houseNode.texture ?? SKTexture(imageNamed: "house_1")
+                    let highlightSize = houseNode.size
                     
-                    highlight = SKShapeNode(rect: rect, cornerRadius: 8)
-                    highlight?.name = "indicator_highlight"
-                    highlight?.strokeColor = .systemYellow
-                    highlight?.lineWidth = 6
-                    highlight?.fillColor = .clear
-                    highlight?.zPosition = -1
+                    let h = SKSpriteNode(texture: houseTexture, size: highlightSize)
+                    h.name = "indicator_highlight"
+                    h.color = .clear
+                    h.colorBlendFactor = 1.0
+                    h.zPosition = -1
                     
-                    if let h = highlight { houseNode.addChild(h) }
+                    h.physicsBody = SKPhysicsBody(texture: houseTexture, size: highlightSize)
+                    h.physicsBody?.isDynamic = false
+                    h.physicsBody?.categoryBitMask = 0
+                    h.physicsBody?.collisionBitMask = 0
+                    h.physicsBody?.contactTestBitMask = 0
+                    
+                    let strokeThickness: CGFloat = 2.5
+                    let offsets = [
+                        CGPoint(x: strokeThickness, y: 0),
+                        CGPoint(x: -strokeThickness, y: 0),
+                        CGPoint(x: 0, y: strokeThickness),
+                        CGPoint(x: 0, y: -strokeThickness),
+                        CGPoint(x: strokeThickness, y: strokeThickness),
+                        CGPoint(x: -strokeThickness, y: -strokeThickness),
+                        CGPoint(x: strokeThickness, y: -strokeThickness),
+                        CGPoint(x: -strokeThickness, y: strokeThickness)
+                    ]
+                    
+                    for (index, offset) in offsets.enumerated() {
+                        let outlineSprite = SKSpriteNode(texture: houseTexture, size: highlightSize)
+                        outlineSprite.name = "outline_\(index)"
+                        outlineSprite.position = offset
+                        outlineSprite.colorBlendFactor = 1.0
+                        outlineSprite.color = .clear
+                        outlineSprite.zPosition = -1
+                        h.addChild(outlineSprite)
+                    }
+                    
+                    houseNode.addChild(h)
+                    highlight = h
                 }
                 
                 if isSender && isWithinRange && !isHoldingPackage {
-                    highlight?.strokeColor = .systemYellow
                     highlight?.isHidden = false
+                    if let subSprites = highlight?.children as? [SKSpriteNode] {
+                        for sprite in subSprites {
+                            sprite.color = .yellow
+                            sprite.alpha = 1.0
+                        }
+                    }
                 } else if isTarget && isWithinRange {
-                    highlight?.strokeColor = .systemRed
                     highlight?.isHidden = false
+                    if let subSprites = highlight?.children as? [SKSpriteNode] {
+                        for sprite in subSprites {
+                            sprite.color = .red
+                            sprite.alpha = 1.0
+                        }
+                    }
                 } else {
                     highlight?.isHidden = true
+                    if let subSprites = highlight?.children as? [SKSpriteNode] {
+                        for sprite in subSprites {
+                            sprite.color = .clear
+                            sprite.alpha = 0.0
+                        }
+                    }
                 }
                 
                 let senderIcon = houseNode.childNode(withName: "indicator_sender")

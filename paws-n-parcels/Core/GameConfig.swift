@@ -33,6 +33,7 @@ struct GameConfig {
     }
     static let requestIndicatorSize = CGSize(width: 120, height: 120)
     static let requestIndicatorAnimalFaceSize = CGSize(width: 60, height: 60)
+    static let requestIndicatorExclamationSize = CGSize(width: 35, height: 35)
     static let worldSize: CGSize = CGSize(width: 3000, height: 3000)
     
     static let alertDisplayDuration: TimeInterval = 1.5
@@ -42,8 +43,9 @@ struct GameConfig {
     static let playerPhysicsRadius: CGFloat = 14
     static let playerZPosition: CGFloat = 5
     
-    static let playerVerticalSize = CGSize(width: 64, height: 128)
-    static let playerHorizontalSize = CGSize(width: 128, height: 64)
+    static let playerFrontSize = CGSize(width: 46, height: 67)
+    static let playerUpSize = CGSize(width: 46, height: 95)
+    static let playerHorizontalSize = CGSize(width: 80, height: 64)
     
     static let playerWalkFrameDuration: TimeInterval = 0.12
     
