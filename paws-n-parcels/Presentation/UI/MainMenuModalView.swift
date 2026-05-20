@@ -62,6 +62,11 @@ struct MainMenuModalView: View {
                     }
                 }
                 
+                Text("Settings")
+                    .comicRelief(size: 30, isBold: true)
+                    .foregroundColor(.darkGray)
+                    .padding(.top, 15)
+                
                 HStack {
                     Image(systemName: bgm == 0 ? "music.note.slash" : "music.note")
                         .foregroundColor(.red)
@@ -80,6 +85,7 @@ struct MainMenuModalView: View {
                     ).frame(width:130)
                         .tint(Color.darkGray)
                 }
+                .padding(-10)
                 
                 HStack {
                     Image(systemName: sfx == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
@@ -107,16 +113,19 @@ struct MainMenuModalView: View {
                     Button(action: {
                         onResume?()
                     }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.red)
-                            .background(Circle().fill(Color.cream))
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 30))
+                            .foregroundColor(.darkGray)
+                            .frame(width: 40, height: 40)
+                            .background(Circle().fill(Color.white.opacity(0.75)))
                             .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                     }
                     .padding(.top, 40)
-                    .padding(.leading, 45)
+                    .padding(.leading, 35)
+                    
                     Spacer()
                 }
+                
                 Spacer()
             }
         }
