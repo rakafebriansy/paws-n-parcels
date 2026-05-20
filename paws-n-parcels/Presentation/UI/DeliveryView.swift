@@ -85,8 +85,12 @@ struct DeliveryView: View {
             .onTapGesture { closeAllModals() }
             
             if showRelationshipPointsAlert {
-                RelationshipPointsAlertView(points: pointsEarned)
-                    .zIndex(3)
+                RelationshipPointsAlertView(points: pointsEarned) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showRelationshipPointsAlert = false
+                    }
+                }
+                .zIndex(3)
             }
         }
     }

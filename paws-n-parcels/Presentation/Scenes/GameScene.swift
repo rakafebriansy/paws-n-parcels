@@ -42,6 +42,8 @@ class GameScene: SKScene {
     var onRedBubbleUpdate: ((TutorialBubbleData?) -> Void)?
     var onTooFarBubbleUpdate: ((TooFarBubbleData?) -> Void)?
     
+    var currentPhase: GamePhase = .backgroundStory
+    
     private var tooFarBubbleTimer: TimeInterval = 0
     
     var hasShownYellowArrowTutorialTimer: Bool = false
@@ -97,16 +99,31 @@ class GameScene: SKScene {
         print("[Tutorial] hasSeenRedArrowTutorial: \(UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial"))")
         
         if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            print("[Tutorial] Joystick tutorial deferred until background story is dismissed.")
+        }
+    }
+    
+    func startTutorialIfNeeded() {
+        currentPhase = .tutorial
+        print("[GameScene] Phase changed to tutorial.")
+        
+        if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
             print("[Tutorial] Showing joystick tutorial bubble")
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
                 UserDefaults.standard.set(true, forKey: "hasSeenJoystickTutorial")
                 self.onJoystickBubbleUpdate?(nil)
+                self.currentPhase = .playing
+                print("[GameScene] Phase changed to playing.")
             }
+        } else {
+            currentPhase = .playing
+            print("[GameScene] No tutorial needed, phase changed to playing.")
         }
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard currentPhase != .backgroundStory else { return }
         guard gameStateMachine?.currentState is GamePlayingState else { return }
         
         let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
@@ -120,6 +137,7 @@ class GameScene: SKScene {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard currentPhase != .backgroundStory else { return }
         guard gameStateMachine?.currentState is GamePlayingState else { return }
         
         let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
@@ -409,6 +427,48 @@ class GameScene: SKScene {
             stateComponent.stateMachine?.enter(PlayerIdleState.self)
             print("[GameScene] Gameplay resumed, entering PlayerIdleState.")
         }
+    }
+    
+    func resetGame() {
+        // Reset UserDefaults tutorial flags
+        UserDefaults.standard.set(false, forKey: "hasSeenJoystickTutorial")
+        UserDefaults.standard.set(false, forKey: "hasSeenYellowArrowTutorial")
+        UserDefaults.standard.set(false, forKey: "hasSeenRedArrowTutorial")
+        
+        // Reset tutorial timers and tracking state
+        hasShownYellowArrowTutorialTimer = false
+        hasShownRedArrowTutorialTimer = false
+        revealedYellowArrowHouseNames = []
+        yellowTutorialStartTime = nil
+        yellowTutorialTargetHouseName = nil
+        redTutorialStartTime = nil
+        lastYellowArrowRevealTime = 0
+        
+        // Stop player movement
+        if let movement = playerEntity.component(ofType: MovementComponent.self) {
+            movement.velocity = .zero
+        }
+        joystick.processTouchEnded()
+        
+        // Reset player position
+        if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
+            playerNode.position = GameConfig.playerInitialPosition
+        }
+        
+        // Clear any too-far bubble
+        tooFarBubbleTimer = 0
+        onTooFarBubbleUpdate?(nil)
+        onJoystickBubbleUpdate?(nil)
+        onYellowBubbleUpdate?(nil)
+        onRedBubbleUpdate?(nil)
+        
+        // Reset phase back to background story
+        currentPhase = .backgroundStory
+        
+        // Resume state machine so game isn't stuck in paused state
+        gameStateMachine?.enter(GamePlayingState.self)
+        
+        print("[GameScene] Game reset to initial state.")
     }
     
     private func updateIndicators() {

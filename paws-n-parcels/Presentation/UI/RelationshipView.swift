@@ -250,7 +250,7 @@ struct FractionalHeartView: View {
             
             Image(systemName: "heart")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.darkGray)
+                .foregroundColor(.red)
         }
         .frame(width: 15, height: 13)
     }

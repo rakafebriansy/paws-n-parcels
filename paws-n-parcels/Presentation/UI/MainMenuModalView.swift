@@ -17,6 +17,7 @@ struct MainMenuModalView: View {
     var onResume: (() -> Void)? = nil
     var onCollectibles: (() -> Void)? = nil
     var onRelationships: (() -> Void)? = nil
+    var onReset: (() -> Void)? = nil
     
     var body: some View {
         ZStack {
@@ -74,6 +75,22 @@ struct MainMenuModalView: View {
                         .padding(.vertical, 8)
                         .padding(.horizontal, 20)
                         .background(Color.darkGray)
+                        .cornerRadius(35)
+                    }
+                    
+                    Button(action: {
+                        onReset?()
+                    }){
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("Reset")
+                        }
+                        .comicRelief(size: 25, isBold: true)
+                        .tracking(1.5)
+                        .foregroundColor(Color.cream)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 38)
+                        .background(Color.red)
                         .cornerRadius(35)
                     }
                 }

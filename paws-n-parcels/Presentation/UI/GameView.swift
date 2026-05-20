@@ -32,6 +32,7 @@ struct GameView: View {
     @State private var currentDialogMessage: String = ""
     
     @State private var isPaused: Bool = false
+    @State private var currentPhase: GamePhase = .backgroundStory
     
     enum PauseMenuScreen {
         case main
@@ -51,29 +52,31 @@ struct GameView: View {
             SpriteView(scene: gameScene)
                 .ignoresSafeArea()
             
-            if let data = joystickBubbleData {
-                TutorialBubbleView(data: data)
-                    .position(data.position)
-                    .transition(.opacity)
-            }
-            if let data = yellowBubbleData {
-                TutorialBubbleView(data: data)
-                    .position(data.position)
-                    .transition(.opacity)
-            }
-            if let data = redBubbleData {
-                TutorialBubbleView(data: data)
-                    .position(data.position)
-                    .transition(.opacity)
+            if currentPhase != .backgroundStory {
+                if let data = joystickBubbleData {
+                    TutorialBubbleView(data: data)
+                        .position(data.position)
+                        .transition(.opacity)
+                }
+                if let data = yellowBubbleData {
+                    TutorialBubbleView(data: data)
+                        .position(data.position)
+                        .transition(.opacity)
+                }
+                if let data = redBubbleData {
+                    TutorialBubbleView(data: data)
+                        .position(data.position)
+                        .transition(.opacity)
+                }
+                
+                if let data = tooFarBubbleData {
+                    TooFarBubbleView(data: data)
+                        .position(data.position)
+                        .transition(.opacity)
+                }
             }
             
-            if let data = tooFarBubbleData {
-                TooFarBubbleView(data: data)
-                    .position(data.position)
-                    .transition(.opacity)
-            }
-            
-            if !isPaused {
+            if !isPaused && currentPhase != .backgroundStory {
                 VStack {
                     HStack(spacing: 12) {
                         Button(action: {
@@ -127,7 +130,11 @@ struct GameView: View {
             
             if showRelationshipPointsAlert {
                 VStack {
-                    RelationshipPointsAlertView(points: relationshipPointsEarned)
+                    RelationshipPointsAlertView(points: relationshipPointsEarned) {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showRelationshipPointsAlert = false
+                        }
+                    }
                     Spacer()
                 }
                 .zIndex(3)
@@ -160,6 +167,28 @@ struct GameView: View {
                                 withAnimation(.easeInOut) {
                                     activePauseScreen = .relationships
                                 }
+                            },
+                            onReset: {
+                                // Reset all SwiftUI state
+                                showPickUpAlert = false
+                                showDeliveryAlert = false
+                                showRelationshipPointsAlert = false
+                                relationshipPointsEarned = 0
+                                currentDialogMessage = ""
+                                joystickBubbleData = nil
+                                yellowBubbleData = nil
+                                redBubbleData = nil
+                                tooFarBubbleData = nil
+                                activePauseScreen = .main
+                                
+                                // Reset scene-side state (tutorial flags, timers, player position, phase)
+                                gameScene.resetGame()
+                                
+                                // Dismiss pause menu and transition to background story
+                                withAnimation(.easeInOut(duration: 0.4)) {
+                                    isPaused = false
+                                    currentPhase = .backgroundStory
+                                }
                             }
                         )
                     case .collectibles:
@@ -181,11 +210,28 @@ struct GameView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 .zIndex(10)
             }
+            if currentPhase == .backgroundStory {
+                Color.black.opacity(0.45)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .zIndex(19)
+                
+                BackgroundStoryView {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        currentPhase = .tutorial
+                        gameScene.currentPhase = .tutorial
+                        gameScene.startTutorialIfNeeded()
+                    }
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .zIndex(20)
+            }
         }
         .onAppear {
             GameDataManager.shared.setup(with: modelContext)
             setupGameDependencies()
             setupGameSceneCallbacks()
+            gameScene.currentPhase = .backgroundStory
         }
     }
     
@@ -248,9 +294,11 @@ struct GameView: View {
         }
         
         if showRelationshipPointsAlert {
-            DispatchQueue.main.asyncAfter(deadline: .now() + (GameConfig.alertDisplayDuration * 2.0)) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    showRelationshipPointsAlert = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+                if self.showRelationshipPointsAlert {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        self.showRelationshipPointsAlert = false
+                    }
                 }
             }
         }
