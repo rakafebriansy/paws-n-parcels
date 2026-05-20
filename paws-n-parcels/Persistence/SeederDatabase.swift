@@ -55,7 +55,7 @@ class SeederDatabase {
                 Collectible(name: "Scarf"),
                 Collectible(name: "Clover Lucky Charm"),
                 Collectible(name: "Sunflower"),
-                Collectible(name: "Photostrip")
+                Collectible(name: "Photostrips")
             ]
             
             for item in collectibles {
