@@ -139,7 +139,7 @@ struct GameView: View {
                             }
                         )
                     case .collectibles:
-                        CollectibleView(
+                        CollectiblesView(
                             onClose: {
                                 withAnimation(.easeInOut) {
                                     activePauseScreen = .main

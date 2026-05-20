@@ -9,6 +9,8 @@ import SwiftUI
 
 struct NewCollectibleAlertView: View {
     @Binding var isPresented: Bool
+    var item: Collectible
+    
     var body: some View {
         ZStack{
             Image("modal").resizable().scaledToFit().padding(24)
@@ -17,13 +19,17 @@ struct NewCollectibleAlertView: View {
                     .comicRelief(size: 30, isBold: true)     .foregroundColor(.brown)
                     .multilineTextAlignment(.center)
                 
-                Image(systemName: "checkmark")
+                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
+                
+                Image(assetName)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
-                    .bold()
+                    .frame(width: 120, height: 120)
                 
+                Text(item.name)
+                    .comicRelief(size: 25, isBold: true)     .foregroundColor(.darkGray)
+                    .multilineTextAlignment(.center)
+            
                 Button("Tutup") {
                     withAnimation(.easeInOut) {
                         isPresented = false
@@ -33,7 +39,6 @@ struct NewCollectibleAlertView: View {
             }
             .padding(30)
         }
-            .shadow(radius: 10)
             .transition(.scale.combined(with: .opacity))
     }
 }
@@ -42,7 +47,8 @@ struct NewCollectibleAlertView: View {
    
     ZStack {
         Color.black.opacity(0.3).ignoresSafeArea()
+        let item = Collectible(name: "sunflower")
         
-        NewCollectibleAlertView(isPresented: .constant(true))
+        NewCollectibleAlertView(isPresented: .constant(true), item: item)
     }
 }
