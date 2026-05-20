@@ -62,6 +62,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         print("[SceneDelegate] Main ModelContext created.")
         
         GameDataManager.shared.setup(with: context)
+        
+        // One-time migration: animal names were renamed to match CharacterRegistry
+        let migrationKey = "didMigrateAnimalNamesV1"
+        if !UserDefaults.standard.bool(forKey: migrationKey) {
+            print("[SceneDelegate] Running one-time migration: clearing old animal data...")
+            SeederDatabase.clearDatabase(context: context)
+            UserDefaults.standard.set(true, forKey: migrationKey)
+        }
+        
         SeederDatabase.seedDatabaseIfNeeded(context: context)
         
         let mainGameView = GameView()

@@ -28,35 +28,35 @@ class SeederDatabase {
         let relationshipCount = (try? context.fetchCount(FetchDescriptor<AnimalRelationship>())) ?? 0
         
         // Hanya jalan jika database benar-benar kosong
-        if existingAnimals.isEmpty {
+        if animalCount == 0 || relationshipCount == 0 {
             print("Database kosong. Memulai proses Seeding...")
             
-            // Seed 5 AnimalFriend
+            // Seed 5 Animal
             let animals = [
-                AnimalFriend(
-                    name: "Kelinci",
+                Animal(
+                    name: "Joko",
                     assetName: "rabbit",
-                    dialog: "Oh, you're here! I’ve been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!"
+                    pickupDialog: "Oh, you're here! I've been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!"
                 ),
-                AnimalFriend(
-                    name: "Kucing",
+                Animal(
+                    name: "Susilo",
                     assetName: "cat",
-                    dialog: "Meow~ About time. Handle it with care, please; I don’t want a single scratch on my package! Thanks for finally showing up."
+                    pickupDialog: "Meow~ About time. Handle it with care, please; I don't want a single scratch on my package! Thanks for finally showing up."
                 ),
-                AnimalFriend(
-                    name: "Berang-berang",
+                Animal(
+                    name: "Santoso",
                     assetName: "beaver",
-                    dialog: "Great job being on time! This package is absolutely crucial for me. Thanks for the help—I’m counting on you to get it there in one piece."
+                    pickupDialog: "Great job being on time! This package is absolutely crucial for me. Thanks for the help—I'm counting on you to get it there in one piece."
                 ),
-                AnimalFriend(
-                    name: "Kura-kura",
+                Animal(
+                    name: "Purnomo",
                     assetName: "turtle",
-                    dialog: "Thank... you... just take your time delivering it... no need to rush... the world moves fast enough as it is. Have a... lovely... stroll."
+                    pickupDialog: "Thank... you... just take your time delivering it... no need to rush... the world moves fast enough as it is. Have a... lovely... stroll."
                 ),
-                AnimalFriend(
+                Animal(
                     name: "Capybara",
                     assetName: "capybara",
-                    dialog: "Take it easy, my friend. Thanks for stopping by to grab the package. No need to stress—it’ll get there when it gets there. Safe travels."
+                    pickupDialog: "Take it easy, my friend. Thanks for stopping by to grab the package. No need to stress—it'll get there when it gets there. Safe travels."
                 )
             ]
             
@@ -69,7 +69,7 @@ class SeederDatabase {
                 for j in (i + 1)..<animals.count {
                     let relation = AnimalRelationship(
                         friendOne: animals[i],
-                        friendTwo: animals[j],
+                        friendTwo: animals[j]
                     )
                     context.insert(relation)
                     relationCount += 1

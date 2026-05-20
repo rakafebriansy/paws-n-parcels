@@ -117,7 +117,7 @@ struct MainMenuModalView: View {
                             .font(.system(size: 30))
                             .foregroundColor(.darkGray)
                             .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color.white.opacity(0.75)))
+                            .background(Circle().fill(Color.cream.opacity(0.75)))
                             .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                     }
                     .padding(.top, 40)

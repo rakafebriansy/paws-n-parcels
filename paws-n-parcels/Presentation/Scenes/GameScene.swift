@@ -37,6 +37,23 @@ class GameScene: SKScene {
     var onPickUpSuccess: ((String) -> Void)?
     var onDeliverySuccess: ((Int) -> Void)?
     
+    var onJoystickBubbleUpdate: ((TutorialBubbleData?) -> Void)?
+    var onYellowBubbleUpdate: ((TutorialBubbleData?) -> Void)?
+    var onRedBubbleUpdate: ((TutorialBubbleData?) -> Void)?
+    
+    var hasShownYellowArrowTutorialTimer: Bool = false
+    var hasShownRedArrowTutorialTimer: Bool = false
+    
+    var revealedYellowArrowHouseNames: Set<String> = []
+    
+    var yellowTutorialStartTime: TimeInterval? = nil
+    var yellowTutorialTargetHouseName: String? = nil
+    var redTutorialStartTime: TimeInterval? = nil
+    let tutorialDuration: TimeInterval = 8.0
+    
+    var lastArrowDebugLogTime: TimeInterval = 0
+    var lastYellowArrowRevealTime: TimeInterval = 0
+    
     private let bounceAction: SKAction = {
         let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
         let moveDown = moveUp.reversed()
@@ -71,6 +88,19 @@ class GameScene: SKScene {
         print("[GameScene] Game Flow State Machine initialized in GamePlayingState.")
         
         print("[GameScene] Initialization complete. Game is ready to play!")
+        
+        print("[Tutorial] hasSeenJoystickTutorial: \(UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial"))")
+        print("[Tutorial] hasSeenYellowArrowTutorial: \(UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial"))")
+        print("[Tutorial] hasSeenRedArrowTutorial: \(UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial"))")
+        
+        if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            print("[Tutorial] Showing joystick tutorial bubble")
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+                UserDefaults.standard.set(true, forKey: "hasSeenJoystickTutorial")
+                self.onJoystickBubbleUpdate?(nil)
+            }
+        }
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -495,7 +525,7 @@ class GameScene: SKScene {
         
         let shadow = SKLabelNode(text: "❌")
         shadow.fontSize = 55
-        shadow.fontColor = .black
+        shadow.fontColor = UIColor(red: 63/255, green: 55/255, blue: 49/255, alpha: 1.0)
         shadow.alpha = 0.5
         shadow.zPosition = -1
         shadow.position = CGPoint(x: 3, y: -3)
@@ -518,9 +548,23 @@ class GameScene: SKScene {
     }
     
     private func updateScreenEdgeArrows(viewWidth: CGFloat, viewHeight: CGFloat) {
-        cameraNode.enumerateChildNodes(withName: "edge_arrow") {
-            node, _ in
-            node.removeFromParent()
+        cameraNode.enumerateChildNodes(withName: "edge_arrow") { node, _ in node.removeFromParent() }
+        
+        if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            let screenX = joystick.baseNode.position.x + (viewWidth / 2)
+            let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
+            
+            let clampedX = min(max(screenX, 70), viewWidth - 70)
+            let clampedY = screenY - 110 // Jarak yang lebih jauh ke atas dari joystick
+            
+            let data = TutorialBubbleData(
+                text: "Move Goldie using this joystick.",
+                position: CGPoint(x: clampedX, y: clampedY),
+                isInTopZone: false
+            )
+            onJoystickBubbleUpdate?(data)
+        } else {
+            onJoystickBubbleUpdate?(nil)
         }
         
         guard let mapBuilder = mapBuilder else {
@@ -534,29 +578,172 @@ class GameScene: SKScene {
         let ovalRadiusX = (screenWidth / 2) - padding
         let ovalRadiusY = (screenHeight / 2) - padding
         
+        let hasActivePackage = deliverySystem?.activePackage != nil
+        
+        let now0 = CACurrentMediaTime()
+        let shouldLog = now0 - lastArrowDebugLogTime >= 2.0
+        if shouldLog {
+            lastArrowDebugLogTime = now0
+            let dsStatus = deliverySystem != nil ? "ALIVE" : "NIL"
+            let apStatus = hasActivePackage ? "YES" : "NO"
+            print("[Arrow DEBUG] deliverySystem=\(dsStatus), activePackage=\(apStatus)")
+        }
+        
         if let activePackage = deliverySystem?.activePackage {
+            onYellowBubbleUpdate?(nil) // Dismiss yellow tutorial bubble when delivering
+            
             let receiverName = activePackage.receiver.name
             if let targetHouse = mapBuilder.environmentEntities.first(where: {
                 ($0 as? HouseEntity)?.component(ofType: OwnerComponent.self)?.characterName == receiverName
             }) as? HouseEntity, let houseNode = targetHouse.component(ofType: RenderComponent.self)?.node {
-                createArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+                
+                let arrowNode = createArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+                
+                if shouldLog {
+                    print("[Arrow DEBUG] RED: receiver=\(receiverName), houseFound=YES, arrowCreated=\(arrowNode != nil)")
+                }
+                
+                if !UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial") {
+                    let now2 = CACurrentMediaTime()
+                    
+                    if !hasShownRedArrowTutorialTimer {
+                        hasShownRedArrowTutorialTimer = true
+                        redTutorialStartTime = now2
+                    }
+                    
+                    if let startTime = redTutorialStartTime {
+                        if now2 - startTime < tutorialDuration {
+                            if let validArrow = arrowNode {
+                                let screenX = validArrow.position.x + (viewWidth / 2)
+                                let screenY = -validArrow.position.y + (viewHeight / 2)
+                                
+                                let isInTopZone = validArrow.position.y > 0
+                                
+                                let clampedX = min(max(screenX, 70), viewWidth - 70)
+                                let clampedY = screenY + (isInTopZone ? 55 : -55)
+                                
+                                let data = TutorialBubbleData(
+                                    text: "Follow the red arrow to deliver the parcel.",
+                                    position: CGPoint(x: clampedX, y: clampedY),
+                                    isInTopZone: isInTopZone
+                                )
+                                onRedBubbleUpdate?(data)
+                            } else {
+                                onRedBubbleUpdate?(nil)
+                            }
+                        } else {
+                            UserDefaults.standard.set(true, forKey: "hasSeenRedArrowTutorial")
+                            onRedBubbleUpdate?(nil)
+                        }
+                    }
+                }
+            } else {
+                print("[Arrow] RED: Target house not found for receiver: \(receiverName)")
+                onRedBubbleUpdate?(nil)
             }
         } else {
-            for entity in mapBuilder.environmentEntities {
-                if let house = entity as? HouseEntity, house.component(ofType: RequestComponent.self) != nil, let houseNode = house.component(ofType: RenderComponent.self)?.node {
-                    createArrowNode(to: houseNode.position, assetName: "arrow_yellow", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+            onRedBubbleUpdate?(nil) // Dismiss red tutorial bubble when not delivering
+            
+            let now = CACurrentMediaTime()
+            
+            let allRequestingHouses = mapBuilder.environmentEntities
+                .compactMap { $0 as? HouseEntity }
+                .filter { $0.component(ofType: RequestComponent.self) != nil }
+            
+            if !allRequestingHouses.isEmpty {
+                let activeHouseNames = Set(allRequestingHouses.compactMap {
+                    $0.component(ofType: OwnerComponent.self)?.characterName
+                })
+                revealedYellowArrowHouseNames = revealedYellowArrowHouseNames.intersection(activeHouseNames)
+            }
+            
+            if shouldLog {
+                let elapsed = String(format: "%.1f", now - lastYellowArrowRevealTime)
+                print("[Arrow DEBUG] YELLOW: requestingHouses=\(allRequestingHouses.count), revealed=\(revealedYellowArrowHouseNames), timeSinceLastReveal=\(elapsed)")
+            }
+            
+            if now - lastYellowArrowRevealTime >= 5.0 {
+                for house in allRequestingHouses {
+                    guard let name = house.component(ofType: OwnerComponent.self)?.characterName else { continue }
+                    if !revealedYellowArrowHouseNames.contains(name) {
+                        revealedYellowArrowHouseNames.insert(name)
+                        lastYellowArrowRevealTime = now
+                        print("[Arrow] YELLOW REVEAL: \(name) (total revealed: \(revealedYellowArrowHouseNames.count), total requests: \(allRequestingHouses.count))")
+                        
+                        if yellowTutorialTargetHouseName == nil {
+                            yellowTutorialTargetHouseName = name
+                        }
+                        
+                        break
+                    }
                 }
+            }
+            
+            var didShowYellowTutorialBubble = false
+            
+            for house in allRequestingHouses {
+                guard let name = house.component(ofType: OwnerComponent.self)?.characterName,
+                      revealedYellowArrowHouseNames.contains(name),
+                      let houseNode = house.component(ofType: RenderComponent.self)?.node else { continue }
+                
+                let arrowNode = createArrowNode(
+                    to: houseNode.position,
+                    assetName: "arrow_yellow",
+                    ovalX: ovalRadiusX,
+                    ovalY: ovalRadiusY,
+                    viewW: viewWidth,
+                    viewH: viewHeight
+                )
+                
+                if name == yellowTutorialTargetHouseName,
+                   !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
+                    
+                    if !hasShownYellowArrowTutorialTimer {
+                        hasShownYellowArrowTutorialTimer = true
+                        yellowTutorialStartTime = now
+                    }
+                    
+                    if let startTime = yellowTutorialStartTime {
+                        if now - startTime < tutorialDuration {
+                            if let validArrow = arrowNode {
+                                let screenX = validArrow.position.x + (viewWidth / 2)
+                                let screenY = -validArrow.position.y + (viewHeight / 2)
+                                
+                                let isInTopZone = validArrow.position.y > 0
+                                
+                                let clampedX = min(max(screenX, 70), viewWidth - 70)
+                                let clampedY = screenY + (isInTopZone ? 55 : -55)
+                                
+                                let data = TutorialBubbleData(
+                                    text: "Follow the yellow arrow to pick up the parcel.",
+                                    position: CGPoint(x: clampedX, y: clampedY),
+                                    isInTopZone: isInTopZone
+                                )
+                                onYellowBubbleUpdate?(data)
+                                didShowYellowTutorialBubble = true
+                            }
+                        } else {
+                            UserDefaults.standard.set(true, forKey: "hasSeenYellowArrowTutorial")
+                            onYellowBubbleUpdate?(nil)
+                            didShowYellowTutorialBubble = true
+                        }
+                    }
+                }
+            }
+            
+            if !didShowYellowTutorialBubble && !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
+                onYellowBubbleUpdate?(nil)
             }
         }
     }
     
-    private func createArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) {
+    private func createArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) -> SKSpriteNode? {
         let dx = targetPosition.x - cameraNode.position.x
         let dy = targetPosition.y - cameraNode.position.y
         
         let safetyMargin: CGFloat = 50.0
         if abs(dx) < (viewW / 2) - safetyMargin && abs(dy) < (viewH / 2) - safetyMargin {
-            return
+            return nil
         }
         
         let angle = atan2(dy, dx)
@@ -573,7 +760,9 @@ class GameScene: SKScene {
         arrowNode.zPosition = 90_000
         
         cameraNode.addChild(arrowNode)
+        return arrowNode
     }
+    
 }
 
 #Preview {

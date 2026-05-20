@@ -14,6 +14,7 @@ struct RelationshipView: View {
     @State private var relationships: [AnimalRelationship] = []
     
     @State private var selectedIndex: Int = 0
+    var onClose: (() -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -29,12 +30,12 @@ struct RelationshipView: View {
                 VStack(spacing: 12) {
                     Text(currentCharacter.name)
                         .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.darkGray)
                         .padding(.top, 40)
 
                     ZStack {
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.75))
+                            .fill(Color.cream.opacity(0.75))
                             .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
                         
                         Image(currentCharacter.assetName)
@@ -82,13 +83,13 @@ struct RelationshipView: View {
                                         .fill(
                                             selectedIndex == index
                                             ? Color.orange
-                                            : Color.white
+                                            : Color.cream
                                         )
                                         .shadow(color: Color.black.opacity(0.12), radius: 3, x: 2, y: 1)
 
                                     Text(String(characters[index].name.prefix(1)))
                                         .font(.system(size: 13, weight: .bold, design: .rounded))
-                                        .foregroundColor(selectedIndex == index ? .white : .primary)
+                                        .foregroundColor(selectedIndex == index ? .cream : .darkGray)
                                 }
                                 .frame(width: 32, height: 60)
                                 .offset(x: selectedIndex == index ? 4 : 0) // Efek menonjol kecil saat terpilih
@@ -104,7 +105,29 @@ struct RelationshipView: View {
                     .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundColor(.gray)
             }
+            
+            // Close Button
+            if onClose != nil {
+                VStack {
+                    HStack {
+                        Button(action: {
+                            onClose?()
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 32))
+                                .foregroundColor(.red)
+                                .background(Circle().fill(Color.cream))
+                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                        }
+                        .padding(.top, 40)
+                        .padding(.leading, 45)
+                        Spacer()
+                    }
+                    Spacer()
+                }
+            }
         }
+        .scaleEffect(0.85)
         .onAppear {
             self.characters = GameDataManager.shared.fetchAnimals().sorted { $0.name < $1.name }
             self.relationships = GameDataManager.shared.fetchRelationships()
@@ -184,11 +207,11 @@ struct RelationshipRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(characterName)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.darkGray)
                 
                 Text(statusText)
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.darkGray.opacity(0.7))
             }
 
             Spacer()
@@ -203,7 +226,7 @@ struct RelationshipRow: View {
         .frame(height: 60)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.65))
+                .fill(Color.cream.opacity(0.65))
                 .shadow(color: Color.black.opacity(0.04), radius: 2, x: 0, y: 1)
         )
         .padding(.horizontal, 20)
@@ -215,10 +238,12 @@ struct FractionalHeartView: View {
 
     var body: some View {
         ZStack(alignment: .leading) {
-            Image(systemName: "heart")
+            // Isi abu-abu tipis untuk bagian kosong
+            Image(systemName: "heart.fill")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.gray.opacity(0.35))
+                .foregroundColor(.darkGray.opacity(0.12))
             
+            // Isi pink yang terisi sebagian/seluruhnya
             Image(systemName: "heart.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.pink)
@@ -231,6 +256,11 @@ struct FractionalHeartView: View {
                         }
                     }
                 )
+            
+            // Outline/Border di lapisan paling atas
+            Image(systemName: "heart")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.darkGray)
         }
         .frame(width: 15, height: 13)
     }

@@ -14,7 +14,7 @@ import GameplayKit
 struct GameView: View {
     @Environment(\.modelContext) private var modelContext
     
-    private let requestSystem = RequestSystem()
+    @State private var requestSystem = RequestSystem()
     @State private var deliverySystem = DeliverySystem()
         
     @State private var gameScene: GameScene = {
@@ -41,10 +41,32 @@ struct GameView: View {
     
     @State private var activePauseScreen: PauseMenuScreen = .main
     
+    @State private var joystickBubbleData: TutorialBubbleData? = nil
+    @State private var yellowBubbleData: TutorialBubbleData? = nil
+    @State private var redBubbleData: TutorialBubbleData? = nil
+    
     var body: some View {
         ZStack {
             SpriteView(scene: gameScene)
                 .ignoresSafeArea()
+            
+            // Render Tutorial Bubbles
+            if let data = joystickBubbleData {
+                TutorialBubbleView(data: data)
+                    .position(data.position)
+                    .transition(.opacity)
+            }
+            if let data = yellowBubbleData {
+                TutorialBubbleView(data: data)
+                    .position(data.position)
+                    .transition(.opacity)
+            }
+            if let data = redBubbleData {
+                TutorialBubbleView(data: data)
+                    .position(data.position)
+                    .transition(.opacity)
+            }
+            
             VStack {
                 HStack(spacing: 12) {
                     Button(action: {
@@ -61,12 +83,12 @@ struct GameView: View {
                     }) {
                         Image(systemName: isPaused ? "play.fill" : "pause.fill")
                             .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.cream)
                             .frame(width: 44, height: 44)
                             .background(
                                 Circle()
                                     .fill(Color.black.opacity(0.45))
-                                    .background(Circle().stroke(Color.white.opacity(0.2), lineWidth: 1.5))
+                                    .background(Circle().stroke(Color.cream.opacity(0.2), lineWidth: 1.5))
                             )
                             .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                     }
@@ -147,29 +169,11 @@ struct GameView: View {
                             }
                         )
                     case .relationships:
-                        ZStack {
-                            RelationshipView()
-                                                       // Close button for RelationshipView to return to Pause Main Menu
-                            VStack {
-                                HStack {
-                                    Button(action: {
-                                        withAnimation(.easeInOut) {
-                                            activePauseScreen = .main
-                                        }
-                                    }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.system(size: 32))
-                                            .foregroundColor(.red)
-                                            .background(Circle().fill(Color.cream))
-                                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                                    }
-                                    .padding(.top, 40)
-                                    .padding(.leading, 45)
-                                    Spacer()
-                                }
-                                Spacer()
+                        RelationshipView(onClose: {
+                            withAnimation(.easeInOut) {
+                                activePauseScreen = .main
                             }
-                        }
+                        })
                     }
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
@@ -211,6 +215,18 @@ struct GameView: View {
             }
             
             dismissAlertsAutomatically()
+        }
+        
+        gameScene.onJoystickBubbleUpdate = { data in
+            joystickBubbleData = data
+        }
+        
+        gameScene.onYellowBubbleUpdate = { data in
+            yellowBubbleData = data
+        }
+        
+        gameScene.onRedBubbleUpdate = { data in
+            redBubbleData = data
         }
     }
     

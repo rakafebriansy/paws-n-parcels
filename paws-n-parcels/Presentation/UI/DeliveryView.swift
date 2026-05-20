@@ -12,9 +12,9 @@ import GameplayKit
 struct DeliveryView: View {
     var playerEntity: GKEntity
     var deliverySystem: DeliverySystem
-    var req: Requests
+    var req: Request
     
-    @Bindable var activeRelationship: AnimalFriendRelationship
+    @Bindable var activeRelationship: AnimalRelationship
     
     @State private var showRelationshipPointsAlert: Bool = false
     @State private var showPickUpSuccessAlert: Bool = false
@@ -32,7 +32,7 @@ struct DeliveryView: View {
                     Text("Paket dari: \(req.sender.name)")
                     Text("Untuk: \(req.receiver.name)")
                     Divider().padding(.vertical, 5)
-                    Text("Relationship Points: \(activeRelationship.friendshipPoints)")
+                    Text("Relationship Points: \(activeRelationship.friendshipPoint)")
                         .font(.headline)
                         .foregroundColor(.blue)
                 }
@@ -67,7 +67,7 @@ struct DeliveryView: View {
                     
                     ZStack {
                         if showPickUpSuccessAlert {
-                            PickUpSuccessAlertView(message: req.sender.dialog)
+                            PickUpSuccessAlertView(message: req.sender.pickupDialog)
                         }
                         
                         if showDeliverySuccessAlert {
@@ -92,7 +92,7 @@ struct DeliveryView: View {
     }
     
     private func processDelivery() {
-        let result = deliverySystem.deliverPackage(for: playerEntity)
+        let result = deliverySystem.deliverPackage(for: playerEntity, relationships: [activeRelationship])
         
         if result.pointsAdded > 0 {
             self.pointsEarned = result.pointsAdded
@@ -132,27 +132,33 @@ struct DeliveryView: View {
 
 
 #Preview {
-    // database palsu
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: AnimalFriend.self, AnimalFriendRelationship.self, Collectible.self, Requests.self, configurations: config)
-    let context = container.mainContext
+    let makePreview = { () -> AnyView in
+        // database palsu
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try! ModelContainer(for: Animal.self, AnimalRelationship.self, Collectible.self, Request.self, configurations: config)
+        let context = container.mainContext
+        
+        // data hewan dan request palsu
+        let kelinci = Animal(name: "Kelinci", assetName: "rabbit", pickupDialog: "Oh, you're here! I’ve been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!")
+        let beruang = Animal(name: "Beruang", assetName: "bear", pickupDialog: "Thanks for picking this up! Make sure it arrives safely.")
+        let relasiPalsu = AnimalRelationship(friendOne: kelinci, friendTwo: beruang)
+        let letterPalsu = PackageLetter(sender: "Kelinci", recipient: "Beruang", messageBody: "Oh, you're here! I’ve been waiting to get this moving.")
+        let requestPalsu = Request(sender: kelinci, receiver: beruang, letter: letterPalsu)
+        
+        context.insert(kelinci)
+        context.insert(beruang)
+        context.insert(relasiPalsu)
+        context.insert(requestPalsu)
+        
+        // Entitas dan Sistem palsu
+        let dummyGoldie = PlayerEntity(node: SKNode())
+        let dummySystem = DeliverySystem()
+        
+        return AnyView(
+            DeliveryView(playerEntity: dummyGoldie, deliverySystem: dummySystem, req: requestPalsu, activeRelationship: relasiPalsu)
+                .modelContainer(container)
+        )
+    }
     
-    // data hewan dan request palsu
-    let kelinci = AnimalFriend(name: "Kelinci", assetName: "rabbit", dialog: "Oh, you're here! I’ve been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!")
-    let beruang = AnimalFriend(name: "Beruang", assetName: "bear", dialog: "Thanks for picking this up! Make sure it arrives safely.")
-    let relasiPalsu = AnimalFriendRelationship(friendOne: kelinci, friendTwo: beruang)
-    let requestPalsu = Requests(sender: kelinci, receiver: beruang)
-    
-    context.insert(kelinci)
-    context.insert(beruang)
-    context.insert(relasiPalsu)
-    context.insert(requestPalsu)
-    
-    // Entitas dan Sistem palsu
-    let dummyGoldie = GoldieEntity()
-    let dummySystem = DeliverySystem()
-    dummySystem.setup(context: context)
-    
-    return DeliveryView(playerEntity: dummyGoldie, deliverySystem: dummySystem, req: requestPalsu, activeRelationship: relasiPalsu)
-        .modelContainer(container)
+    return makePreview()
 }
