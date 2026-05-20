@@ -48,14 +48,12 @@ class JoystickController {
         print("[JoystickController] Attached to camera at default position Y: \(defaultYPosition).")
     }
     
-    func processTouchBegan(location: CGPoint, treshold: CGFloat) {
-        if location.y < treshold {
-            isActive = true
-            baseNode.position = location
-            knobNode.position = .zero
-            
-            print("[JoystickController] Touch began. Joystick activated at \(location).")
-        }
+    func processTouchBegan(location: CGPoint) {
+        isActive = true
+        baseNode.position = location
+        knobNode.position = .zero
+        
+        print("[JoystickController] Touch began. Joystick activated at \(location).")
     }
     
     func processTouchMoved(locationInBase: CGPoint) {

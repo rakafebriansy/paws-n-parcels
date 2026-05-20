@@ -83,9 +83,7 @@ class GameScene: SKScene {
         else { return }
         
         let location = touch.location(in: cameraNode)
-        let treshold = -(self.size.height / 4)
-        
-        joystick.processTouchBegan(location: location, treshold: treshold)
+        joystick.processTouchBegan(location: location)
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
