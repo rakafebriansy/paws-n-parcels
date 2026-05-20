@@ -21,27 +21,29 @@ struct CollectiblesView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            Color(red: 0.98, green: 0.96, blue: 0.9)
-                .ignoresSafeArea()
+            Image("collectibles_book").resizable().scaledToFill().ignoresSafeArea().overlay(
 
-                VStack {
+                VStack (spacing: 15) {
                     Text("Collectibles")
                         .comicRelief(size: 45, isBold: true)
                         .foregroundColor(.darkGray)
                         .multilineTextAlignment(.center)
+                        .padding(.top, 50)
                     
                     ScrollView(showsIndicators: false){
                         LazyVGrid(columns: columns, spacing: 20) {
                             // enumerated() supaya bisa dapat urutan index
                             ForEach(Array(collectibles.enumerated()), id: \.element.id) {
                                 index, item in
-                                CollectibleCard(item: item, index: index, bgColor: Color.sage)
+                                CollectibleCard(item: item, index: index, bgColor: Color.cream)
                             }
                         }
                         .padding(.horizontal, 25)
                         .padding(.bottom, 40)
+                        .padding(.leading, 40)
                     }
                 }
+            )
         }
     }
     
@@ -61,32 +63,28 @@ struct CollectibleCard: View {
     
     var body: some View {
         ZStack {
-            if !item.isUnlocked && index >= 5 {
-                // background warna light gray untuk item yang masih locked
-                Color(red: 0.85, green: 0.85, blue: 0.85)
-            } else {
-                bgColor
-            }
+           bgColor
             
             if item.isUnlocked || index < 5 {
-//                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
+                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
                 
                 VStack{
-                    Image(systemName: "shippingbox.fill")
+                    Image(assetName)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(.brown)
-                // ubah warna item collectible jadi grayscale kalau belum unlocked
-                    .saturation(item.isUnlocked ? 1.0 : 0.0)
-                    .opacity(item.isUnlocked ? 1.0 : 0.4)
+                        .frame(width: 80, height: 80)
+                        // ubah warna item collectible jadi hitam putih kalau belum unlocked
+                        .colorMultiply(item.isUnlocked ? .white : .black.opacity(0.6))
                     if item.isUnlocked{
                         Text(item.name)
-                            .comicRelief(size: 20)
+                            .comicRelief(size: 20, isBold: true)
                             .foregroundColor(.darkGray)
-                            .padding(.top, 5)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.5)
                     }
                 }
+                .padding(8)
             } else {
                 Image(systemName: "lock.fill")
                     .resizable()
@@ -97,6 +95,10 @@ struct CollectibleCard: View {
         }
         .frame(height: 150)
         .cornerRadius(20)
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.darkGray, lineWidth: 3))
+        .background(RoundedRectangle(cornerRadius: 20)
+            .fill(Color.darkGray)
+            .offset(x: -6, y: 6))
     }
 }
 
@@ -104,11 +106,11 @@ struct CollectibleCard: View {
 extension Collectible {
     static var dummyData: [Collectible] {
         [
-            makePreviewItem(name: "Kacamata", isUnlocked: true),
-            makePreviewItem(name: "Boba Drink", isUnlocked: true),
-            makePreviewItem(name: "Mesin Tik", isUnlocked: false),
-            makePreviewItem(name: "Handphone", isUnlocked: false),
-            makePreviewItem(name: "Laptop", isUnlocked: true),
+            makePreviewItem(name: "Necklace", isUnlocked: true),
+            makePreviewItem(name: "Scarf", isUnlocked: true),
+            makePreviewItem(name: "Clover Lucky Charm", isUnlocked: true),
+            makePreviewItem(name: "Sunflower", isUnlocked: false),
+            makePreviewItem(name: "Photostrips", isUnlocked: false),
             makePreviewItem(name: "Rahasia 1", isUnlocked: false),
             makePreviewItem(name: "Rahasia 2", isUnlocked: false),
             makePreviewItem(name: "Rahasia 3", isUnlocked: false)
