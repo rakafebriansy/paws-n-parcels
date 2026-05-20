@@ -92,7 +92,7 @@ class DeliveryCompletedState: DeliveryBaseState {
         }
         
         let result = deliverySystem.deliverPackage(for: scene.playerEntity, relationships: requestSystem.relationships)
-        scene.onDeliverySuccess?(result.pointsAdded)
+        scene.onDeliverySuccess?(result.pointsAdded, result.isLevelUp, result.unlockedItem)
         
         requestSystem.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
         

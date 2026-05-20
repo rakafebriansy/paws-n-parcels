@@ -36,7 +36,7 @@ class GameScene: SKScene {
     var previousTime: TimeInterval = 0
     
     var onPickUpSuccess: ((String) -> Void)?
-    var onDeliverySuccess: ((Int) -> Void)?
+    var onDeliverySuccess: ((Int, Bool, Collectible?) -> Void)?
     
     var onJoystickBubbleUpdate: ((TutorialBubbleData?) -> Void)?
     var onYellowBubbleUpdate: ((TutorialBubbleData?) -> Void)?
@@ -432,6 +432,7 @@ class GameScene: SKScene {
     }
     
     func resumeGameplay() {
+        gameStateMachine?.enter(GamePlayingState.self)
         if let stateComponent = playerEntity.component(ofType: PlayerStateComponent.self) {
             stateComponent.stateMachine?.enter(PlayerIdleState.self)
             print("[GameScene] Gameplay resumed, entering PlayerIdleState.")

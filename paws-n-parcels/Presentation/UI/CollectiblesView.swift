@@ -10,9 +10,11 @@ import SwiftData
 
 struct CollectiblesView: View {
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Collectible.name) private var collectibles: [Collectible]
     
-    var collectibles: [Collectible] = Collectible.dummyData
     var onClose: (() -> Void)?
+    
+    private let lockedPlaceholderCount = 45
     
     let columns = [
         GridItem(.flexible(), spacing: 20),
@@ -33,9 +35,12 @@ struct CollectiblesView: View {
                     ScrollView(showsIndicators: false){
                         LazyVGrid(columns: columns, spacing: 20) {
                             // enumerated() supaya bisa dapat urutan index
-                            ForEach(Array(collectibles.enumerated()), id: \.element.id) {
-                                index, item in
+                            ForEach(Array(collectibles.enumerated()), id: \.element.id) { index, item in
                                 CollectibleCard(item: item, index: index, bgColor: Color.cream)
+                            }
+                            
+                            ForEach(0..<lockedPlaceholderCount, id: \.self) { _ in
+                                LockedCollectibleCard(bgColor: Color.cream)
                             }
                         }
                         .padding(.horizontal, 25)
@@ -102,30 +107,31 @@ struct CollectibleCard: View {
     }
 }
 
-// dummy data untuk Preview
-extension Collectible {
-    static var dummyData: [Collectible] {
-        [
-            makePreviewItem(name: "Necklace", isUnlocked: true),
-            makePreviewItem(name: "Scarf", isUnlocked: true),
-            makePreviewItem(name: "Clover Lucky Charm", isUnlocked: true),
-            makePreviewItem(name: "Sunflower", isUnlocked: false),
-            makePreviewItem(name: "Photostrips", isUnlocked: false),
-            makePreviewItem(name: "Rahasia 1", isUnlocked: false),
-            makePreviewItem(name: "Rahasia 2", isUnlocked: false),
-            makePreviewItem(name: "Rahasia 3", isUnlocked: false)
-        ]
-    }
+struct LockedCollectibleCard: View {
+    let bgColor: Color
     
-    private static func makePreviewItem(name: String, isUnlocked: Bool) -> Collectible {
-        let item = Collectible(name: name)
-        item.isUnlocked = isUnlocked
-        return item
+    var body: some View {
+        ZStack {
+            bgColor
+            
+            Image(systemName: "lock.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60, height: 60)
+                .foregroundColor(.darkGray)
+        }
+        .frame(height: 150)
+        .cornerRadius(20)
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.darkGray, lineWidth: 3))
+        .background(RoundedRectangle(cornerRadius: 20)
+            .fill(Color.darkGray)
+            .offset(x: -6, y: 6))
     }
 }
 
 #Preview {
-    NavigationStack{
+    NavigationStack {
         CollectiblesView()
     }
+    .modelContainer(for: Collectible.self, inMemory: true)
 }
