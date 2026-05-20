@@ -37,24 +37,6 @@
 			);
 			target = 1DDB9DB82FA8EE3800AFC25E /* paws-n-parcels */;
 		};
-		A5E0522E2FB4165F003626A6 /* Exceptions for "paws-n-parcels" folder in "paws-n-parcelsTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Assets/Fonts/ComicRelief-Bold.ttf",
-				"Assets/Fonts/ComicRelief-Regular.ttf",
-				Assets/Fonts/OFL.txt,
-			);
-			target = 1DDB9DD12FA8EE3800AFC25E /* paws-n-parcelsTests */;
-		};
-		A5E0522F2FB4165F003626A6 /* Exceptions for "paws-n-parcels" folder in "paws-n-parcelsUITests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Assets/Fonts/ComicRelief-Bold.ttf",
-				"Assets/Fonts/ComicRelief-Regular.ttf",
-				Assets/Fonts/OFL.txt,
-			);
-			target = 1DDB9DDB2FA8EE3800AFC25E /* paws-n-parcelsUITests */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -62,8 +44,6 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				1DDB9DE42FA8EE3800AFC25E /* Exceptions for "paws-n-parcels" folder in "paws-n-parcels" target */,
-				A5E0522E2FB4165F003626A6 /* Exceptions for "paws-n-parcels" folder in "paws-n-parcelsTests" target */,
-				A5E0522F2FB4165F003626A6 /* Exceptions for "paws-n-parcels" folder in "paws-n-parcelsUITests" target */,
 			);
 			path = "paws-n-parcels";
 			sourceTree = "<group>";
