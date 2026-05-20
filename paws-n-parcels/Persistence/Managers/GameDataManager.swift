@@ -42,8 +42,6 @@ class GameDataManager {
         return (try? context?.fetch(descriptor)) ?? []
     }
     
-    // MARK: - Player Profile
-    
     func fetchPlayerProfile() -> PlayerProfile? {
         let descriptor = FetchDescriptor<PlayerProfile>()
         return (try? context?.fetch(descriptor))?.first
@@ -61,21 +59,16 @@ class GameDataManager {
         print("[GameDataManager] Player position saved: (\(x), \(y))")
     }
     
-    // MARK: - Pending Requests
-    
-    /// Fetch requests that are at houses (not picked up, not completed)
     func fetchPendingRequests() -> [Request] {
         let descriptor = FetchDescriptor<Request>(predicate: #Predicate<Request> { !$0.isCompleted && !$0.isPickedUp })
         return (try? context?.fetch(descriptor)) ?? []
     }
     
-    /// Fetch the request currently being carried by the player
     func fetchPickedUpRequests() -> [Request] {
         let descriptor = FetchDescriptor<Request>(predicate: #Predicate<Request> { $0.isPickedUp && !$0.isCompleted })
         return (try? context?.fetch(descriptor)) ?? []
     }
     
-    /// Delete all non-completed requests (for reset)
     func deleteAllPendingRequests() {
         let allPending = fetchPendingRequests() + fetchPickedUpRequests()
         for request in allPending {
@@ -86,7 +79,6 @@ class GameDataManager {
     }
     
     func saveActiveRequests(senderNames: [String]) {
-        // Save the list of active sender house names so we can restore which houses had requests
         UserDefaults.standard.set(senderNames, forKey: "activeRequestSenderNames")
         print("[GameDataManager] Saved \(senderNames.count) active request sender names.")
     }
@@ -94,8 +86,6 @@ class GameDataManager {
     func loadActiveRequestSenderNames() -> [String] {
         return UserDefaults.standard.stringArray(forKey: "activeRequestSenderNames") ?? []
     }
-    
-    // MARK: - Full Game State Save
     
     func saveGameState(playerX: Double, playerY: Double, activeRequestSenderNames: [String]) {
         savePlayerPosition(x: playerX, y: playerY)

@@ -9,6 +9,7 @@ import SpriteKit
 import GameplayKit
 import SwiftData
 import SwiftUI
+import AVFoundation
 
 class GameScene: SKScene {
     
@@ -63,6 +64,8 @@ class GameScene: SKScene {
         let moveDown = moveUp.reversed()
         return SKAction.repeatForever(SKAction.sequence([moveUp, moveDown]))
     }()
+    
+    private var bgmPlayer: AVAudioPlayer?
 
     override func didMove(to view: SKView) {
         print("[GameScene] Starting Scene initialization...")
@@ -103,6 +106,7 @@ class GameScene: SKScene {
         
         restoreGameState()
         startAutoSaveTimer()
+        playBGM()
     }
     
     func startTutorialIfNeeded() {
@@ -411,7 +415,6 @@ class GameScene: SKScene {
         
         reqSys.fetchData()
         
-        // Restore any saved active requests before spawning new ones
         restoreActiveRequests()
         
         reqSys.initialBurstSpawn()
@@ -436,13 +439,11 @@ class GameScene: SKScene {
     }
     
     func resetGame() {
-        // Reset UserDefaults tutorial and story flags
         UserDefaults.standard.set(false, forKey: "hasSeenJoystickTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenYellowArrowTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenRedArrowTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenBackgroundStory")
         
-        // Reset tutorial timers and tracking state
         hasShownYellowArrowTutorialTimer = false
         hasShownRedArrowTutorialTimer = false
         currentDialogMessage = nil
@@ -450,25 +451,21 @@ class GameScene: SKScene {
         yellowTutorialTargetHouseName = nil
         redTutorialStartTime = nil
         
-        // Stop player movement
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
             movement.velocity = .zero
         }
         joystick.processTouchEnded()
         
-        // Reset player position
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
             playerNode.position = GameConfig.playerInitialPosition
         }
         
-        // Clear delivery carrying state
         deliverySystem?.activePackage = nil
         if let deliveryComp = playerEntity.component(ofType: DeliveryComponent.self) {
             deliveryComp.activeRequest = nil
         }
         deliverySystem?.stateMachine?.enter(NoActiveRequestState.self)
         
-        // Remove all RequestComponents from houses
         if let mapBuilder = mapBuilder {
             for entity in mapBuilder.environmentEntities {
                 if let house = entity as? HouseEntity,
@@ -479,20 +476,16 @@ class GameScene: SKScene {
             }
         }
         
-        // Clear any too-far bubble
         tooFarBubbleTimer = 0
         onTooFarBubbleUpdate?(nil)
         onJoystickBubbleUpdate?(nil)
         onYellowBubbleUpdate?(nil)
         onRedBubbleUpdate?(nil)
         
-        // Reset phase back to background story
         currentPhase = .backgroundStory
         
-        // Resume state machine so game isn't stuck in paused state
         gameStateMachine?.enter(GamePlayingState.self)
         
-        // Clear persisted game state so next launch starts fresh
         UserDefaults.standard.removeObject(forKey: "activeRequestSenderNames")
         GameDataManager.shared.savePlayerPosition(
             x: Double(GameConfig.playerInitialPosition.x),
@@ -500,10 +493,40 @@ class GameScene: SKScene {
         )
         GameDataManager.shared.deleteAllPendingRequests()
         
+        playBGM()
+        
         print("[GameScene] Game reset to initial state.")
     }
     
-    // MARK: - Game State Persistence
+    private func playBGM() {
+        bgmPlayer?.stop()
+        bgmPlayer = nil
+        
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("[BGM] Error setting up audio session: \(error)")
+        }
+        
+        guard let url = Bundle.main.url(forResource: "1. Playground", withExtension: "m4a") else {
+            print("[BGM] Error: Could not find BGM file in bundle")
+            return
+        }
+        
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.numberOfLoops = -1
+            player.volume = 0.0
+            player.prepareToPlay()
+            player.play()
+            player.setVolume(1.0, fadeDuration: 2.0)
+            self.bgmPlayer = player
+            print("[BGM] Playing BGM with fade-in.")
+        } catch {
+            print("[BGM] Error initializing AVAudioPlayer: \(error)")
+        }
+    }
     
     func saveGameState() {
         guard let playerNode = playerEntity?.component(ofType: RenderComponent.self)?.node else {
@@ -514,14 +537,12 @@ class GameScene: SKScene {
         let playerX = Double(playerNode.position.x)
         let playerY = Double(playerNode.position.y)
         
-        // Collect sender names from houses that currently have active requests
         var activeRequestSenderNames: [String] = []
         if let mapBuilder = mapBuilder {
             for entity in mapBuilder.environmentEntities {
                 if let house = entity as? HouseEntity,
                    let requestComp = house.component(ofType: RequestComponent.self),
                    let ownerName = house.component(ofType: OwnerComponent.self)?.characterName {
-                    // Save the request to SwiftData (it's already a @Model, just ensure it's persisted)
                     let request = requestComp.request
                     if !request.isCompleted {
                         activeRequestSenderNames.append(ownerName)
@@ -538,12 +559,10 @@ class GameScene: SKScene {
     }
     
     func restoreGameState() {
-        // Restore player position only — request restoration happens in registerHousesAndStartSpawning
         if let profile = GameDataManager.shared.fetchPlayerProfile() {
             let savedX = CGFloat(profile.positionX)
             let savedY = CGFloat(profile.positionY)
             
-            // Only restore if position was previously saved (not at origin default)
             if savedX != 0 || savedY != 0 {
                 if let playerNode = playerEntity?.component(ofType: RenderComponent.self)?.node {
                     playerNode.position = CGPoint(x: savedX, y: savedY)
@@ -562,18 +581,14 @@ class GameScene: SKScene {
             for request in pendingRequests {
                 let senderName = request.sender.name
                 
-                // Only restore if this sender was in the active list when we last saved
                 guard savedSenderNames.contains(senderName) else {
-                    // This request is orphaned (e.g. from an ungraceful exit or previous session reset). Delete it.
                     GameDataManager.shared.context?.delete(request)
                     continue
                 }
                 
-                // Find the matching house
                 if let house = mapBuilder.environmentEntities.first(where: {
                     ($0 as? HouseEntity)?.component(ofType: OwnerComponent.self)?.characterName == senderName
                 }) as? HouseEntity {
-                    // Don't re-attach if house already has a request
                     guard house.component(ofType: RequestComponent.self) == nil else { continue }
                     
                     let component = RequestComponent(request: request)
@@ -585,7 +600,6 @@ class GameScene: SKScene {
             GameDataManager.shared.save()
         }
         
-        // Restore picked-up request if any
         if let pickedUpRequest = GameDataManager.shared.fetchPickedUpRequests().first {
             deliverySystem?.pickUpPackage(request: pickedUpRequest, for: playerEntity)
             deliverySystem?.stateMachine?.enter(CarryingState.self)

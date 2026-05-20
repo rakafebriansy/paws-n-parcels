@@ -178,7 +178,6 @@ struct GameView: View {
                                 }
                             },
                             onReset: {
-                                // Reset all SwiftUI state
                                 showPickUpAlert = false
                                 showDeliveryAlert = false
                                 showRelationshipPointsAlert = false
@@ -190,10 +189,8 @@ struct GameView: View {
                                 tooFarBubbleData = nil
                                 activePauseScreen = .main
                                 
-                                // Reset scene-side state (tutorial flags, timers, player position, phase)
                                 gameScene.resetGame()
-                                
-                                // Dismiss pause menu and transition to background story
+                            
                                 withAnimation(.easeInOut(duration: 0.4)) {
                                     isPaused = false
                                     currentPhase = .backgroundStory
@@ -247,7 +244,6 @@ struct GameView: View {
             gameScene.currentPhase = initialPhase
             
             if initialPhase == .playing || initialPhase == .tutorial {
-                // Skip background story — start tutorial if needed or go to playing
                 if initialPhase == .tutorial {
                     gameScene.startTutorialIfNeeded()
                 }

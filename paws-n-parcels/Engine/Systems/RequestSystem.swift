@@ -34,7 +34,6 @@ class RequestSystem {
     
     func deliverRequest(_ request: Request) {
         request.isCompleted = true
-        // Delete the completed request from SwiftData
         GameDataManager.shared.context?.delete(request)
         GameDataManager.shared.save()
         
@@ -111,7 +110,6 @@ class RequestSystem {
         if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: chosenRel.friendshipLevel) {
             let newRequest = Request(sender: senderAnimal, receiver: receiverAnimal, letter: letterData)
             
-            // Persist the request to SwiftData
             GameDataManager.shared.context?.insert(newRequest)
             GameDataManager.shared.save()
             
@@ -126,7 +124,6 @@ class RequestSystem {
     }
     
     private func scheduleNextPackageSpawn(delaySeconds: Int) {
-        // Count houses with requests + any picked-up (being carried) requests
         let houseRequestCount = houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count
         let pickedUpCount = GameDataManager.shared.fetchPickedUpRequests().count
         let totalActive = houseRequestCount + pickedUpCount

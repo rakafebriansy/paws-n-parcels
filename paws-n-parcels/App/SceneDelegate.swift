@@ -64,7 +64,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         GameDataManager.shared.setup(with: context)
         
-        // One-time migration: animal names were renamed to match CharacterRegistry
         let migrationKey = "didMigrateAnimalNamesV1"
         if !UserDefaults.standard.bool(forKey: migrationKey) {
             print("[SceneDelegate] Running one-time migration: clearing old animal data...")
@@ -101,7 +100,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     
     private func findAndSaveGameScene() {
-        // Walk the window's view hierarchy to find the SKView and its scene
         guard let window = window else { return }
         
         func findSKView(in view: UIView) -> SKView? {
@@ -121,7 +119,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             gameScene.saveGameState()
             print("[SceneDelegate] Game state saved via SKView scene.")
         } else {
-            // As a final fallback, just save the SwiftData context
             GameDataManager.shared.save()
             print("[SceneDelegate] Fallback: saved SwiftData context only.")
         }
