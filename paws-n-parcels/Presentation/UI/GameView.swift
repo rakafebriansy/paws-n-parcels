@@ -37,6 +37,7 @@ struct GameView: View {
     @State private var unlockedItem: Collectible? = nil
     @State private var pendingLevelUp: Bool = false
     @State private var unlockedItem: Collectible? = nil
+    @State private var showPostcard: Bool = false
     
     @State private var isPaused: Bool = false
     @State private var currentPhase: GamePhase = {
@@ -48,6 +49,7 @@ struct GameView: View {
             return .playing
         }
     }()
+    @State private var deliveredRequest: Request? = nil
     
     enum PauseMenuScreen {
         case main
@@ -121,7 +123,7 @@ struct GameView: View {
                 .zIndex(5)
             }
             
-            if isShowingAlert {
+            if isShowingAlert || showPostcard {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
                     .transition(.opacity)
@@ -129,7 +131,7 @@ struct GameView: View {
                     .onTapGesture {
                         handleModalTap()
                     }
-                
+                 
                 ZStack {
                     if showPickUpAlert {
                         PickUpSuccessAlertView(message: currentDialogMessage)
@@ -162,6 +164,39 @@ struct GameView: View {
                 }
             }
             
+            if showPostcard {
+                    VStack {
+                        Spacer()
+                        
+                        if let request = deliveredRequest {
+                            LetterView(letter: request.letter)
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                    removal: .move(edge: .bottom).combined(with: .opacity)
+                                ))
+                        }
+                        
+                        Spacer()
+                        
+                        // Tap anywhere outside or a clean close button to return to running around the map
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                showPostcard = false
+                            }
+                            gameScene.resumeGameplay()
+                        }) {
+                            Text("Close Postcard")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 24)
+                                .background(Capsule().fill(Color.white.opacity(0.8)))
+                        }
+                        .padding(.bottom, 40)
+                    }
+                    .zIndex(3)
+                }
+            
             if showRelationshipPointsAlert {
                 VStack {
                     RelationshipPointsAlertView(points: relationshipPointsEarned) {
@@ -173,7 +208,7 @@ struct GameView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
-                .zIndex(3)
+                .zIndex(4)
                 .transition(.scale.combined(with: .opacity))
                 .onTapGesture {
                     handleModalTap()
@@ -383,6 +418,7 @@ struct GameView: View {
         
         gameScene.onDeliverySuccess = { points, isLevelUp, newItem in
             relationshipPointsEarned = points
+            deliveredRequest = request
             gameScene.gameStateMachine?.enter(GamePausedState.self)
             
             if isLevelUp, let collectible = newItem {
