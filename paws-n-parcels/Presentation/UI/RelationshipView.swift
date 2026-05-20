@@ -18,11 +18,26 @@ struct RelationshipView: View {
 
     var body: some View {
         ZStack {
-            Image("buat menu")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: 400)
-                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+            ZStack(alignment: .topLeading) {
+                Image("buat menu")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 400)
+                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                
+                if onClose != nil {
+                    Button(action: {
+                        onClose?()
+                    }) {
+                        Image("back_button")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 44, height: 44)
+                    }
+                    .padding(.top, 40)
+                    .padding(.leading, 45)
+                }
+            }
 
             if !characters.isEmpty {
                 let currentCharacter = characters[selectedIndex]
@@ -68,7 +83,6 @@ struct RelationshipView: View {
                 }
                 .frame(width: 360, height: 480)
                 
-                // 4. Tab Indeks di Samping Kanan (Bergaya Notebook Tab)
                 HStack {
                     Spacer()
                     VStack(spacing: 6) {
@@ -92,40 +106,20 @@ struct RelationshipView: View {
                                         .foregroundColor(selectedIndex == index ? .cream : .darkGray)
                                 }
                                 .frame(width: 32, height: 60)
-                                .offset(x: selectedIndex == index ? 4 : 0) // Efek menonjol kecil saat terpilih
+                                .offset(x: selectedIndex == index ? 4 : 0)
                             }
                         }
                     }
                     .padding(.trailing, 10)
                 }
                 .frame(width: 400, height: 480)
-                .offset(x: 28) // Offset keluar papan
+                .offset(x: 28)
             } else {
                 Text("No characters found.")
                     .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundColor(.gray)
             }
-            
-            // Close Button
-            if onClose != nil {
-                VStack {
-                    HStack {
-                        Button(action: {
-                            onClose?()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(.red)
-                                .background(Circle().fill(Color.cream))
-                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                        }
-                        .padding(.top, 40)
-                        .padding(.leading, 45)
-                        Spacer()
-                    }
-                    Spacer()
-                }
-            }
+
         }
         .scaleEffect(0.85)
         .onAppear {
@@ -203,7 +197,6 @@ struct RelationshipRow: View {
             }
             .frame(width: 44, height: 44)
 
-            // 2. Info Nama & Tingkat Hubungan
             VStack(alignment: .leading, spacing: 3) {
                 Text(characterName)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
@@ -238,12 +231,10 @@ struct FractionalHeartView: View {
 
     var body: some View {
         ZStack(alignment: .leading) {
-            // Isi abu-abu tipis untuk bagian kosong
             Image(systemName: "heart.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.darkGray.opacity(0.12))
             
-            // Isi pink yang terisi sebagian/seluruhnya
             Image(systemName: "heart.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.pink)
@@ -257,7 +248,6 @@ struct FractionalHeartView: View {
                     }
                 )
             
-            // Outline/Border di lapisan paling atas
             Image(systemName: "heart")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.darkGray)

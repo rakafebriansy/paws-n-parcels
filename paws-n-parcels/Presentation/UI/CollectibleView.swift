@@ -14,10 +14,23 @@ struct CollectibleView: View {
     
     var body: some View {
         ZStack {
-            Image("modal")
-                .resizable()
-                .scaledToFit()
-                .padding(24)
+            ZStack(alignment: .topLeading) {
+                Image("modal")
+                    .resizable()
+                    .scaledToFit()
+                
+                Button(action: {
+                    onClose?()
+                }) {
+                    Image("back_button")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 44)
+                }
+                .padding(.top, 40)
+                .padding(.leading, 45)
+            }
+            .padding(24)
             
             VStack(spacing: 16) {
                 Text("Collectibles")
@@ -75,24 +88,7 @@ struct CollectibleView: View {
             }
             .padding(.horizontal, 30)
             .offset(y: -10)
-            
-            VStack {
-                HStack {
-                    Button(action: {
-                        onClose?()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(.red)
-                            .background(Circle().fill(Color.cream))
-                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                    }
-                    .padding(.top, 40)
-                    .padding(.leading, 45)
-                    Spacer()
-                }
-                Spacer()
-            }
+
         }
         .transition(.scale.combined(with: .opacity))
         .onAppear {

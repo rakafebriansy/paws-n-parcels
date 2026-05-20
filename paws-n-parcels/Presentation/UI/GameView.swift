@@ -44,13 +44,13 @@ struct GameView: View {
     @State private var joystickBubbleData: TutorialBubbleData? = nil
     @State private var yellowBubbleData: TutorialBubbleData? = nil
     @State private var redBubbleData: TutorialBubbleData? = nil
+    @State private var tooFarBubbleData: TooFarBubbleData? = nil
     
     var body: some View {
         ZStack {
             SpriteView(scene: gameScene)
                 .ignoresSafeArea()
             
-            // Render Tutorial Bubbles
             if let data = joystickBubbleData {
                 TutorialBubbleView(data: data)
                     .position(data.position)
@@ -67,39 +67,37 @@ struct GameView: View {
                     .transition(.opacity)
             }
             
-            VStack {
-                HStack(spacing: 12) {
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                            if isPaused {
-                                gameScene.gameStateMachine?.enter(GamePlayingState.self)
-                                isPaused = false
-                            } else {
+            if let data = tooFarBubbleData {
+                TooFarBubbleView(data: data)
+                    .position(data.position)
+                    .transition(.opacity)
+            }
+            
+            if !isPaused {
+                VStack {
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                                 activePauseScreen = .main
                                 gameScene.gameStateMachine?.enter(GamePausedState.self)
                                 isPaused = true
                             }
+                        }) {
+                            Image("menu_button")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 44, height: 44)
                         }
-                    }) {
-                        Image(systemName: isPaused ? "play.fill" : "pause.fill")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.cream)
-                            .frame(width: 44, height: 44)
-                            .background(
-                                Circle()
-                                    .fill(Color.black.opacity(0.45))
-                                    .background(Circle().stroke(Color.cream.opacity(0.2), lineWidth: 1.5))
-                            )
-                            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                        Spacer()
                     }
+                    .padding(.top, 16)
+                    .padding(.leading, 16)
+                    
                     Spacer()
                 }
-                .padding(.top, 16)
-                .padding(.leading, 16)
-                
-                Spacer()
+                .transition(.opacity)
+                .zIndex(5)
             }
-            .zIndex(5)
             
             if showPickUpAlert || showDeliveryAlert {
                 Color.black.opacity(0.3)
@@ -136,10 +134,14 @@ struct GameView: View {
             }
             
             if isPaused {
-                ZStack {
-                    Color.black.opacity(0.55)
-                        .ignoresSafeArea()
-                    
+                Color.black.opacity(0.55)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .zIndex(9)
+            }
+            
+            if isPaused {
+                Group {
                     switch activePauseScreen {
                     case .main:
                         MainMenuModalView(
@@ -227,6 +229,12 @@ struct GameView: View {
         
         gameScene.onRedBubbleUpdate = { data in
             redBubbleData = data
+        }
+        
+        gameScene.onTooFarBubbleUpdate = { data in
+            withAnimation(.easeOut(duration: 0.15)) {
+                tooFarBubbleData = data
+            }
         }
     }
     

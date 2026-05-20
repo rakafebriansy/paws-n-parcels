@@ -20,7 +20,23 @@ struct MainMenuModalView: View {
     
     var body: some View {
         ZStack {
-            Image("modal").resizable().scaledToFit().padding(24)
+            ZStack(alignment: .topLeading) {
+                Image("modal")
+                    .resizable()
+                    .scaledToFit()
+                
+                Button(action: {
+                    onResume?()
+                }) {
+                    Image("close_button")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 44)
+                }
+                .padding(.top, 40)
+                .padding(.leading, 35)
+            }
+            .padding(24)
             
             VStack(spacing: 23) {
                 Text("Menu")
@@ -107,27 +123,7 @@ struct MainMenuModalView: View {
                 }
             }
             .offset(y: -25)
-            
-            VStack {
-                HStack {
-                    Button(action: {
-                        onResume?()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 30))
-                            .foregroundColor(.darkGray)
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color.cream.opacity(0.75)))
-                            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-                    }
-                    .padding(.top, 40)
-                    .padding(.leading, 35)
-                    
-                    Spacer()
-                }
-                
-                Spacer()
-            }
+
         }
         .transition(.scale.combined(with: .opacity))
     }

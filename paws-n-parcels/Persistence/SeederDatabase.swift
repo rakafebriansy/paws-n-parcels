@@ -27,11 +27,9 @@ class SeederDatabase {
         let animalCount = (try? context.fetchCount(FetchDescriptor<Animal>())) ?? 0
         let relationshipCount = (try? context.fetchCount(FetchDescriptor<AnimalRelationship>())) ?? 0
         
-        // Hanya jalan jika database benar-benar kosong
         if animalCount == 0 || relationshipCount == 0 {
             print("Database kosong. Memulai proses Seeding...")
             
-            // Seed 5 Animal
             let animals = [
                 Animal(
                     name: "Joko",

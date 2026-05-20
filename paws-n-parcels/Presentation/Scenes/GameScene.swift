@@ -40,6 +40,9 @@ class GameScene: SKScene {
     var onJoystickBubbleUpdate: ((TutorialBubbleData?) -> Void)?
     var onYellowBubbleUpdate: ((TutorialBubbleData?) -> Void)?
     var onRedBubbleUpdate: ((TutorialBubbleData?) -> Void)?
+    var onTooFarBubbleUpdate: ((TooFarBubbleData?) -> Void)?
+    
+    private var tooFarBubbleTimer: TimeInterval = 0
     
     var hasShownYellowArrowTutorialTimer: Bool = false
     var hasShownRedArrowTutorialTimer: Bool = false
@@ -183,6 +186,16 @@ class GameScene: SKScene {
         gameStateMachine?.update(deltaTime: deltaTime)
         
         updateIndicators()
+        
+        if tooFarBubbleTimer > 0 {
+            tooFarBubbleTimer -= deltaTime
+            if tooFarBubbleTimer <= 0 {
+                tooFarBubbleTimer = 0
+                onTooFarBubbleUpdate?(nil)
+            } else {
+                updateTooFarBubblePosition()
+            }
+        }
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
             let viewWidth = self.size.width * cameraNode.xScale
@@ -515,36 +528,26 @@ class GameScene: SKScene {
     }
     
     private func showTooFarIndicator(on houseNode: SKNode) {
-        houseNode.childNode(withName: "too_far_x")?.removeFromParent()
+        tooFarBubbleTimer = 2.0
+        updateTooFarBubblePosition()
+    }
+    
+    private func updateTooFarBubblePosition() {
+        guard let view = self.view,
+              let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node else { return }
+        let viewWidth = view.bounds.width
+        let viewHeight = view.bounds.height
         
-        let xLabel = SKLabelNode(text: "❌")
-        xLabel.name = "too_far_x"
-        xLabel.fontSize = 55
-        xLabel.zPosition = 200
-        xLabel.position = CGPoint(x: 0, y: 0)
+        let absoluteScenePos = CGPoint(x: playerNode.position.x, y: playerNode.position.y + 140)
+        let relativePos = cameraNode.convert(absoluteScenePos, from: self)
+        let screenX = relativePos.x + (viewWidth / 2)
+        let screenY = -relativePos.y + (viewHeight / 2)
         
-        let shadow = SKLabelNode(text: "❌")
-        shadow.fontSize = 55
-        shadow.fontColor = UIColor(red: 63/255, green: 55/255, blue: 49/255, alpha: 1.0)
-        shadow.alpha = 0.5
-        shadow.zPosition = -1
-        shadow.position = CGPoint(x: 3, y: -3)
-        xLabel.addChild(shadow)
-        
-        xLabel.setScale(0.0)
-        houseNode.addChild(xLabel)
-        
-        let popIn = SKAction.scale(to: 1.2, duration: 0.15)
-        let bounce = SKAction.scale(to: 1.0, duration: 0.1)
-        let moveUp = SKAction.moveBy(x: 0, y: 30, duration: 0.25)
-        
-        let spawnGroup = SKAction.group([SKAction.sequence([popIn, bounce]), moveUp])
-        
-        let wait = SKAction.wait(forDuration: 2.75)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
-        let remove = SKAction.removeFromParent()
-        
-        xLabel.run(SKAction.sequence([spawnGroup, wait, fadeOut, remove]))
+        let data = TooFarBubbleData(
+            text: "Too far away.",
+            position: CGPoint(x: screenX, y: screenY)
+        )
+        onTooFarBubbleUpdate?(data)
     }
     
     private func updateScreenEdgeArrows(viewWidth: CGFloat, viewHeight: CGFloat) {
@@ -555,7 +558,7 @@ class GameScene: SKScene {
             let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
             
             let clampedX = min(max(screenX, 70), viewWidth - 70)
-            let clampedY = screenY - 110 // Jarak yang lebih jauh ke atas dari joystick
+            let clampedY = screenY - 110
             
             let data = TutorialBubbleData(
                 text: "Move Goldie using this joystick.",
@@ -590,7 +593,7 @@ class GameScene: SKScene {
         }
         
         if let activePackage = deliverySystem?.activePackage {
-            onYellowBubbleUpdate?(nil) // Dismiss yellow tutorial bubble when delivering
+            onYellowBubbleUpdate?(nil)
             
             let receiverName = activePackage.receiver.name
             if let targetHouse = mapBuilder.environmentEntities.first(where: {
@@ -642,7 +645,7 @@ class GameScene: SKScene {
                 onRedBubbleUpdate?(nil)
             }
         } else {
-            onRedBubbleUpdate?(nil) // Dismiss red tutorial bubble when not delivering
+            onRedBubbleUpdate?(nil)
             
             let now = CACurrentMediaTime()
             

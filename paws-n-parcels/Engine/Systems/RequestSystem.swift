@@ -136,7 +136,6 @@ class RequestSystem {
                 return false
             }
             
-            // Filter out decoration houses (no animal data / no relationships)
             guard animalsMap[name] != nil else { return false }
             guard relationships.contains(where: { $0.friendOne.name == name || $0.friendTwo.name == name }) else { return false }
             

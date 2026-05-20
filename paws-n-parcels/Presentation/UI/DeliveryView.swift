@@ -97,13 +97,11 @@ struct DeliveryView: View {
         if result.pointsAdded > 0 {
             self.pointsEarned = result.pointsAdded
             
-            // 1. Munculkan Relationship Poin dan Alert Pengantaran bersamaan
             withAnimation(.spring()) {
                 showRelationshipPointsAlert = true
                 showDeliverySuccessAlert = true
             }
             
-            // 2. Cek apakah naik level
             if result.isLevelUp {
                 pendingNextLevel = true
             }
@@ -118,7 +116,6 @@ struct DeliveryView: View {
                 showDeliverySuccessAlert = false
                 showRelationshipPointsAlert = false
                 
-                // Jika naik level, tunggu modal delivery success hilang, baru munculkan alert New Collectible
                 if pendingNextLevel{
                     withAnimation(.spring()) {
                         showNewCollectibleAlert = true
@@ -133,12 +130,10 @@ struct DeliveryView: View {
 
 #Preview {
     let makePreview = { () -> AnyView in
-        // database palsu
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(for: Animal.self, AnimalRelationship.self, Collectible.self, Request.self, configurations: config)
         let context = container.mainContext
         
-        // data hewan dan request palsu
         let kelinci = Animal(name: "Kelinci", assetName: "rabbit", pickupDialog: "Oh, you're here! I’ve been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!")
         let beruang = Animal(name: "Beruang", assetName: "bear", pickupDialog: "Thanks for picking this up! Make sure it arrives safely.")
         let relasiPalsu = AnimalRelationship(friendOne: kelinci, friendTwo: beruang)
@@ -150,7 +145,6 @@ struct DeliveryView: View {
         context.insert(relasiPalsu)
         context.insert(requestPalsu)
         
-        // Entitas dan Sistem palsu
         let dummyGoldie = PlayerEntity(node: SKNode())
         let dummySystem = DeliverySystem()
         

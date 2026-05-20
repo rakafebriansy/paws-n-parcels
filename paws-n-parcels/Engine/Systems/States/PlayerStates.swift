@@ -131,7 +131,6 @@ class PlayerStateComponent: GKComponent {
     override func update(deltaTime seconds: TimeInterval) {
         stateMachine?.update(deltaTime: seconds)
         
-        // Keep visuals synchronized
         let isWalking = stateMachine?.currentState is PlayerWalkingState
         updateVisuals(isWalking: isWalking)
     }
@@ -145,7 +144,6 @@ class PlayerStateComponent: GKComponent {
         let isHolding = delivery.isHoldingPackage
         let velocity = movement.velocity
         
-        // Determine current direction based on movement velocity
         var currentDirection = lastDirection
         if velocity != .zero {
             if abs(velocity.x) > abs(velocity.y) {
@@ -155,7 +153,6 @@ class PlayerStateComponent: GKComponent {
             }
         }
         
-        // Check if carrying state, direction, or movement state changed, or if it is the first update
         let holdingChanged = (isHolding != lastHolding)
         let directionChanged = (currentDirection != lastDirection)
         let walkingStateChanged = (isWalking != lastWalking)
@@ -166,7 +163,6 @@ class PlayerStateComponent: GKComponent {
             if holdingChanged {
                 lastHolding = isHolding
                 
-                // Smooth transition effect when carrying state changes (fade out, change texture, fade back in)
                 let fadeOut = SKAction.fadeAlpha(to: GameConfig.playerCarryingTransitionAlpha, duration: GameConfig.playerCarryingTransitionDuration)
                 let scaleDown = SKAction.scale(to: GameConfig.playerCarryingTransitionScale, duration: GameConfig.playerCarryingTransitionDuration)
                 let transitionOut = SKAction.group([fadeOut, scaleDown])
@@ -211,17 +207,14 @@ class PlayerStateComponent: GKComponent {
         }
         
         if isWalking {
-            // Load 3 walk textures for dynamic 4-directional walking
             let tex1 = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
             let tex2 = SKTexture(imageNamed: "\(prefix)\(dirStr)_2")
             let tex3 = SKTexture(imageNamed: "\(prefix)\(dirStr)_3")
             
-            // Loop pattern: 1 -> 2 -> 3 -> 2
             let textures = [tex1, tex2, tex3, tex2]
             let walkAnim = SKAction.animate(with: textures, timePerFrame: GameConfig.playerWalkFrameDuration)
             let walkAnimLoop = SKAction.repeatForever(walkAnim)
             
-            // Gentle bouncy squash and stretch animation for walking
             let squashX = isVertical ? GameConfig.playerWalkVerticalSquash.x : GameConfig.playerWalkHorizontalSquash.x
             let squashY = isVertical ? GameConfig.playerWalkVerticalSquash.y : GameConfig.playerWalkHorizontalSquash.y
             let stretchX = isVertical ? GameConfig.playerWalkVerticalStretch.x : GameConfig.playerWalkHorizontalStretch.x
@@ -235,11 +228,9 @@ class PlayerStateComponent: GKComponent {
             
             node.run(SKAction.group([walkAnimLoop, bounce]), withKey: "player_anim")
         } else {
-            // Idle state: set static first frame of the direction
             let idleTex = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
             node.texture = idleTex
             
-            // Gentle flat breathing squash effect for idle
             let breatheSquashX = isVertical ? GameConfig.playerIdleVerticalSquash.x : GameConfig.playerIdleHorizontalSquash.x
             let breatheSquashY = isVertical ? GameConfig.playerIdleVerticalSquash.y : GameConfig.playerIdleHorizontalSquash.y
             let breatheStretchX = isVertical ? GameConfig.playerIdleVerticalStretch.x : GameConfig.playerIdleHorizontalStretch.x
