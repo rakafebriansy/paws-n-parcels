@@ -91,7 +91,6 @@ class DeliveryCompletedState: DeliveryBaseState {
             return
         }
         
-         1. Capture the request BEFORE deliverPackage() wipes it
         let completedRequest = deliverySystem.activePackage
         
         let result = deliverySystem.deliverPackage(for: scene.playerEntity, relationships: requestSystem.relationships)
