@@ -13,6 +13,7 @@ enum ItemType: Codable {
     case pond(size: CGSize)
     case tree
     case fence
+    case decoration
 
     enum CodingKeys: String, CodingKey {
         case type
@@ -30,6 +31,8 @@ enum ItemType: Codable {
             self = .tree
         case "fence":
             self = .fence
+        case "decoration":
+            self = .decoration
         case "pond":
             let width = try container.decode(CGFloat.self, forKey: .width)
             let height = try container.decode(CGFloat.self, forKey: .height)
@@ -48,6 +51,8 @@ enum ItemType: Codable {
             try container.encode("tree", forKey: .type)
         case .fence:
             try container.encode("fence", forKey: .type)
+        case .decoration:
+            try container.encode("decoration", forKey: .type)
         case .pond(let size):
             try container.encode("pond", forKey: .type)
             try container.encode(size.width, forKey: .width)
@@ -108,6 +113,9 @@ extension ItemBlueprint {
         case .fence:
             width = 1
             height = 0.5
+        case .decoration:
+            width = 1
+            height = 1
         }
         
         let exactX = (pos.x * grid) + ((width * grid) / 2)

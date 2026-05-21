@@ -74,9 +74,9 @@ struct DeliveryView: View {
                             DeliverySuccessAlertView()
                         }
                         
-                        if showNewCollectibleAlert {
-                            NewCollectibleAlertView(isPresented: $showNewCollectibleAlert)
-                        }
+//                        if showNewCollectibleAlert {
+//                            NewCollectibleAlertView(isPresented: $showNewCollectibleAlert, item: Collectible)
+//                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .zIndex(2)
