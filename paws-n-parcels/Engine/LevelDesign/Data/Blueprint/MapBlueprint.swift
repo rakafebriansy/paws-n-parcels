@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import SpriteKit
+import GameplayKit
 
 struct MapBlueprint: Codable {
     let groundSize: CGSize
@@ -67,22 +68,22 @@ let rawLevelDataJSON = """
       {"type": {"type": "house"}, "pos": [23, 23], "assetName": "house_5"},
     {"type": {"type": "pond", "width": 8, "height": 6}, "pos": [12.6, 11.9]},
 
-    {"type": {"type": "decoration"}, "pos": [0.2, 4.2], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [0.4, 13.4], "assetName": "rock_1"},
+    {"type": {"type": "decoration"}, "pos": [0.4, 4.2], "assetName": "rock_2"},
+    {"type": {"type": "decoration"}, "pos": [0.6, 13.4], "assetName": "rock_1"},
     {"type": {"type": "decoration"}, "pos": [0.5, 4.8], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [0.65, 4.55], "assetName": "lavender"},
     {"type": {"type": "decoration"}, "pos": [0.8, 4.3], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [0.8, 14.0], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [1.0, 17.8], "assetName": "rock_3"},
+    {"type": {"type": "decoration"}, "pos": [0.8, 13.7], "assetName": "lavender"},
+    {"type": {"type": "decoration"}, "pos": [1.0, 17.5], "assetName": "rock_3"},
     {"type": {"type": "decoration"}, "pos": [1.1, 4.8], "assetName": "rock_1"},
-    {"type": {"type": "decoration"}, "pos": [1.1, 14.4], "assetName": "rock_2"},
+    {"type": {"type": "decoration"}, "pos": [1.0, 13.5], "assetName": "rock_2"},
     {"type": {"type": "decoration"}, "pos": [1.2, 13.7], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [1.4, 17.4], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [1.8, 17.8], "assetName": "rose"},
+    {"type": {"type": "decoration"}, "pos": [1.2, 17.4], "assetName": "lavender"},
+    {"type": {"type": "decoration"}, "pos": [1.4, 17.5], "assetName": "rose"},
     {"type": {"type": "decoration"}, "pos": [2.0, 19.3], "assetName": "rock_1"},
-    {"type": {"type": "decoration"}, "pos": [2.2, 13.1], "assetName": "rose"},
+    {"type": {"type": "decoration"}, "pos": [2.3, 13.4], "assetName": "rose"},
     {"type": {"type": "decoration"}, "pos": [2.3, 5.1], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [2.4, 18.8], "assetName": "big_rock_2"},
+    {"type": {"type": "decoration"}, "pos": [2.3, 19.0], "assetName": "big_rock_2"},
     {"type": {"type": "decoration"}, "pos": [2.6, 13.6], "assetName": "rock_1"},
     {"type": {"type": "decoration"}, "pos": [5.0, 18.2], "assetName": "rock_3"},
     {"type": {"type": "decoration"}, "pos": [5.2, 20.2], "assetName": "big_rock_3"},
@@ -97,16 +98,16 @@ let rawLevelDataJSON = """
     {"type": {"type": "decoration"}, "pos": [7.5, 20.6], "assetName": "lavender"},
 
     {"type": {"type": "decoration"}, "pos": [10.2, 18.1], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [10.4, 12.2], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [10.4, 13.2], "assetName": "rock_1"},
+    {"type": {"type": "decoration"}, "pos": [10.8, 12.5], "assetName": "rock_2"},
+    {"type": {"type": "decoration"}, "pos": [10.8, 13.0], "assetName": "rock_1"},
     {"type": {"type": "decoration"}, "pos": [10.8, 18.4], "assetName": "rose"},
     {"type": {"type": "decoration"}, "pos": [10.9, 19.2], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [11.0, 12.6], "assetName": "rose"},
     {"type": {"type": "decoration"}, "pos": [11.2, 22.6], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [11.4, 13.1], "assetName": "big_rock_2"},
+    {"type": {"type": "decoration"}, "pos": [11.4, 12.9], "assetName": "big_rock_2"},
     {"type": {"type": "decoration"}, "pos": [11.4, 18.0], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [11.5, 19.6], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [11.7, 12.4], "assetName": "sunflower"},
+    {"type": {"type": "decoration"}, "pos": [11.4, 12.6], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [11.8, 20.5], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [11.8, 22.8], "assetName": "rose"},
     {"type": {"type": "decoration"}, "pos": [12.0, 18.5], "assetName": "lavender"},
@@ -190,38 +191,17 @@ let rawLevelDataJSON = """
     {"type": {"type": "decoration"}, "pos": [19.8, 19.1], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [20.2, 18.6], "assetName": "rock_2"},
 
-    {"type": {"type": "decoration"}, "pos": [23.0, 6.2], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [23.0, 7.0], "assetName": "rock_2"},
+    {"type": {"type": "decoration"}, "pos": [23.3, 6.2], "assetName": "rose"},
+    {"type": {"type": "decoration"}, "pos": [23.3, 6.7], "assetName": "rock_2"},
     {"type": {"type": "decoration"}, "pos": [23.5, 6.5], "assetName": "rock_1"},
-    {"type": {"type": "decoration"}, "pos": [23.7, 7.1], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [24.0, 6.2], "assetName": "sunflower"},
+    {"type": {"type": "decoration"}, "pos": [23.7, 6.6], "assetName": "rose"},
+    {"type": {"type": "decoration"}, "pos": [23.7, 6.3], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [24.0, 8.4], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [24.4, 8.9], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [24.8, 25.8], "assetName": "rock_3"},
-    {"type": {"type": "decoration"}, "pos": [25.0, 24.9], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [25.0, 25.5], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [25.0, 26.1], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [25.1, 26.6], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [25.4, 25.2], "assetName": "rock_1"},
-    {"type": {"type": "decoration"}, "pos": [25.4, 25.9], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [25.5, 24.6], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [25.5, 26.35], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [25.8, 25.4], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [25.8, 26.9], "assetName": "sunflower"},
+    {"type": {"type": "decoration"}, "pos": [24.2, 8.7], "assetName": "sunflower"},
+    
     {"type": {"type": "decoration"}, "pos": [26.0, 5.2], "assetName": "rock_3"},
     {"type": {"type": "decoration"}, "pos": [26.0, 25.0], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [26.0, 25.8], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [26.0, 26.2], "assetName": "lavender"},
-    {"type": {"type": "decoration"}, "pos": [26.2, 26.65], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [26.4, 25.4], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [26.5, 25.9], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [26.6, 26.5], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [26.8, 5.4], "assetName": "big_rock_3"},
-    {"type": {"type": "decoration"}, "pos": [26.8, 27.1], "assetName": "rock_1"},
-    {"type": {"type": "decoration"}, "pos": [27.2, 26.65], "assetName": "rose"},
-    {"type": {"type": "decoration"}, "pos": [27.4, 25.4], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [27.5, 25.9], "assetName": "sunflower"},
-    {"type": {"type": "decoration"}, "pos": [27.6, 26.5], "assetName": "sunflower"},
+   
     {"type": {"type": "decoration"}, "pos": [27.8, 5.4], "assetName": "big_rock_3"},
     {"type": {"type": "decoration"}, "pos": [27.8, 27.1], "assetName": "rock_1"},
     {"type": {"type": "decoration"}, "pos": [27.0, 25.2], "assetName": "rose"},
@@ -233,7 +213,7 @@ let rawLevelDataJSON = """
     {"type": {"type": "decoration"}, "pos": [27.6, 27.2], "assetName": "sunflower"},
     {"type": {"type": "decoration"}, "pos": [27.8, 26.6], "assetName": "lavender"},
     {"type": {"type": "decoration"}, "pos": [28.2, 11.2], "assetName": "rock_2"},
-    {"type": {"type": "decoration"}, "pos": [28.4, 4.4], "assetName": "lavender"},
+    {"type": {"type": "decoration"}, "pos": [28.8, 4.4], "assetName": "lavender"},
     {"type": {"type": "decoration"}, "pos": [28.4, 26.3], "assetName": "rock_2"},
     {"type": {"type": "decoration"}, "pos": [28.4, 27.0], "assetName": "lavender"},
     {"type": {"type": "decoration"}, "pos": [28.8, 11.6], "assetName": "big_rock_2"},
@@ -262,6 +242,108 @@ let rawLevelDataJSON = """
 }
 """
 
+///rect dalam grid-space yang tidak boleh diisi asset decorations
+private struct ExclusionRect {
+    let minX: CGFloat
+    let maxX: CGFloat
+    let minY: CGFloat
+    let maxY: CGFloat
+    func contains(_ p: CGPoint) -> Bool {
+        p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY
+    }
+}
+
+///kumpulan exclusion rect untuk jalan dan area rumah
+private let sharedExclusionZones: [ExclusionRect] = [
+    // Roads (diberi padding ±0.8 grid agar dekorasi tidak mepet tepi jalan)
+    ExclusionRect(minX: 2.2,  maxX: 3.8,  minY: 5.2,  maxY: 24.8),
+    ExclusionRect(minX: 2.2,  maxX: 8.8,  minY: 23.2, maxY: 24.8),
+    ExclusionRect(minX: 7.2,  maxX: 8.8,  minY: 9.2,  maxY: 16.8),
+    ExclusionRect(minX: 2.2,  maxX: 25.8, minY: 9.2,  maxY: 10.8),
+    ExclusionRect(minX: 7.2,  maxX: 8.8,  minY: 25.2, maxY: 26.8),
+    ExclusionRect(minX: 13.2, maxX: 19.8, minY: 5.2,  maxY: 6.8),
+    ExclusionRect(minX: 20.2, maxX: 21.8, minY: 5.2,  maxY: 9.8),
+    ExclusionRect(minX: 20.2, maxX: 21.8, minY: 9.2,  maxY: 24.8),
+
+    // Houses (2x2 grid masing-masing, padding ±0.5)
+    ExclusionRect(minX: 0.5,  maxX: 3.5,  minY: 5.5,  maxY: 8.5),
+    ExclusionRect(minX: 13.5, maxX: 17.5, minY: 6.5,  maxY: 9.5),
+    ExclusionRect(minX: 23.5, maxX: 27.5, minY: 10.5, maxY: 13.5),
+    ExclusionRect(minX: 23.5, maxX: 27.5, minY: 6.5,  maxY: 9.5),
+    ExclusionRect(minX: 4.5,  maxX: 8.5,  minY: 24.5, maxY: 27.5),
+    ExclusionRect(minX: 6.5,  maxX: 10.5, minY: 26.5, maxY: 29.5),
+    ExclusionRect(minX: 4.5,  maxX: 8.5,  minY: 14.5, maxY: 17.5),
+    ExclusionRect(minX: 6.5,  maxX: 10.5, minY: 16.5, maxY: 19.5),
+    ExclusionRect(minX: 8.5,  maxX: 12.5, minY: 14.5, maxY: 17.5),
+    ExclusionRect(minX: 19.5, maxX: 23.5, minY: 24.5, maxY: 27.5),
+    ExclusionRect(minX: 21.5, maxX: 25.5, minY: 22.5, maxY: 25.5),
+
+    // ── Pond (origin [12.6, 11.9], ukuran 8x6 grid) ──
+    ExclusionRect(minX: 12.1, maxX: 21.1, minY: 11.4, maxY: 18.4),
+]
+
+/// Scatter dekorasi secara padat dalam sebuah bounding rect,
+/// menghindari exclusion zones dan titik yang sudah terisi.
+///
+/// - Parameters:
+///   - minX/maxX/minY/maxY : batas area populasi (grid units)
+///   - count               : jumlah dekorasi yang ingin ditempatkan
+///   - minDist             : jarak minimum antar dekorasi (grid units)
+///   - assets              : array nama asset yang bisa dipilih
+///   - weights             : bobot pemilihan asset (harus sama panjang dengan `assets`).
+///                           Jika nil, semua asset dipilih dengan probabilitas sama.
+///   - seed                : seed untuk GKLinearCongruentialRandomSource
+///   - parsedItems         : array yang akan diisi
+func scatterDense(
+    minX: CGFloat, maxX: CGFloat,
+    minY: CGFloat, maxY: CGFloat,
+    count: Int,
+    minDist: CGFloat = 0.20,
+    assets: [String],
+    weights: [Int]? = nil,
+    seed: UInt64 = 12345,
+    parsedItems: inout [ItemBlueprint]
+) {
+    var weightedPool: [String] = []
+    if let w = weights, w.count == assets.count {
+        for (asset, weight) in zip(assets, w) {
+            weightedPool.append(contentsOf: repeatElement(asset, count: weight))
+        }
+    } else {
+        weightedPool = assets
+    }
+
+    var occupiedPoints: [CGPoint] = []
+    let rng = GKLinearCongruentialRandomSource(seed: seed)
+
+    for _ in 0..<count {
+        var placed: CGPoint? = nil
+
+        for _ in 0..<200 {
+            let rx = minX + CGFloat(rng.nextUniform()) * (maxX - minX)
+            let ry = minY + CGFloat(rng.nextUniform()) * (maxY - minY)
+            let candidate = CGPoint(x: rx, y: ry)
+
+            let blocked = sharedExclusionZones.contains { $0.contains(candidate) }
+            if blocked { continue }
+
+            let tooClose = occupiedPoints.contains {
+                hypot($0.x - candidate.x, $0.y - candidate.y) < minDist
+            }
+            if tooClose { continue }
+
+            placed = candidate
+            break
+        }
+
+        guard let pos = placed else { continue }
+        occupiedPoints.append(pos)
+
+        let idx = Int(abs(rng.nextInt())) % weightedPool.count
+        let chosenAsset = weightedPool[idx]
+        parsedItems.append(ItemBlueprint(type: .decoration, pos: pos, assetName: chosenAsset))
+    }
+}
 func parseWorldMap() -> MapBlueprint {
     guard let data = rawLevelDataJSON.data(using: .utf8) else {
         fatalError("Failed to convert rawLevelDataJSON string to Data.")
@@ -303,6 +385,66 @@ func parseWorldMap() -> MapBlueprint {
                 parsedItems.append(contentsOf: fences)
             }
         }
+        
+        let flowerAssets = ["sunflower", "rose", "lavender"]
+                let rockAssets = ["big_rock_2", "big_rock_3", "big_rock_4", "rock_1", "rock_2", "rock_3"]
+                let allAssets = flowerAssets + rockAssets
+                
+        scatterDense(
+            minX: 12.5, maxX: 17.5,
+            minY: 22.0, maxY: 25.9,
+            count: 230,
+            minDist: 0.18,
+            assets: ["sunflower", "rose", "lavender", "rock_1", "rock_2"],
+            weights: [5, 5, 5, 1, 1],
+            seed: 11111,
+            parsedItems: &parsedItems
+        )
+                
+        scatterDense(
+            minX: 5.0, maxX: 20.0,
+            minY: 16.0, maxY: 22.0,
+            count: 450,
+            minDist: 0.18,
+            assets: ["sunflower", "rose", "lavender", "rock_1", "rock_2", "rock_3"],
+            weights: [4, 4, 4, 1, 1, 1],
+            seed: 22222,
+            parsedItems: &parsedItems
+        )
+        
+        scatterDense(
+            minX: 10.0, maxX: 13.0,
+            minY: 22.0, maxY: 23.5,
+            count: 30,
+            minDist: 0.18,
+            assets: ["sunflower", "rose", "lavender", "rock_1", "rock_2", "rock_3"],
+            weights: [4, 4, 4, 1, 1, 1],
+            seed: 22222,
+            parsedItems: &parsedItems
+        )
+        
+        scatterDense(
+            minX: 10.5, maxX: 20.0,
+            minY: 12.0, maxY: 13.5,
+            count: 80,
+            minDist: 0.2,
+            assets: ["sunflower", "rose", "lavender", "rock_1", "rock_2", "rock_3"],
+            weights: [4, 4, 4, 1, 1, 1],
+            seed: 22222,
+            parsedItems: &parsedItems
+        )
+                
+        scatterDense(
+            minX: 25.0, maxX: 29.5,
+            minY: 24.0, maxY: 28.0,
+            count: 190,
+            minDist: 0.18,
+            assets: ["sunflower", "rose", "lavender", "rock_1", "rock_2", "rock_3", "big_rock_2", "big_rock_3"],
+            weights: [3, 3, 3, 3, 3, 2, 1, 1],
+            seed: 33333,
+            parsedItems: &parsedItems
+        )
+        
         return MapBlueprint(
             groundSize: level.groundSize,
             oceanGridHeight: level.oceanGridHeight,
