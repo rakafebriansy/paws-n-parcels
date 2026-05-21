@@ -13,89 +13,50 @@ struct LetterView: View {
     
     var body: some View {
         ZStack {
-            // Postcard Base Background (Simulating your asset using soft colors)
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(red: 0.98, green: 0.96, blue: 0.92)) // Warm paper/cream tone
-                .frame(width: 340, height: 220) // Standard landscape postcard aspect ratio
-                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+            // 1. The Background Asset properly scaled
+            Image("letter")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 350) // Adjusts the asset size nicely to match phone layouts
+                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
             
-            // Subtle dotted inner border to keep that cozy stationery aesthetic
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.brown.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [4, 4]))
-                .frame(width: 324, height: 204)
-            
-            // Postcard Layout Grid
+            // 2. The Text Overlay Container
+            // We use an absolute frame size matching the card portion of your asset
             HStack(alignment: .top, spacing: 0) {
                 
-                // LEFT SIDE: The Body Message & Sender Signature
-                VStack(alignment: .leading, spacing: 6) {
+                // LEFT SIDE: The Message Body and Sender Signature
+                VStack(alignment: .leading, spacing: 4) {
                     Text(letter.messageBody)
-                        .font(.system(size: 12, weight: .medium, design: .serif)) // Serif gives it a warm, handwritten feel
+                        .font(.system(size: 11, weight: .medium, design: .serif))
                         .italic()
-                        .foregroundColor(Color(red: 0.25, green: 0.2, blue: 0.15)) // Deep espresso brown text
-                        .lineLimit(6)
+                        .foregroundColor(Color(red: 0.25, green: 0.2, blue: 0.15))
+                        .lineLimit(5)
                         .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
                     
-                    Spacer(minLength: 4)
+                    Spacer(minLength: 2)
                     
-                    // Sender Signature line
                     Text("From: \(letter.sender)")
-                        .font(.system(size: 11, weight: .semibold, design: .serif))
+                        .font(.system(size: 10, weight: .bold, design: .serif))
                         .italic()
-                        .foregroundColor(Color.brown)
+                        .foregroundColor(Color(red: 0.4, green: 0.3, blue: 0.2))
                 }
-                .padding(.trailing, 12)
-                .frame(width: 170, alignment: .leading)
+                .frame(width: 175, height: 95, alignment: .topLeading)
                 
-                // CENTER SEPARATOR LINE
-                Rectangle()
-                    .fill(Color.brown.opacity(0.2))
-                    .frame(width: 1)
-                    .padding(.vertical, 8)
+                Spacer(minLength: 0)
                 
-                // RIGHT SIDE: Stamp & Recipient Details
-                VStack(alignment: .trailing, spacing: 0) {
+                // RIGHT SIDE: The Destination Name (To:)
+                VStack(alignment: .leading, spacing: 2) {
+                    Spacer()
                     
-                    // Simulated Stamp Box
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.brown.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
-                            .fill(Color.orange.opacity(0.05))
-                            .frame(width: 40, height: 48)
-                        
-                        Text("✉️")
-                            .font(.system(size: 20))
-                    }
-                    .padding(.bottom, 16)
-                    
-                    // Address Lines (To: Recipient Name)
-                    VStack(alignment: .leading, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("To:")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .foregroundColor(.brown.opacity(0.6))
-                            
-                            Text(letter.recipient)
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.2))
-                        }
-                        
-                        // Decorative traditional postcard destination lines
-                        VStack(spacing: 6) {
-                            Color.brown.opacity(0.25).frame(height: 1)
-                            Color.brown.opacity(0.25).frame(height: 1)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 12)
-                    
+                    Text("To: \(letter.recipient)")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.2))
+                        .padding(.leading, 4)
                 }
-                .frame(width: 120)
+                .frame(width: 115, height: 95, alignment: .bottomLeading)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 20)
-            .frame(width: 340, height: 220)
+            .frame(width: 260, height: 95)
+            .padding(.bottom, 185)
         }
     }
 }
@@ -108,5 +69,4 @@ struct LetterView: View {
             messageBody: "I left your prototype blueprints on the work table. Let me know if the level progression data makes sense or if we need to expand the XP reward values tomorrow!"
         )
     )
-    .background(Color.gray.opacity(0.2))
 }
