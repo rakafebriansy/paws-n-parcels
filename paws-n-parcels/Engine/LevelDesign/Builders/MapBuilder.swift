@@ -43,7 +43,7 @@ class MapBuilder {
             case .fence:
                 buildFence(at: actualPos, rotation: item.rotation)
             case .decoration:
-                            buildDecoration(at: actualPos, assetName: item.assetName ?? "rock_1")
+                buildDecoration(at: actualPos, assetName: item.assetName ?? "rock_1")
             }
         }
         
@@ -85,7 +85,7 @@ class MapBuilder {
             let repeatingIndex = x % 3
             for y in 0..<maxGridY {
                 var tileName = ""
-               
+                
                 switch y {
                 case 0: tileName = "sea"
                 case 1: tileName = seaTiles[repeatingIndex]
@@ -252,22 +252,29 @@ class MapBuilder {
     
     private func buildDecoration(at point: CGPoint, assetName: String) {
         let texture = getTexture(named: assetName)
-        let grid = GameConfig.gridSize
-        let targetWidth = decorationWidth(for: assetName, grid: grid)
-        let aspectRatio = texture.size().height / max(texture.size().width, 1)
-        let targetSize = CGSize(width: targetWidth, height: targetWidth * aspectRatio)
+        let node = SKSpriteNode(texture: texture)
         
-        let node = buildGeneralEntity(
-            imageNamed: assetName,
-            size: targetSize,
-            at: point,
-            rotation: nil,
-            physicsShape: .texture,
-            zPositionStrategy: .ySorted(offset: 0)
+        node.position = point
+        node.setScale(0.4)
+        
+        
+        let actualHeight = node.size.height * 0.4
+        let baseOfTheItemY = point.y - (actualHeight / 2)
+        node.zPosition = 10000 - baseOfTheItemY
+        
+        let physicsWidth = node.size.width * 0.5
+        let physicsHeight = actualHeight * 0.3
+        
+        node.physicsBody = SKPhysicsBody(
+            rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
+            center: CGPoint(x: 0, y: -actualHeight * 0.35)
         )
+        node.physicsBody?.isDynamic = false
+        node.physicsBody?.restitution = 0.0
+        node.physicsBody?.friction = 0.0
         
-        let entity = EnvironmentEntity(node: node)
-        environmentEntities.append(entity)
+        scene.addChild(node)
+        environmentEntities.append(EnvironmentEntity(node: node))
     }
     
     private func decorationWidth(for assetName: String, grid: CGFloat) -> CGFloat {
@@ -280,7 +287,15 @@ class MapBuilder {
         return grid * 0.3
     }
     
-
+    private func decorationPhysicsBody(for assetName: String, size: CGSize) -> SKPhysicsBody {
+        if assetName.contains("rock") {
+            let radius = min(size.width, size.height)
+            return SKPhysicsBody(circleOfRadius: radius, center: CGPoint(x: 0, y: -size.height * 0.2))
+        }
+        
+        let collisionSize = CGSize(width: size.width * 2, height: size.height * 2)
+        return SKPhysicsBody(rectangleOf: collisionSize, center: .zero)
+    }
     
     private func configureStaticWall(_ physicsBody: SKPhysicsBody?) {
         physicsBody?.isDynamic = false
@@ -323,7 +338,7 @@ class MapBuilder {
         senderExclamation.position = CGPoint(x: senderIndicator.size.width * 0.35, y: senderIndicator.size.height * 0.35)
         senderExclamation.zPosition = 1
         senderIndicator.addChild(senderExclamation)
-            
+        
         houseNode.addChild(senderIndicator)
         
         let receiverAnimalTextureName = ownerName.flatMap { getAnimalAsset(for: $0) }.map { "conversation_\($0)" } ?? "conversation_rabbit"

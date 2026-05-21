@@ -23,6 +23,8 @@ struct CollectiblesView: View {
         ZStack(alignment: .top) {
             Color(red: 0.98, green: 0.96, blue: 0.9)
                 .ignoresSafeArea()
+            Color(red: 0.98, green: 0.96, blue: 0.9)
+                .ignoresSafeArea()
 
             VStack {
                 ZStack {
@@ -83,7 +85,7 @@ struct CollectibleCard: View {
             }
             
             if item.isUnlocked || index < 5 {
-                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
+//                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
                 
                 VStack{
                     Image(assetName)
@@ -95,7 +97,9 @@ struct CollectibleCard: View {
                     if item.isUnlocked{
                         Text(item.name)
                             .comicRelief(size: 20)
+                            .comicRelief(size: 20)
                             .foregroundColor(.darkGray)
+                            .padding(.top, 5)
                             .padding(.top, 5)
                     }
                 }
@@ -134,7 +138,30 @@ extension Collectible {
     }
 }
 
+// dummy data untuk Preview
+extension Collectible {
+    static var dummyData: [Collectible] {
+        [
+            makePreviewItem(name: "Kacamata", isUnlocked: true),
+            makePreviewItem(name: "Boba Drink", isUnlocked: true),
+            makePreviewItem(name: "Mesin Tik", isUnlocked: false),
+            makePreviewItem(name: "Handphone", isUnlocked: false),
+            makePreviewItem(name: "Laptop", isUnlocked: true),
+            makePreviewItem(name: "Rahasia 1", isUnlocked: false),
+            makePreviewItem(name: "Rahasia 2", isUnlocked: false),
+            makePreviewItem(name: "Rahasia 3", isUnlocked: false)
+        ]
+    }
+    
+    private static func makePreviewItem(name: String, isUnlocked: Bool) -> Collectible {
+        let item = Collectible(name: name)
+        item.isUnlocked = isUnlocked
+        return item
+    }
+}
+
 #Preview {
+    NavigationStack{
     NavigationStack{
         CollectiblesView()
     }
