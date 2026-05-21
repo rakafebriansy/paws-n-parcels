@@ -10,36 +10,53 @@ import SwiftUI
 struct NewCollectibleAlertView: View {
     @Binding var isPresented: Bool
     var item: Collectible
-    
+
     var body: some View {
         ZStack{
-            Image("modal").resizable().scaledToFit().padding(24)
-            VStack(spacing: 20) {
-                Text("New Collectible Unlocked!")
-                    .comicRelief(size: 30, isBold: true)     .foregroundColor(.brown)
-                    .multilineTextAlignment(.center)
+            Image("modal").resizable().scaledToFit().padding(24).overlay(
+                VStack{
+                    Text("New Collectible Unlocked!")
+                        .comicRelief(size: 32, isBold: true)     .foregroundColor(.darkGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal,30)
+                        .frame(maxWidth: 300)
+                    
+                    let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
+                    
+                    Image(assetName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
+                        .lineLimit(2)
+                        
+                    Text(item.name)
+                        .comicRelief(size: 27)     .foregroundColor(.darkGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal,30)
+                        .minimumScaleFactor(0.5)
+                        .frame(maxWidth: 300)
                 
-                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
-                
-                Image(assetName)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 120, height: 120)
-                
-                Text(item.name)
-                    .comicRelief(size: 25, isBold: true)     .foregroundColor(.darkGray)
-                    .multilineTextAlignment(.center)
-            
-                Button("Tutup") {
-                    withAnimation(.easeInOut) {
-                        isPresented = false
+                    Button(action: {
+                        withAnimation(.easeInOut) {
+                            isPresented = false
+                        }
+                    }){
+                        HStack{
+                            Text("Yay!")
+                        }
+                        .comicRelief(size: 25, isBold: true)
+                        .tracking(1.5)
+                        .foregroundColor(Color.cream)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 20)
+                        .background(Color.darkGray)
+                        .cornerRadius(35)
                     }
                 }
-                .padding(.top, 10)
-            }
-            .padding(30)
+            )
         }
-            .transition(.scale.combined(with: .opacity))
+        .padding(5)
+        .transition(.scale.combined(with: .opacity))
     }
 }
 
