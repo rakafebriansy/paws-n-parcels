@@ -91,8 +91,17 @@ class DeliveryCompletedState: DeliveryBaseState {
             return
         }
         
+        // 1. Capture the request BEFORE deliverPackage() wipes it
+        let completedRequest = deliverySystem.activePackage
+        
+        // 2. Process reward points (this clears activePackage internally)
         let result = deliverySystem.deliverPackage(for: scene.playerEntity, relationships: requestSystem.relationships)
         scene.onDeliverySuccess?(result.pointsAdded, result.isLevelUp, result.unlockedItem)
+        
+        // 3. Pass the letter to GameView for display
+        if let request = completedRequest {
+            scene.onLetterReady?(request)
+        }
         
         requestSystem.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
         

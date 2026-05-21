@@ -32,27 +32,27 @@ class SeederDatabase {
             
             let animals = [
                 Animal(
-                    name: "Joko",
+                    name: "Ms. Bunn",
                     assetName: "rabbit",
                     pickupDialog: "Oh, you're here! I've been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!"
                 ),
                 Animal(
-                    name: "Susilo",
+                    name: "Mao",
                     assetName: "cat",
                     pickupDialog: "Meow~ About time. Handle it with care, please; I don't want a single scratch on my package! Thanks for finally showing up."
                 ),
                 Animal(
-                    name: "Santoso",
+                    name: "Mr. Beavey",
                     assetName: "beaver",
                     pickupDialog: "Great job being on time! This package is absolutely crucial for me. Thanks for the help—I'm counting on you to get it there in one piece."
                 ),
                 Animal(
-                    name: "Purnomo",
+                    name: "Oogway",
                     assetName: "turtle",
                     pickupDialog: "Thank... you... just take your time delivering it... no need to rush... the world moves fast enough as it is. Have a... lovely... stroll."
                 ),
                 Animal(
-                    name: "Capybara",
+                    name: "Owen",
                     assetName: "capybara",
                     pickupDialog: "Take it easy, my friend. Thanks for stopping by to grab the package. No need to stress—it'll get there when it gets there. Safe travels."
                 )

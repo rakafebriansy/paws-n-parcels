@@ -57,7 +57,7 @@ struct GameView: View {
     @State private var activePauseScreen: PauseMenuScreen = .main
     
     private var isShowingAlert: Bool {
-        showPickUpAlert || showDeliveryAlert || showNewCollectibleAlert
+        showPickUpAlert || showNewCollectibleAlert
     }
     
     @State private var joystickBubbleData: TutorialBubbleData? = nil
@@ -138,14 +138,7 @@ struct GameView: View {
                             )
                     }
                     
-                    if showDeliveryAlert {
-                        DeliverySuccessAlertView()
-                            .transition(
-                                .scale
-                                .combined(with: .opacity)
-                            )
-                    }
-                    
+
                     if showNewCollectibleAlert {
                         if let itemToShow = unlockedItem {
                             NewCollectibleAlertView(isPresented: $showNewCollectibleAlert, item: itemToShow)
@@ -162,54 +155,57 @@ struct GameView: View {
             }
             
             if showPostcard {
-                    VStack {
-                        Spacer()
-                        
-                        if let request = deliveredRequest {
-                            LetterView(letter: request.letter)
-                                .transition(.asymmetric(
-                                    insertion: .scale(scale: 0.8).combined(with: .opacity),
-                                    removal: .move(edge: .bottom).combined(with: .opacity)
-                                ))
+                // Single top-level tap layer (zIndex 5 > points alert 4 > postcard 3)
+                // Catches all taps regardless of what's displayed underneath.
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showPostcard = false
+                            showRelationshipPointsAlert = false
                         }
-                        
-                        Spacer()
-                        
-                        // Tap anywhere outside or a clean close button to return to running around the map
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                showPostcard = false
+                        if pendingLevelUp {
+                            pendingLevelUp = false
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                                showNewCollectibleAlert = true
                             }
+                        } else {
                             gameScene.resumeGameplay()
-                        }) {
-                            Text("Close Postcard")
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                .foregroundColor(.secondary)
-                                .padding(.vertical, 10)
-                                .padding(.horizontal, 24)
-                                .background(Capsule().fill(Color.white.opacity(0.8)))
                         }
-                        .padding(.bottom, 40)
                     }
-                    .zIndex(3)
+                    .zIndex(5)
+                
+                // Postcard display only — hit testing disabled so tap layer above catches it
+                if let request = deliveredRequest {
+                    LetterView(letter: request.letter)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.8).combined(with: .opacity),
+                            removal: .move(edge: .bottom).combined(with: .opacity)
+                        ))
+                        .allowsHitTesting(false)
+                        .zIndex(3)
                 }
+            }
             
             if showRelationshipPointsAlert {
                 VStack {
                     RelationshipPointsAlertView(points: relationshipPointsEarned) {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showRelationshipPointsAlert = false
+                        // This callback fires when the internal close button is tapped.
+                        // When postcard is also showing, the top-level tap layer handles closing.
+                        if !showPostcard {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showRelationshipPointsAlert = false
+                            }
+                            gameScene.resumeGameplay()
                         }
                     }
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentShape(Rectangle())
+                .allowsHitTesting(showPostcard ? false : true)
                 .zIndex(4)
                 .transition(.scale.combined(with: .opacity))
-                .onTapGesture {
-                    handleModalTap()
-                }
             }
             
             if isPaused {
@@ -258,6 +254,12 @@ struct GameView: View {
                                     isPaused = false
                                     currentPhase = .backgroundStory
                                 }
+                            },
+                            onBGMChange: { volume in
+                                gameScene.setBGMVolume(volume)
+                            },
+                            onSFXChange: { volume in
+                                gameScene.setSFXVolume(volume)
                             }
                         )
                     case .collectibles:
@@ -298,7 +300,11 @@ struct GameView: View {
             }
         }
         .onAppear {
-            GameDataManager.shared.setup(with: modelContext)
+            // SceneDelegate already initialized GameDataManager and seeded the DB.
+            // Only call setup here if context was somehow not set (e.g., Preview/Test).
+            if GameDataManager.shared.context == nil {
+                GameDataManager.shared.setup(with: modelContext)
+            }
             setupGameDependencies()
             setupGameSceneCallbacks()
             
@@ -309,6 +315,11 @@ struct GameView: View {
             if initialPhase == .playing || initialPhase == .tutorial {
                 if initialPhase == .tutorial {
                     gameScene.startTutorialIfNeeded()
+                } else {
+                    // Returning player: registerHousesAndStartSpawning() ran before currentPhase
+                    // was set to .playing, so the initial burst spawn was skipped.
+                    // Trigger it now that the phase is correctly set.
+                    gameScene.requestSystem?.initialBurstSpawn()
                 }
             }
         }
@@ -345,23 +356,6 @@ struct GameView: View {
             return
         }
         
-        if showDeliveryAlert {
-            withAnimation(.easeInOut) {
-                showDeliveryAlert = false
-                showRelationshipPointsAlert = false
-            }
-            
-            if pendingLevelUp {
-                pendingLevelUp = false
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                    showNewCollectibleAlert = true
-                }
-            } else {
-                gameScene.resumeGameplay()
-            }
-            return
-        }
-        
         if showNewCollectibleAlert {
             withAnimation(.easeInOut) {
                 showNewCollectibleAlert = false
@@ -394,16 +388,16 @@ struct GameView: View {
             }
             
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                showDeliveryAlert = true
                 showRelationshipPointsAlert = true
             }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
-                if showRelationshipPointsAlert {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showRelationshipPointsAlert = false
-                    }
-                }
+            // Relationship points alert stays visible until the player closes the postcard.
+            // No auto-dismiss timer — gameplay resumes via postcard tap.
+        }
+        
+        gameScene.onLetterReady = { request in
+            deliveredRequest = request
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                showPostcard = true
             }
         }
         

@@ -49,6 +49,19 @@ struct CollectiblesView: View {
                     }
                 }
             )
+            
+            // Back button top-left
+            HStack {
+                Button(action: { close() }) {
+                    Image("back_button")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 44)
+                }
+                .padding(.top, 50)
+                .padding(.leading, 20)
+                Spacer()
+            }
         }
     }
     

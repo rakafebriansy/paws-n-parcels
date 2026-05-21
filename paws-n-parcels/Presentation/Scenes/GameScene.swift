@@ -39,6 +39,7 @@ class GameScene: SKScene {
 
     var onPickUpSuccess: ((String) -> Void)?
     var onDeliverySuccess: ((Int, Bool, Collectible?) -> Void)?
+    var onLetterReady: ((Request) -> Void)?
     
     var onJoystickBubbleUpdate: ((TutorialBubbleData?) -> Void)?
     var onYellowBubbleUpdate: ((TutorialBubbleData?) -> Void)?
@@ -57,9 +58,12 @@ class GameScene: SKScene {
     var yellowTutorialStartTime: TimeInterval? = nil
     var yellowTutorialTargetHouseName: String? = nil
     var redTutorialStartTime: TimeInterval? = nil
-    let tutorialDuration: TimeInterval = 8.0
+    let tutorialDuration: TimeInterval = 5.0
     
     var lastArrowDebugLogTime: TimeInterval = 0
+    
+    /// Tracks whether the player has used the joystick at least once after "Tap to start".
+    private var hasStartedFirstMove: Bool = false
     
     private let bounceAction: SKAction = {
         let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
@@ -116,24 +120,54 @@ class GameScene: SKScene {
     func startTutorialIfNeeded() {
         currentPhase = .tutorial
         print("[GameScene] Phase changed to tutorial.")
-        
-        // Start spawning requests now that the background story has been dismissed
-        requestSystem?.fetchData()
-        requestSystem?.initialBurstSpawn()
+        hasStartedFirstMove = false
         
         if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
-            print("[Tutorial] Showing joystick tutorial bubble")
+            print("[Tutorial] Showing joystick tutorial bubble immediately.")
+            // Compute position relative to the joystick base so it appears just above it
+            let viewWidth  = self.view?.bounds.width  ?? size.width
+            let viewHeight = self.view?.bounds.height ?? size.height
+            let screenX = joystick.baseNode.position.x + (viewWidth / 2)
+            let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
+            let clampedX = min(max(screenX, 70), viewWidth - 70)
+            let clampedY = screenY - 110
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+            let data = TutorialBubbleData(
+                text: "Move Goldie using this joystick.",
+                position: CGPoint(x: clampedX, y: clampedY),
+                isInTopZone: false
+            )
+            onJoystickBubbleUpdate?(data)
+            
+            // Dismiss bubble after tutorialDuration, then transition to playing
+            DispatchQueue.main.asyncAfter(deadline: .now() + tutorialDuration) {
                 UserDefaults.standard.set(true, forKey: "hasSeenJoystickTutorial")
                 self.onJoystickBubbleUpdate?(nil)
                 self.currentPhase = .playing
-                print("[GameScene] Phase changed to playing.")
+                print("[GameScene] Joystick tutorial dismissed. Phase changed to playing.")
             }
         } else {
-            currentPhase = .playing
-            print("[GameScene] No tutorial needed, phase changed to playing.")
+            // Returning player: no bubble needed; phase will flip to .playing on first move
+            print("[GameScene] Joystick tutorial already seen. Requests will spawn on first move.")
         }
+    }
+    
+    /// Called once when the player first moves the joystick after "Tap to start".
+    /// Only responsible for spawning requests — bubble timing is handled by startTutorialIfNeeded().
+    private func onFirstJoystickUse() {
+        guard !hasStartedFirstMove else { return }
+        hasStartedFirstMove = true
+        
+        print("[GameScene] First joystick use detected — spawning requests.")
+        requestSystem?.fetchData()
+        requestSystem?.initialBurstSpawn()
+        
+        // For returning players (no tutorial bubble), switch to playing immediately
+        if UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            currentPhase = .playing
+            print("[GameScene] Phase changed to playing.")
+        }
+        // For new players: phase transition is handled by the DispatchQueue timer above
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -171,6 +205,11 @@ class GameScene: SKScene {
         if let movement = playerEntity.component(ofType: MovementComponent.self)
         {
             movement.velocity = joystick.currentVelocity
+        }
+        
+        // Gate: trigger first-move logic once the joystick is actually dragged
+        if currentPhase == .tutorial && joystick.currentVelocity != .zero {
+            onFirstJoystickUse()
         }
     }
 
@@ -210,8 +249,12 @@ class GameScene: SKScene {
         let tappedNodes = nodes(at: locationInMap)
 
         for node in tappedNodes {
-            if let house = findHouseEntity(for: node) {
-                interactWithHouse(house)
+            let name = node.name
+            // Only react to taps on the floating animal bubbles
+            if name == "indicator_sender" || name == "indicator_receiver" {
+                if let house = findHouseEntity(for: node) {
+                    interactWithHouse(house)
+                }
                 break
             }
         }
@@ -490,12 +533,12 @@ class GameScene: SKScene {
         
         restoreActiveRequests()
         
-        // Only spawn requests immediately if the game is already past the background story.
-        // If still in backgroundStory phase, spawning is deferred to startTutorialIfNeeded().
-        if currentPhase != .backgroundStory {
+        // Only spawn requests if already past tutorial/background story.
+        // For new players, spawning is deferred to onFirstJoystickUse().
+        if currentPhase == .playing {
             reqSys.initialBurstSpawn()
         } else {
-            print("[GameScene] Skipping initialBurstSpawn — background story not yet dismissed.")
+            print("[GameScene] Skipping initialBurstSpawn — waiting for first joystick use.")
         }
     }
 
@@ -530,6 +573,7 @@ class GameScene: SKScene {
         
         hasShownYellowArrowTutorialTimer = false
         hasShownRedArrowTutorialTimer = false
+        hasStartedFirstMove = false
         currentDialogMessage = nil
         yellowTutorialStartTime = nil
         yellowTutorialTargetHouseName = nil
@@ -605,15 +649,32 @@ class GameScene: SKScene {
         do {
             let player = try AVAudioPlayer(contentsOf: url)
             player.numberOfLoops = -1
+            // Apply saved BGM volume preference
+            let savedBGM = Float(UserDefaults.standard.double(forKey: "bgm") / 100.0)
+            let targetVolume = savedBGM > 0 ? savedBGM : 1.0
             player.volume = 0.0
             player.prepareToPlay()
             player.play()
-            player.setVolume(1.0, fadeDuration: 2.0)
+            player.setVolume(targetVolume, fadeDuration: 2.0)
             self.bgmPlayer = player
-            print("[BGM] Playing BGM with fade-in.")
+            print("[BGM] Playing BGM with fade-in, target volume: \(targetVolume).")
         } catch {
             print("[BGM] Error initializing AVAudioPlayer: \(error)")
         }
+    }
+    
+    /// Called by GameView when the BGM slider changes value (0.0–1.0).
+    func setBGMVolume(_ volume: Float) {
+        bgmPlayer?.volume = volume
+        print("[BGM] Volume set to \(volume).")
+    }
+    
+    /// Stored for use when SFX are played. (Future: pass to SKAction.playSoundFileNamed wrappers.)
+    private(set) var sfxVolume: Float = 1.0
+    
+    func setSFXVolume(_ volume: Float) {
+        sfxVolume = volume
+        print("[SFX] Volume set to \(volume).")
     }
     
     func saveGameState() {
@@ -737,90 +798,17 @@ class GameScene: SKScene {
                 let isWithinRange =
                     distanceSquared <= GameConfig.interactionRadiusSquared
 
-                var highlight =
-                    houseNode.childNode(withName: "indicator_highlight")
-                    as? SKSpriteNode
-                if highlight == nil {
-                    let houseTexture = houseNode.texture ?? SKTexture(imageNamed: "house_1")
-                    let highlightSize = houseNode.size
-                    
-                    let h = SKSpriteNode(texture: houseTexture, size: highlightSize)
-                    h.name = "indicator_highlight"
-                    h.color = .clear
-                    h.colorBlendFactor = 1.0
-                    h.zPosition = -1
-                    
-                    h.physicsBody = SKPhysicsBody(texture: houseTexture, size: highlightSize)
-                    h.physicsBody?.isDynamic = false
-                    h.physicsBody?.categoryBitMask = 0
-                    h.physicsBody?.collisionBitMask = 0
-                    h.physicsBody?.contactTestBitMask = 0
-                    
-                    let strokeThickness: CGFloat = 2.5
-                    let offsets = [
-                        CGPoint(x: strokeThickness, y: 0),
-                        CGPoint(x: -strokeThickness, y: 0),
-                        CGPoint(x: 0, y: strokeThickness),
-                        CGPoint(x: 0, y: -strokeThickness),
-                        CGPoint(x: strokeThickness, y: strokeThickness),
-                        CGPoint(x: -strokeThickness, y: -strokeThickness),
-                        CGPoint(x: strokeThickness, y: -strokeThickness),
-                        CGPoint(x: -strokeThickness, y: strokeThickness)
-                    ]
-                    
-                    for (index, offset) in offsets.enumerated() {
-                        let outlineSprite = SKSpriteNode(texture: houseTexture, size: highlightSize)
-                        outlineSprite.name = "outline_\(index)"
-                        outlineSprite.position = offset
-                        outlineSprite.colorBlendFactor = 1.0
-                        outlineSprite.color = .clear
-                        outlineSprite.zPosition = -1
-                        h.addChild(outlineSprite)
-                    }
-                    
-                    houseNode.addChild(h)
-                    highlight = h
-                }
+                let senderIcon = houseNode.childNode(withName: "indicator_sender") as? SKSpriteNode
+                let receiverIcon = houseNode.childNode(withName: "indicator_receiver") as? SKSpriteNode
 
-                if isSender && isWithinRange && !isHoldingPackage {
-                    highlight?.isHidden = false
-                    if let subSprites = highlight?.children as? [SKSpriteNode] {
-                        for sprite in subSprites {
-                            sprite.color = .yellow
-                            sprite.alpha = 1.0
-                        }
-                    }
-                } else if isTarget && isWithinRange {
-                    highlight?.isHidden = false
-                    if let subSprites = highlight?.children as? [SKSpriteNode] {
-                        for sprite in subSprites {
-                            sprite.color = .red
-                            sprite.alpha = 1.0
-                        }
-                    }
-                } else {
-                    highlight?.isHidden = true
-                    if let subSprites = highlight?.children as? [SKSpriteNode] {
-                        for sprite in subSprites {
-                            sprite.color = .clear
-                            sprite.alpha = 0.0
-                        }
-                    }
-                }
-
-                let senderIcon = houseNode.childNode(
-                    withName: "indicator_sender"
-                )
-                let receiverIcon = houseNode.childNode(
-                    withName: "indicator_receiver"
-                )
-
+                // Show/hide bubbles
                 senderIcon?.isHidden = !isSender || isHoldingPackage
                 receiverIcon?.isHidden = !isTarget
 
                 senderIcon?.zRotation = -houseNode.zRotation
                 receiverIcon?.zRotation = -houseNode.zRotation
 
+                // Bounce animation
                 if isSender {
                     if senderIcon?.action(forKey: "bounce") == nil {
                         senderIcon?.run(bounceAction, withKey: "bounce")
@@ -835,6 +823,46 @@ class GameScene: SKScene {
                     }
                 } else {
                     receiverIcon?.removeAction(forKey: "bounce")
+                }
+
+                // Proximity highlight — shown ON the bubble, not the house
+                if isSender && isWithinRange && !isHoldingPackage {
+                    // Yellow pulse on sender bubble
+                    if senderIcon?.action(forKey: "highlight") == nil {
+                        let pulse = SKAction.sequence([
+                            SKAction.scale(to: 1.15, duration: 0.25),
+                            SKAction.scale(to: 1.0,  duration: 0.25)
+                        ])
+                        senderIcon?.run(SKAction.repeatForever(pulse), withKey: "highlight")
+                        senderIcon?.color = .yellow
+                        senderIcon?.colorBlendFactor = 0.12
+                    }
+                } else {
+                    senderIcon?.removeAction(forKey: "highlight")
+                    senderIcon?.setScale(1.0)
+                    senderIcon?.colorBlendFactor = 0.0
+                }
+
+                if isTarget && isWithinRange {
+                    // Red pulse on receiver bubble
+                    if receiverIcon?.action(forKey: "highlight") == nil {
+                        let pulse = SKAction.sequence([
+                            SKAction.scale(to: 1.15, duration: 0.25),
+                            SKAction.scale(to: 1.0,  duration: 0.25)
+                        ])
+                        receiverIcon?.run(SKAction.repeatForever(pulse), withKey: "highlight")
+                        receiverIcon?.color = .red
+                        receiverIcon?.colorBlendFactor = 0.12
+                    }
+                } else {
+                    receiverIcon?.removeAction(forKey: "highlight")
+                    receiverIcon?.setScale(1.0)
+                    receiverIcon?.colorBlendFactor = 0.0
+                }
+
+                // Remove old house-level outline highlight (no longer needed)
+                if let oldHighlight = houseNode.childNode(withName: "indicator_highlight") {
+                    oldHighlight.removeFromParent()
                 }
             }
         }
@@ -874,20 +902,9 @@ class GameScene: SKScene {
             return
         }
         
-        if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
-            let screenX = joystick.baseNode.position.x + (viewWidth / 2)
-            let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
-            
-            let clampedX = min(max(screenX, 70), viewWidth - 70)
-            let clampedY = screenY - 110
-            
-            let data = TutorialBubbleData(
-                text: "Move Goldie using this joystick.",
-                position: CGPoint(x: clampedX, y: clampedY),
-                isInTopZone: false
-            )
-            onJoystickBubbleUpdate?(data)
-        } else {
+        // Joystick tutorial bubble is now shown by onFirstJoystickUse() after first move.
+        // Just ensure it's cleared once tutorial has been seen.
+        if UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
             onJoystickBubbleUpdate?(nil)
         }
 

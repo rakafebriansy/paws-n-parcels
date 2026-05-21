@@ -19,6 +19,8 @@ struct MainMenuModalView: View {
     var onCollectibles: (() -> Void)? = nil
     var onRelationships: (() -> Void)? = nil
     var onReset: (() -> Void)? = nil
+    var onBGMChange: ((Float) -> Void)? = nil
+    var onSFXChange: ((Float) -> Void)? = nil
     
     var body: some View {
         ZStack {
@@ -122,47 +124,62 @@ struct MainMenuModalView: View {
                 .padding(.horizontal, 60)
                 
                 Text("Settings")
-                    .comicRelief(size: 26, isBold: true)
+                    .comicRelief(size: 30, isBold: true)
                     .foregroundColor(.darkGray)
-                    .padding(.top, 6)
+                    .padding(.top, 15)
                 
-                HStack {
-                    Image(systemName: bgm == 0 ? "music.note.slash" : "music.note")
-                        .foregroundColor(.red)
-                        .font(.system(size:24))
-                    
-                    Text("BGM")
-                        .comicRelief(size: 22, isBold: true)
-                        .foregroundColor(.darkGray)
-                    
-                    Slider(
-                        value: $bgm,
-                        in: 0...100,
-                        onEditingChanged: { editing in
-                            isEditing = editing
-                        }
-                    ).frame(width:120)
+                VStack(spacing: 12) {
+                    HStack(spacing: 8) {
+                        Image(systemName: bgm == 0 ? "music.note.slash" : "music.note")
+                            .foregroundColor(.red)
+                            .font(.system(size: 28))
+                            .frame(width: 34, alignment: .center)
+                        
+                        Text("BGM")
+                            .comicRelief(size: 25, isBold: true)
+                            .foregroundColor(.darkGray)
+                            .frame(width: 58, alignment: .leading)
+                        
+                        Slider(
+                            value: $bgm,
+                            in: 0...100,
+                            onEditingChanged: { editing in
+                                isEditing = editing
+                            }
+                        )
+                        .frame(width: 130)
                         .tint(Color.darkGray)
-                }
-                .padding(.vertical, -8)
-                
-                HStack {
-                    Image(systemName: sfx == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                        .foregroundColor(.red)
-                        .font(.system(size:24))
-                    
-                    Text("SFX")
-                        .comicRelief(size: 22, isBold: true)
-                        .foregroundColor(.darkGray)
-                    
-                    Slider(
-                        value: $sfx,
-                        in: 0...100,
-                        onEditingChanged: { editing in
-                            isEditing = editing
+                        .onChange(of: bgm) { _, newValue in
+                            onBGMChange?(Float(newValue / 100.0))
                         }
-                    ).frame(width:120)
+                    }
+                    .frame(width: 230, alignment: .leading)
+                    
+                    HStack(spacing: 8) {
+                        Image(systemName: sfx == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .foregroundColor(.red)
+                            .font(.system(size: 28))
+                            .frame(width: 34, alignment: .center)
+                        
+                        Text("SFX")
+                            .comicRelief(size: 25, isBold: true)
+                            .foregroundColor(.darkGray)
+                            .frame(width: 58, alignment: .leading)
+                        
+                        Slider(
+                            value: $sfx,
+                            in: 0...100,
+                            onEditingChanged: { editing in
+                                isEditing = editing
+                            }
+                        )
+                        .frame(width: 130)
                         .tint(Color.darkGray)
+                        .onChange(of: sfx) { _, newValue in
+                            onSFXChange?(Float(newValue / 100.0))
+                        }
+                    }
+                    .frame(width: 230, alignment: .leading)
                 }
             }
             .offset(y: -20)

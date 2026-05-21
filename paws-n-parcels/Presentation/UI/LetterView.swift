@@ -11,6 +11,15 @@ import SwiftUI
 struct LetterView: View {
     var letter: PackageLetter
 
+    /// Falls back to a generic warm message if AI generation returned empty content.
+    private var displayBody: String {
+        let body = letter.messageBody.trimmingCharacters(in: .whitespacesAndNewlines)
+        if body.isEmpty {
+            return "Wishing you a wonderful day! Hope this little package brings a smile to your face. With warmth, \(letter.sender)."
+        }
+        return body
+    }
+
     var body: some View {
         ZStack {
             // 1. The Background Asset properly scaled
@@ -31,7 +40,7 @@ struct LetterView: View {
                 // LEFT COLUMN: Message Body Only
                 // This completely isolates the body so it can never cross to the right side
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(letter.messageBody)
+                    Text(displayBody)
                         .font(.system(size: 9.5, weight: .medium, design: .serif))
                         .italic()
                         .foregroundColor(Color(red: 0.25, green: 0.2, blue: 0.15))

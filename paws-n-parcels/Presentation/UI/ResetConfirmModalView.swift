@@ -29,7 +29,7 @@ struct ResetConfirmModalView: View {
             }
             .padding(24)
 
-            VStack(spacing: 20) {
+            VStack(spacing: 5) {
                 Text("Reset Game?")
                     .comicRelief(size: 36, isBold: true)
                     .foregroundColor(.darkGray)
@@ -40,6 +40,7 @@ struct ResetConfirmModalView: View {
                     .foregroundColor(.darkGray.opacity(0.8))
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
+                    .padding(.bottom, 20)
 
                 VStack(spacing: 12) {
                     Button(action: {

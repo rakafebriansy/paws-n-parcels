@@ -15,11 +15,11 @@ struct CharacterInfo {
 struct CharacterRegistry {
     
     static let all: [CharacterInfo] = [
-        CharacterInfo(name: "Joko", assetName: "rabbit", housePosition: CGPoint(x: 19, y: 7)),
-        CharacterInfo(name: "Susilo", assetName: "cat", housePosition: CGPoint(x: 17, y: 7)),
-        CharacterInfo(name: "Santoso", assetName: "beaver", housePosition: CGPoint(x: 27, y: 9)),
-        CharacterInfo(name: "Purnomo", assetName: "turtle", housePosition: CGPoint(x: 10, y: 25)),
-        CharacterInfo(name: "Capybara", assetName: "capybara", housePosition: CGPoint(x: 19, y: 23))
+        CharacterInfo(name: "Ms. Bunn",    assetName: "rabbit",   housePosition: CGPoint(x: 19, y: 7)),
+        CharacterInfo(name: "Mao",         assetName: "cat",      housePosition: CGPoint(x: 17, y: 7)),
+        CharacterInfo(name: "Mr. Beavey",  assetName: "beaver",   housePosition: CGPoint(x: 27, y: 9)),
+        CharacterInfo(name: "Oogway",      assetName: "turtle",   housePosition: CGPoint(x: 10, y: 25)),
+        CharacterInfo(name: "Owen",        assetName: "capybara", housePosition: CGPoint(x: 19, y: 23))
     ]
     
     static func getAsset(for name: String) -> String? {
