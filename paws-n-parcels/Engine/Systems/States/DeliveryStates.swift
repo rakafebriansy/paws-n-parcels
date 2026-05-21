@@ -91,21 +91,11 @@ class DeliveryCompletedState: DeliveryBaseState {
             return
         }
         
-        // 1. Capture the request BEFORE deliverySystem.deliverPackage wipes it out
-        guard let completedRequest = deliverySystem.activePackage else {
-            print("[DeliveryFSM] Error: No active package found in deliverySystem during completion state.")
-            stateMachine?.enter(NoActiveRequestState.self)
-            return
-        }
-        
-        // 2. Process the reward points and database updates
         let result = deliverySystem.deliverPackage(for: scene.playerEntity, relationships: requestSystem.relationships)
         scene.onDeliverySuccess?(result.pointsAdded, result.isLevelUp, result.unlockedItem)
         
-        // 4. Safely call the SwiftUI callback with the points and the captured request
-        scene.onDeliverySuccess?(result.pointsAdded, completedRequest)
+        requestSystem.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
         
-        // 5. Reset to the idle state machine flow
         stateMachine?.enter(NoActiveRequestState.self)
     }
 }

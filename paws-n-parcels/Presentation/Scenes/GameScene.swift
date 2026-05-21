@@ -85,7 +85,7 @@ class GameScene: SKScene {
         setupInvisibleWalls()
         joystick.attach(to: cameraNode, screenHeight: self.size.height)
 
-        drawDebugGrid(gridSize: 100)
+        // drawDebugGrid(gridSize: 100)
         registerHousesAndStartSpawning()
 
         let states = [
@@ -334,7 +334,7 @@ class GameScene: SKScene {
         let texture = SKTexture(imageNamed: "goldie_down_1")
         let playerNode = SKSpriteNode(
             texture: texture,
-            size: GameConfig.playerVerticalSize
+            size: GameConfig.playerFrontSize
         )
         playerNode.zPosition = GameConfig.playerZPosition
         playerNode.position = GameConfig.playerInitialPosition
@@ -454,22 +454,11 @@ class GameScene: SKScene {
         } else if let carryingState = deliverySys.stateMachine?.currentState
             as? CarryingState
         {
-            guard let completedRequest = deliverySys.activePackage else {
-                return
-            }
             guard let heldPackage = deliverySys.activePackage else { return }
             let receiverName = heldPackage.receiver.name
             if receiverName == houseName {
                 print("[GameScene] Delivering package to \(houseName)...")
-                let result = deliverySys.deliverPackage(
-                    for: playerEntity,
-                    relationships: requestSys.relationships
-                )
                 carryingState.deliver()
-                requestSys.deliverRequest(completedRequest)
-
-                // 4. Pass the calculated points from your result tuple back up to the SwiftUI View wrapper
-                onDeliverySuccess?(result.pointsAdded, completedRequest)
             } else {
                 print(
                     "[GameScene] Wrong address! This package is for \(receiverName), not for \(houseName)."
@@ -524,6 +513,7 @@ class GameScene: SKScene {
     }
 
     func resumeGameplay() {
+        gameStateMachine?.enter(GamePlayingState.self)
         if let stateComponent = playerEntity.component(
             ofType: PlayerStateComponent.self
         ) {
@@ -749,7 +739,7 @@ class GameScene: SKScene {
 
                 var highlight =
                     houseNode.childNode(withName: "indicator_highlight")
-                    as? SKShapeNode
+                    as? SKSpriteNode
                 if highlight == nil {
                     let houseTexture = houseNode.texture ?? SKTexture(imageNamed: "house_1")
                     let highlightSize = houseNode.size
@@ -810,7 +800,7 @@ class GameScene: SKScene {
                     }
                 } else {
                     highlight?.isHidden = true
-                     if let subSprites = highlight?.children as? [SKSpriteNode] {
+                    if let subSprites = highlight?.children as? [SKSpriteNode] {
                         for sprite in subSprites {
                             sprite.color = .clear
                             sprite.alpha = 0.0
@@ -1057,7 +1047,7 @@ class GameScene: SKScene {
         if abs(dx) < (viewW / 2) - safetyMargin
             && abs(dy) < (viewH / 2) - safetyMargin
         {
-            return
+            return nil
         }
 
         let angle = atan2(dy, dx)
