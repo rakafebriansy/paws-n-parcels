@@ -122,19 +122,8 @@ class GameScene: SKScene {
         
         if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
             print("[Tutorial] Showing joystick tutorial bubble immediately.")
-            let viewWidth  = self.view?.bounds.width  ?? size.width
-            let viewHeight = self.view?.bounds.height ?? size.height
-            let screenX = joystick.baseNode.position.x + (viewWidth / 2)
-            let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
-            let clampedX = min(max(screenX, 70), viewWidth - 70)
-            let clampedY = screenY - 110
             
-            let data = TutorialBubbleData(
-                text: "Move Goldie using this joystick.",
-                position: CGPoint(x: clampedX, y: clampedY),
-                isInTopZone: false
-            )
-            onJoystickBubbleUpdate?(data)
+            updateJoystickTutorialBubblePosition()
             
             DispatchQueue.main.asyncAfter(deadline: .now() + tutorialDuration) {
                 UserDefaults.standard.set(true, forKey: "hasSeenJoystickTutorial")
@@ -161,6 +150,24 @@ class GameScene: SKScene {
         }
     }
 
+    private func updateJoystickTutorialBubblePosition() {
+        guard !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") else { return }
+        let viewWidth  = self.view?.bounds.width  ?? size.width
+        let viewHeight = self.view?.bounds.height ?? size.height
+        let screenX = joystick.baseNode.position.x + (viewWidth / 2)
+        let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
+        
+        let clampedX = min(max(screenX, 70), viewWidth - 70)
+        let clampedY = screenY - 150
+        
+        let data = TutorialBubbleData(
+            text: "Move Goldie using this joystick.",
+            position: CGPoint(x: clampedX, y: clampedY),
+            isInTopZone: false
+        )
+        onJoystickBubbleUpdate?(data)
+    }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard currentPhase != .backgroundStory else { return }
         guard gameStateMachine?.currentState is GamePlayingState else { return }
@@ -175,6 +182,10 @@ class GameScene: SKScene {
 
         let location = touch.location(in: cameraNode)
         joystick.processTouchBegan(location: location)
+        
+        if currentPhase == .tutorial {
+            updateJoystickTutorialBubblePosition()
+        }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
