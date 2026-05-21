@@ -22,7 +22,7 @@ struct PickUpSuccessAlertView: View {
                         .padding(.top,10)
                         .frame(maxWidth: 270)
                     
-                    Image("paket")
+                    Image("package")
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 130, maxHeight: 130)

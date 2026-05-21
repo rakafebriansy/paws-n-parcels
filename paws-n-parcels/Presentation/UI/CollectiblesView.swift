@@ -10,9 +10,11 @@ import SwiftData
 
 struct CollectiblesView: View {
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Collectible.name) private var collectibles: [Collectible]
     
-    @Query private var collectibles: [Collectible]
     var onClose: (() -> Void)?
+    
+    private let lockedPlaceholderCount = 45
     
     let columns = [
         GridItem(.flexible(), spacing: 20),
@@ -20,44 +22,47 @@ struct CollectiblesView: View {
     ]
     
     var body: some View {
-        ZStack(alignment: .top) {
-            Color(red: 0.98, green: 0.96, blue: 0.9)
-                .ignoresSafeArea()
-            Color(red: 0.98, green: 0.96, blue: 0.9)
-                .ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack(alignment: .top) {
+                Image("collectibles_book").resizable().scaledToFill().ignoresSafeArea().overlay(
 
-            VStack {
-                ZStack {
-                    Text("Collectibles")
-                        .comicRelief(size: 45, isBold: true)
-                        .foregroundColor(.darkGray)
-                    
-                    HStack {
-                        Button(action: { close() }) {
-                            Image("back_button")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 44, height: 44)
+                    VStack (spacing: 15) {
+                        ZStack {
+                            Text("Collectibles")
+                                .comicRelief(size: 45, isBold: true)
+                                .foregroundColor(.darkGray)
+                                .padding(.leading, 36)
+                            
+                            HStack {
+                                Button(action: { close() }) {
+                                    Image("back_button")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 44, height: 44)
+                                }
+                                .padding(.leading, 20)
+                                Spacer()
+                            }
                         }
-                        .padding(.leading, 20)
+                        .padding(.top, geometry.size.height * 0.05)
                         
-                        Spacer()
-                    }
-                }
-                .padding(.top, 20)
-                .padding(.bottom, 10)
-                
-                ScrollView(showsIndicators: false){
-                    LazyVGrid(columns: columns, spacing: 20) {
-                        // enumerated() supaya bisa dapat urutan index
-                        ForEach(Array(collectibles.enumerated()), id: \.element.id) {
-                            index, item in
-                            CollectibleCard(item: item, index: index, bgColor: Color.sage)
+                        ScrollView(showsIndicators: false){
+                            LazyVGrid(columns: columns, spacing: 20) {
+                                // enumerated() supaya bisa dapat urutan index
+                                ForEach(Array(collectibles.enumerated()), id: \.element.id) { index, item in
+                                    CollectibleCard(item: item, index: index, bgColor: Color.cream)
+                                }
+                                
+                                ForEach(0..<lockedPlaceholderCount, id: \.self) { _ in
+                                    LockedCollectibleCard(bgColor: Color.cream)
+                                }
+                            }
+                            .padding(.horizontal, 25)
+                            .padding(.bottom, 40)
+                            .padding(.leading, 40)
                         }
                     }
-                    .padding(.horizontal, 25)
-                    .padding(.bottom, 40)
-                }
+                )
             }
         }
     }
@@ -78,31 +83,28 @@ struct CollectibleCard: View {
     
     var body: some View {
         ZStack {
-            if !item.isUnlocked && index >= 5 {
-                Color(red: 0.85, green: 0.85, blue: 0.85)
-            } else {
-                bgColor
-            }
+           bgColor
             
             if item.isUnlocked || index < 5 {
-//                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
+                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
                 
                 VStack{
                     Image(assetName)
-                        .renderingMode(item.isUnlocked ? .original : .template)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 60, height: 60)
-                        .foregroundColor(item.isUnlocked ? nil : .black.opacity(0.6))
+                        .frame(width: 80, height: 80)
+                        // ubah warna item collectible jadi hitam putih kalau belum unlocked
+                        .colorMultiply(item.isUnlocked ? .white : .black.opacity(0.6))
                     if item.isUnlocked{
                         Text(item.name)
-                            .comicRelief(size: 20)
-                            .comicRelief(size: 20)
+                            .comicRelief(size: 20, isBold: true)
                             .foregroundColor(.darkGray)
-                            .padding(.top, 5)
-                            .padding(.top, 5)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.5)
                     }
                 }
+                .padding(8)
             } else {
                 Image(systemName: "lock.fill")
                     .resizable()
@@ -113,56 +115,38 @@ struct CollectibleCard: View {
         }
         .frame(height: 150)
         .cornerRadius(20)
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.darkGray, lineWidth: 3))
+        .background(RoundedRectangle(cornerRadius: 20)
+            .fill(Color.darkGray)
+            .offset(x: -6, y: 6))
     }
 }
 
-// dummy data untuk Preview
-extension Collectible {
-    static var dummyData: [Collectible] {
-        [
-            makePreviewItem(name: "Kacamata", isUnlocked: true),
-            makePreviewItem(name: "Boba Drink", isUnlocked: true),
-            makePreviewItem(name: "Mesin Tik", isUnlocked: false),
-            makePreviewItem(name: "Handphone", isUnlocked: false),
-            makePreviewItem(name: "Laptop", isUnlocked: true),
-            makePreviewItem(name: "Rahasia 1", isUnlocked: false),
-            makePreviewItem(name: "Rahasia 2", isUnlocked: false),
-            makePreviewItem(name: "Rahasia 3", isUnlocked: false)
-        ]
-    }
+struct LockedCollectibleCard: View {
+    let bgColor: Color
     
-    private static func makePreviewItem(name: String, isUnlocked: Bool) -> Collectible {
-        let item = Collectible(name: name)
-        item.isUnlocked = isUnlocked
-        return item
-    }
-}
-
-// dummy data untuk Preview
-extension Collectible {
-    static var dummyData: [Collectible] {
-        [
-            makePreviewItem(name: "Kacamata", isUnlocked: true),
-            makePreviewItem(name: "Boba Drink", isUnlocked: true),
-            makePreviewItem(name: "Mesin Tik", isUnlocked: false),
-            makePreviewItem(name: "Handphone", isUnlocked: false),
-            makePreviewItem(name: "Laptop", isUnlocked: true),
-            makePreviewItem(name: "Rahasia 1", isUnlocked: false),
-            makePreviewItem(name: "Rahasia 2", isUnlocked: false),
-            makePreviewItem(name: "Rahasia 3", isUnlocked: false)
-        ]
-    }
-    
-    private static func makePreviewItem(name: String, isUnlocked: Bool) -> Collectible {
-        let item = Collectible(name: name)
-        item.isUnlocked = isUnlocked
-        return item
+    var body: some View {
+        ZStack {
+            bgColor
+            
+            Image(systemName: "lock.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 60, height: 60)
+                .foregroundColor(.darkGray)
+        }
+        .frame(height: 150)
+        .cornerRadius(20)
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.darkGray, lineWidth: 3))
+        .background(RoundedRectangle(cornerRadius: 20)
+            .fill(Color.darkGray)
+            .offset(x: -6, y: 6))
     }
 }
 
 #Preview {
-    NavigationStack{
-    NavigationStack{
+    NavigationStack {
         CollectiblesView()
     }
+    .modelContainer(for: Collectible.self, inMemory: true)
 }

@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct DeliverySuccessAlertView: View {
+    let receiverAssetName: String
+    
     var body: some View {
         ZStack {
             Image("modal").resizable().scaledToFit().padding(24).overlay(
@@ -21,14 +23,13 @@ struct DeliverySuccessAlertView: View {
                         .lineLimit(2)
                         .padding(.top,10)
                                         
-                    Image("paket")
+                    Image(receiverAssetName)
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 130, maxHeight: 130)
-                        .padding(.bottom,140)
-                        .padding(.top,20)
                 }
                     .padding(40)
+                    .offset(y: -10)
             )
         }
         .transition(.scale.combined(with: .opacity))
@@ -38,6 +39,6 @@ struct DeliverySuccessAlertView: View {
 #Preview {
     ZStack {
         Color.black.opacity(0.3).ignoresSafeArea()
-        DeliverySuccessAlertView()
+        DeliverySuccessAlertView(receiverAssetName: "package")
     }
 }

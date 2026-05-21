@@ -252,31 +252,25 @@ class MapBuilder {
     
     private func buildDecoration(at point: CGPoint, assetName: String) {
         let texture = getTexture(named: assetName)
-        let node = SKSpriteNode(texture: texture)
+        let grid = GameConfig.gridSize
+        let targetWidth = decorationWidth(for: assetName, grid: grid)
+        let aspectRatio = texture.size().height / max(texture.size().width, 1)
+        let targetSize = CGSize(width: targetWidth, height: targetWidth * aspectRatio)
         
-        node.position = point
-        node.setScale(0.4)
-        
-        
-        let actualHeight = node.size.height * 0.4
-        let baseOfTheItemY = point.y - (actualHeight / 2)
-        node.zPosition = 10000 - baseOfTheItemY
-        
-        let physicsWidth = node.size.width * 0.5
-        let physicsHeight = actualHeight * 0.3
-        
-        node.physicsBody = SKPhysicsBody(
-            rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
-            center: CGPoint(x: 0, y: -actualHeight * 0.35)
+        let node = buildGeneralEntity(
+            imageNamed: assetName,
+            size: targetSize,
+            at: point,
+            rotation: nil,
+            physicsShape: .texture,
+            zPositionStrategy: .ySorted(offset: 0)
         )
-        node.physicsBody?.isDynamic = false
-        node.physicsBody?.restitution = 0.0
-        node.physicsBody?.friction = 0.0
         
-        scene.addChild(node)
-        environmentEntities.append(EnvironmentEntity(node: node))
+        let entity = EnvironmentEntity(node: node)
+        environmentEntities.append(entity)
     }
-    
+        
+
     private func decorationWidth(for assetName: String, grid: CGFloat) -> CGFloat {
         if assetName.contains("big_rock") {
             return grid * 0.75

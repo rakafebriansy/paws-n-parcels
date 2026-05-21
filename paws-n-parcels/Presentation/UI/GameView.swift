@@ -139,7 +139,7 @@ struct GameView: View {
                     }
                     
                     if showDeliveryAlert {
-                        DeliverySuccessAlertView()
+                        DeliverySuccessAlertView(receiverAssetName: deliveredRequest?.receiver.assetName ?? "package")
                             .transition(.scale.combined(with: .opacity))
                     }
 
