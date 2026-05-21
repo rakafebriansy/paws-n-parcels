@@ -42,7 +42,6 @@ struct CollectiblesView: View {
                         .padding(.bottom, 40)
                     }
                 }
-            )
             
             HStack {
                 Button(action: { close() }) {

@@ -233,7 +233,10 @@ class MapBuilder {
                 node.physicsBody = SKPhysicsBody(circleOfRadius: radius, center: centerOffset)
             case .texture:
                 if let texture = node.texture {
-                    node.physicsBody = SKPhysicsBody(texture: texture, size: size)
+                    node.physicsBody = SKPhysicsBody(texture: texture, alphaThreshold: 0.1, size: size)
+                    if node.physicsBody == nil {
+                        node.physicsBody = SKPhysicsBody(rectangleOf: size)
+                    }
                 } else {
                     node.physicsBody = SKPhysicsBody(rectangleOf: size)
                 }
@@ -249,21 +252,19 @@ class MapBuilder {
     
     private func buildDecoration(at point: CGPoint, assetName: String) {
         let texture = getTexture(named: assetName)
-        let node = SKSpriteNode(texture: texture)
         let grid = GameConfig.gridSize
         let targetWidth = decorationWidth(for: assetName, grid: grid)
         let aspectRatio = texture.size().height / max(texture.size().width, 1)
         let targetSize = CGSize(width: targetWidth, height: targetWidth * aspectRatio)
         
-        node.size = targetSize
-        node.position = point
-        
-        let baseOfTheItemY = point.y - (targetSize.height / 2)
-        node.zPosition = 10000 - baseOfTheItemY
-        node.physicsBody = decorationPhysicsBody(for: assetName, size: targetSize)
-        configureStaticWall(node.physicsBody)
-        
-        scene.addChild(node)
+        let node = buildGeneralEntity(
+            imageNamed: assetName,
+            size: targetSize,
+            at: point,
+            rotation: nil,
+            physicsShape: .texture,
+            zPositionStrategy: .ySorted(offset: 0)
+        )
         
         let entity = EnvironmentEntity(node: node)
         environmentEntities.append(entity)
@@ -279,15 +280,7 @@ class MapBuilder {
         return grid * 0.3
     }
     
-    private func decorationPhysicsBody(for assetName: String, size: CGSize) -> SKPhysicsBody {
-        if assetName.contains("rock") {
-            let radius = min(size.width, size.height)
-            return SKPhysicsBody(circleOfRadius: radius, center: CGPoint(x: 0, y: -size.height * 0.2))
-        }
-        
-        let collisionSize = CGSize(width: size.width * 2, height: size.height * 2)
-        return SKPhysicsBody(rectangleOf: collisionSize, center: .zero)
-    }
+
     
     private func configureStaticWall(_ physicsBody: SKPhysicsBody?) {
         physicsBody?.isDynamic = false
