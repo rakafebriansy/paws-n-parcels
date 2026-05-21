@@ -11,33 +11,34 @@ struct PickUpSuccessAlertView: View {
     var message: String
     var body: some View {
         ZStack{
-            Image("modal").resizable().scaledToFit().padding(24)
-            
-            VStack(spacing: 40) {
-                Text(message)
-                    .comicRelief(size: 30, isBold: true)      .foregroundColor(.brown)
-                    .multilineTextAlignment(.center)
+            Image("modal").resizable().scaledToFit().padding(24).overlay(
                 
-                Image(systemName: "checkmark")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .foregroundColor(Color(red: 0.4, green: 0.7, blue: 0.4))
-                    .bold()
-                
-                Text("\"\(message)\"")
-                    .comicRelief(size: 20, isBold: false)
-                    .foregroundColor(.darkGray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
-            }
-            .padding(40)
-            .offset(y:-10)
+                VStack(spacing: 20) {
+                    Text("Ready for Delivery!")
+                        .comicRelief(size: 40, isBold: true)      .foregroundColor(.darkGray)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .padding(.horizontal, 30)
+                        .padding(.top,10)
+                        .frame(maxWidth: 270)
+                    
+                    Image("paket")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 130, maxHeight: 130)
+                    
+                    Text("\"\(message)\"")
+                        .comicRelief(size: 20, isBold: false)
+                        .foregroundColor(.darkGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                        .minimumScaleFactor(0.5)
+                }
+                    .padding(40)
+                    .offset(y:-10)
+            )
+            .transition(.scale.combined(with: .opacity))
         }
-    }
-    
-    init(message: String) {
-        self.message = message
     }
 }
 

@@ -13,6 +13,7 @@ struct MainMenuModalView: View {
     @AppStorage("sfx") private var sfx = 100.0
     @AppStorage("isVibrationOn") private var isVibrationOn = true
     @State private var isEditing = false
+    @State private var showResetConfirm = false
     
     var onResume: (() -> Void)? = nil
     var onCollectibles: (() -> Void)? = nil
@@ -20,6 +21,31 @@ struct MainMenuModalView: View {
     var onReset: (() -> Void)? = nil
     
     var body: some View {
+        ZStack {
+            if !showResetConfirm {
+                mainMenuContent
+            }
+
+            if showResetConfirm {
+                ResetConfirmModalView(
+                    onConfirm: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            showResetConfirm = false
+                        }
+                        onReset?()
+                    },
+                    onCancel: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            showResetConfirm = false
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var mainMenuContent: some View {
         ZStack {
             ZStack(alignment: .topLeading) {
                 Image("modal")
@@ -39,13 +65,13 @@ struct MainMenuModalView: View {
             }
             .padding(24)
             
-            VStack(spacing: 23) {
+            VStack(spacing: 14) {
                 Text("Menu")
-                    .comicRelief(size: 45, isBold: true)
+                    .comicRelief(size: 40, isBold: true)
                     .foregroundColor(.darkGray)
                     .multilineTextAlignment(.center)
                 
-                VStack(spacing: 15) {
+                VStack(spacing: 10) {
                     Button(action: {
                         onCollectibles?()
                     }){
@@ -53,11 +79,10 @@ struct MainMenuModalView: View {
                             Image(systemName: "book.fill")
                             Text("Collectibles")
                         }
-                        .comicRelief(size: 25, isBold: true)
-                        .tracking(1.5)
+                        .comicRelief(size: 18, isBold: true)
                         .foregroundColor(Color.cream)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 30)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
                         .background(Color.darkGray)
                         .cornerRadius(35)
                     }
@@ -69,44 +94,45 @@ struct MainMenuModalView: View {
                             Image(systemName: "person.2.fill")
                             Text("Relationships")
                         }
-                        .comicRelief(size: 25, isBold: true)
-                        .tracking(1.5)
+                        .comicRelief(size: 18, isBold: true)
                         .foregroundColor(Color.cream)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 20)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
                         .background(Color.darkGray)
                         .cornerRadius(35)
                     }
                     
                     Button(action: {
-                        onReset?()
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            showResetConfirm = true
+                        }
                     }){
                         HStack {
                             Image(systemName: "arrow.counterclockwise")
                             Text("Reset")
                         }
-                        .comicRelief(size: 25, isBold: true)
-                        .tracking(1.5)
+                        .comicRelief(size: 18, isBold: true)
                         .foregroundColor(Color.cream)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 38)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
                         .background(Color.red)
                         .cornerRadius(35)
                     }
                 }
+                .padding(.horizontal, 60)
                 
                 Text("Settings")
-                    .comicRelief(size: 30, isBold: true)
+                    .comicRelief(size: 26, isBold: true)
                     .foregroundColor(.darkGray)
-                    .padding(.top, 15)
+                    .padding(.top, 6)
                 
                 HStack {
                     Image(systemName: bgm == 0 ? "music.note.slash" : "music.note")
                         .foregroundColor(.red)
-                        .font(.system(size:28))
+                        .font(.system(size:24))
                     
                     Text("BGM")
-                        .comicRelief(size: 25, isBold: true)
+                        .comicRelief(size: 22, isBold: true)
                         .foregroundColor(.darkGray)
                     
                     Slider(
@@ -115,18 +141,18 @@ struct MainMenuModalView: View {
                         onEditingChanged: { editing in
                             isEditing = editing
                         }
-                    ).frame(width:130)
+                    ).frame(width:120)
                         .tint(Color.darkGray)
                 }
-                .padding(-10)
+                .padding(.vertical, -8)
                 
                 HStack {
                     Image(systemName: sfx == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
                         .foregroundColor(.red)
-                        .font(.system(size:28))
+                        .font(.system(size:24))
                     
                     Text("SFX")
-                        .comicRelief(size: 25, isBold: true)
+                        .comicRelief(size: 22, isBold: true)
                         .foregroundColor(.darkGray)
                     
                     Slider(
@@ -135,12 +161,11 @@ struct MainMenuModalView: View {
                         onEditingChanged: { editing in
                             isEditing = editing
                         }
-                    ).frame(width:130)
+                    ).frame(width:120)
                         .tint(Color.darkGray)
                 }
             }
-            .offset(y: -25)
-
+            .offset(y: -20)
         }
         .transition(.scale.combined(with: .opacity))
     }

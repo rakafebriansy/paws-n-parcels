@@ -113,6 +113,10 @@ class GameScene: SKScene {
         currentPhase = .tutorial
         print("[GameScene] Phase changed to tutorial.")
         
+        // Start spawning requests now that the background story has been dismissed
+        requestSystem?.fetchData()
+        requestSystem?.initialBurstSpawn()
+        
         if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
             print("[Tutorial] Showing joystick tutorial bubble")
             
@@ -417,7 +421,13 @@ class GameScene: SKScene {
         
         restoreActiveRequests()
         
-        reqSys.initialBurstSpawn()
+        // Only spawn requests immediately if the game is already past the background story.
+        // If still in backgroundStory phase, spawning is deferred to startTutorialIfNeeded().
+        if currentPhase != .backgroundStory {
+            reqSys.initialBurstSpawn()
+        } else {
+            print("[GameScene] Skipping initialBurstSpawn — background story not yet dismissed.")
+        }
     }
     
     private func setupStateMachineIfNeeded() {
@@ -493,6 +503,10 @@ class GameScene: SKScene {
             y: Double(GameConfig.playerInitialPosition.y)
         )
         GameDataManager.shared.deleteAllPendingRequests()
+        
+        // fetchData and initialBurstSpawn are intentionally NOT called here.
+        // Request generation is deferred until startTutorialIfNeeded() is called
+        // when the player taps "Tap to start" on the background story screen.
         
         playBGM()
         
@@ -762,6 +776,14 @@ class GameScene: SKScene {
     
     private func updateScreenEdgeArrows(viewWidth: CGFloat, viewHeight: CGFloat) {
         cameraNode.enumerateChildNodes(withName: "edge_arrow") { node, _ in node.removeFromParent() }
+        
+        // Don't generate arrows or tutorial bubbles while background story is showing
+        guard currentPhase != .backgroundStory else {
+            onJoystickBubbleUpdate?(nil)
+            onYellowBubbleUpdate?(nil)
+            onRedBubbleUpdate?(nil)
+            return
+        }
         
         if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
             let screenX = joystick.baseNode.position.x + (viewWidth / 2)

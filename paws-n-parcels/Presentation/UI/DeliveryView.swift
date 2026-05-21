@@ -20,6 +20,7 @@ struct DeliveryView: View {
     @State private var showPickUpSuccessAlert: Bool = false
     @State private var showDeliverySuccessAlert: Bool = false
     @State private var showNewCollectibleAlert: Bool = false
+    @State private var unlockedItem: Collectible? = nil
     
     @State private var hasPickedUp: Bool = false
     @State private var pendingNextLevel: Bool = false
@@ -74,8 +75,8 @@ struct DeliveryView: View {
                             DeliverySuccessAlertView()
                         }
                         
-                        if showNewCollectibleAlert {
-                            NewCollectibleAlertView(isPresented: $showNewCollectibleAlert)
+                        if showNewCollectibleAlert, let itemToShow = unlockedItem {
+                            NewCollectibleAlertView(isPresented: $showNewCollectibleAlert, item: itemToShow)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -108,6 +109,7 @@ struct DeliveryView: View {
             
             if result.isLevelUp {
                 pendingNextLevel = true
+                unlockedItem = result.unlockedItem
             }
             
         }

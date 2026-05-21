@@ -12,27 +12,15 @@ struct RelationshipPointsAlertView: View {
     var onClose: () -> Void
    
     var body: some View {
-        HStack(spacing: 8) {
-            Button(action: {
-                onClose()
-            }) {
-                Image("close_button")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 22, height: 22)
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Text("+\(points) Relationship Point")
-                .comicRelief(size: 14, isBold: true)
-                .foregroundColor(.brown)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(Color.sage)
-        .cornerRadius(18)
-        .padding(.top, 12)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        Text("+\(points) Relationship Point")
+            .comicRelief(size: 14, isBold: true)
+            .foregroundColor(.brown)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.sage)
+            .cornerRadius(18)
+            .padding(.top, 12)
+            .transition(.move(edge: .top).combined(with: .opacity))
     }
 }
 

@@ -17,7 +17,7 @@ struct TutorialBubbleView: View {
                 .frame(width: 170)
             
             Text(data.text)
-                .font(.custom("ComicRelief", size: 14))
+                .comicRelief(size: 14)
                 .foregroundColor(Color(red: 63/255, green: 55/255, blue: 49/255))
                 .multilineTextAlignment(.center)
                 .frame(width: 135)

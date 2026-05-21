@@ -9,6 +9,10 @@ import Foundation
 import CoreGraphics
 
 struct GameConfig {
+    // MARK: - Font
+    static let fontRegular: String = "ComicRelief-Regular"
+    static let fontBold: String = "ComicRelief-Bold"
+    
     static let deliveryRewardPoints: Int = 1
     
     static let pointsForAcquaintance: Int = 5

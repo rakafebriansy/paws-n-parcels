@@ -44,7 +44,7 @@ struct RelationshipView: View {
 
                 VStack(spacing: 12) {
                     Text(currentCharacter.name)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .comicRelief(size: 24, isBold: true)
                         .foregroundColor(.darkGray)
                         .padding(.top, 40)
 
@@ -102,7 +102,7 @@ struct RelationshipView: View {
                                         .shadow(color: Color.black.opacity(0.12), radius: 3, x: 2, y: 1)
 
                                     Text(String(characters[index].name.prefix(1)))
-                                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                                        .comicRelief(size: 13, isBold: true)
                                         .foregroundColor(selectedIndex == index ? .cream : .darkGray)
                                 }
                                 .frame(width: 32, height: 60)
@@ -116,7 +116,7 @@ struct RelationshipView: View {
                 .offset(x: 28)
             } else {
                 Text("No characters found.")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .comicRelief(size: 14)
                     .foregroundColor(.gray)
             }
 
@@ -199,11 +199,11 @@ struct RelationshipRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(characterName)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .comicRelief(size: 14, isBold: true)
                     .foregroundColor(.darkGray)
                 
                 Text(statusText)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .comicRelief(size: 11, isBold: true)
                     .foregroundColor(.darkGray.opacity(0.7))
             }
 
@@ -250,7 +250,7 @@ struct FractionalHeartView: View {
             
             Image(systemName: "heart")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.red)
+                .foregroundColor(.brown)
         }
         .frame(width: 15, height: 13)
     }

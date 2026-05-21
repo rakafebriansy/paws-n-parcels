@@ -19,21 +19,22 @@ struct BackgroundStoryView: View {
                     .resizable()
                     .scaledToFit()
                 
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     Text("In a peaceful village of forests, savannas, and rivers, lives Goldie. This cheerful golden retriever faithfully delivers packages, weaving warm friendships among the animals!")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .comicRelief(size: 13)
                         .foregroundColor(.darkGray)
                         .multilineTextAlignment(.center)
-                        .lineSpacing(4)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
                     
                     Button(action: onStart) {
                         Text("Tap to start!")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .comicRelief(size: 16, isBold: true)
                             .foregroundColor(.darkGray)
                     }
                 }
-                .padding(.horizontal, 48)
-                .padding(.vertical, 32)
+                .padding(.horizontal, 56)
+                .padding(.vertical, 28)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 40)

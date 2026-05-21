@@ -295,8 +295,6 @@ struct GameView: View {
         print("[GameView] View appeared. Injecting dependencies into GameScene...")
         
         deliverySystem.modelContext = modelContext
-        
-        deliverySystem.modelContext = modelContext
     
         gameScene.deliverySystem = deliverySystem
         gameScene.requestSystem = requestSystem
@@ -363,7 +361,13 @@ struct GameView: View {
                 showRelationshipPointsAlert = true
             }
             
-            dismissAlertsAutomatically()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+                if showRelationshipPointsAlert {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showRelationshipPointsAlert = false
+                    }
+                }
+            }
         }
         
         gameScene.onJoystickBubbleUpdate = { data in
@@ -381,26 +385,6 @@ struct GameView: View {
         gameScene.onTooFarBubbleUpdate = { data in
             withAnimation(.easeOut(duration: 0.15)) {
                 tooFarBubbleData = data
-            }
-        }
-    }
-    
-    private func dismissAlertsAutomatically() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + GameConfig.alertDisplayDuration) {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                showPickUpAlert = false
-                showDeliveryAlert = false
-            }
-            gameScene.resumeGameplay()
-        }
-        
-        if showRelationshipPointsAlert {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
-                if self.showRelationshipPointsAlert {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.showRelationshipPointsAlert = false
-                    }
-                }
             }
         }
     }

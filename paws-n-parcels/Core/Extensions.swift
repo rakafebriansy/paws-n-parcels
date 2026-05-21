@@ -20,6 +20,6 @@ extension Color {
 // Font
 extension View {
     func comicRelief(size: CGFloat, isBold: Bool = false) -> some View {
-        self.font(.custom(isBold ? "ComicRelief-Bold" : "ComicRelief-Regular", size: size))
+        self.font(.custom(isBold ? GameConfig.fontBold : GameConfig.fontRegular, size: size))
     }
 }
