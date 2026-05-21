@@ -155,8 +155,6 @@ struct GameView: View {
             }
             
             if showPostcard {
-                // Single top-level tap layer (zIndex 5 > points alert 4 > postcard 3)
-                // Catches all taps regardless of what's displayed underneath.
                 Color.clear
                     .contentShape(Rectangle())
                     .ignoresSafeArea()
@@ -176,7 +174,6 @@ struct GameView: View {
                     }
                     .zIndex(5)
                 
-                // Postcard display only — hit testing disabled so tap layer above catches it
                 if let request = deliveredRequest {
                     LetterView(letter: request.letter)
                         .transition(.asymmetric(
@@ -191,8 +188,6 @@ struct GameView: View {
             if showRelationshipPointsAlert {
                 VStack {
                     RelationshipPointsAlertView(points: relationshipPointsEarned) {
-                        // This callback fires when the internal close button is tapped.
-                        // When postcard is also showing, the top-level tap layer handles closing.
                         if !showPostcard {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 showRelationshipPointsAlert = false
@@ -300,15 +295,12 @@ struct GameView: View {
             }
         }
         .onAppear {
-            // SceneDelegate already initialized GameDataManager and seeded the DB.
-            // Only call setup here if context was somehow not set (e.g., Preview/Test).
             if GameDataManager.shared.context == nil {
                 GameDataManager.shared.setup(with: modelContext)
             }
             setupGameDependencies()
             setupGameSceneCallbacks()
             
-            // Set the correct phase based on saved state
             let initialPhase = currentPhase
             gameScene.currentPhase = initialPhase
             
@@ -316,9 +308,6 @@ struct GameView: View {
                 if initialPhase == .tutorial {
                     gameScene.startTutorialIfNeeded()
                 } else {
-                    // Returning player: registerHousesAndStartSpawning() ran before currentPhase
-                    // was set to .playing, so the initial burst spawn was skipped.
-                    // Trigger it now that the phase is correctly set.
                     gameScene.requestSystem?.initialBurstSpawn()
                 }
             }
@@ -390,8 +379,6 @@ struct GameView: View {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 showRelationshipPointsAlert = true
             }
-            // Relationship points alert stays visible until the player closes the postcard.
-            // No auto-dismiss timer — gameplay resumes via postcard tap.
         }
         
         gameScene.onLetterReady = { request in

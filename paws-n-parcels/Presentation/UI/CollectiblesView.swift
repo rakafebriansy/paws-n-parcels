@@ -50,7 +50,6 @@ struct CollectiblesView: View {
                 }
             )
             
-            // Back button top-left
             HStack {
                 Button(action: { close() }) {
                     Image("back_button")

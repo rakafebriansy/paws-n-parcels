@@ -8,7 +8,6 @@
 import Foundation
 import SwiftUI
 
-// Color Palette
 extension Color {
     static let cream = Color(red: 239/255, green: 223/255, blue: 199/255) // #EFDFC7
     static let brown = Color(red: 0.4, green: 0.25, blue: 0.15)
@@ -17,7 +16,6 @@ extension Color {
     static let red = Color(red: 223/255, green: 74/255, blue: 80/255)
 }
 
-// Font
 extension View {
     func comicRelief(size: CGFloat, isBold: Bool = false) -> some View {
         self.font(.custom(isBold ? GameConfig.fontBold : GameConfig.fontRegular, size: size))
