@@ -9,6 +9,7 @@ import SpriteKit
 import GameplayKit
 import SwiftData
 import SwiftUI
+import AVFoundation
 
 class GameScene: SKScene {
     
@@ -23,8 +24,8 @@ class GameScene: SKScene {
     }
     weak var requestSystem: RequestSystem? {
         didSet {
-            registerHousesAndStartSpawning()
             setupStateMachineIfNeeded()
+            registerHousesAndStartSpawning()
         }
     }
     
@@ -35,13 +36,36 @@ class GameScene: SKScene {
     var previousTime: TimeInterval = 0
     
     var onPickUpSuccess: ((String) -> Void)?
-    var onDeliverySuccess: ((Int) -> Void)?
+    var onDeliverySuccess: ((Int, Bool, Collectible?) -> Void)?
+    
+    var onJoystickBubbleUpdate: ((TutorialBubbleData?) -> Void)?
+    var onYellowBubbleUpdate: ((TutorialBubbleData?) -> Void)?
+    var onRedBubbleUpdate: ((TutorialBubbleData?) -> Void)?
+    var onTooFarBubbleUpdate: ((TooFarBubbleData?) -> Void)?
+    
+    var currentPhase: GamePhase = .backgroundStory
+    
+    private var tooFarBubbleTimer: TimeInterval = 0
+    
+    var hasShownYellowArrowTutorialTimer: Bool = false
+    var hasShownRedArrowTutorialTimer: Bool = false
+    
+    var currentDialogMessage: String?
+    
+    var yellowTutorialStartTime: TimeInterval? = nil
+    var yellowTutorialTargetHouseName: String? = nil
+    var redTutorialStartTime: TimeInterval? = nil
+    let tutorialDuration: TimeInterval = 8.0
+    
+    var lastArrowDebugLogTime: TimeInterval = 0
     
     private let bounceAction: SKAction = {
         let moveUp = SKAction.moveBy(x: 0, y: 10, duration: 0.5)
         let moveDown = moveUp.reversed()
         return SKAction.repeatForever(SKAction.sequence([moveUp, moveDown]))
     }()
+    
+    private var bgmPlayer: AVAudioPlayer?
 
     override func didMove(to view: SKView) {
         print("[GameScene] Starting Scene initialization...")
@@ -71,9 +95,41 @@ class GameScene: SKScene {
         print("[GameScene] Game Flow State Machine initialized in GamePlayingState.")
         
         print("[GameScene] Initialization complete. Game is ready to play!")
+        
+        print("[Tutorial] hasSeenJoystickTutorial: \(UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial"))")
+        print("[Tutorial] hasSeenYellowArrowTutorial: \(UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial"))")
+        print("[Tutorial] hasSeenRedArrowTutorial: \(UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial"))")
+        
+        if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            print("[Tutorial] Joystick tutorial deferred until background story is dismissed.")
+        }
+        
+        restoreGameState()
+        startAutoSaveTimer()
+        playBGM()
+    }
+    
+    func startTutorialIfNeeded() {
+        currentPhase = .tutorial
+        print("[GameScene] Phase changed to tutorial.")
+        
+        if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            print("[Tutorial] Showing joystick tutorial bubble")
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
+                UserDefaults.standard.set(true, forKey: "hasSeenJoystickTutorial")
+                self.onJoystickBubbleUpdate?(nil)
+                self.currentPhase = .playing
+                print("[GameScene] Phase changed to playing.")
+            }
+        } else {
+            currentPhase = .playing
+            print("[GameScene] No tutorial needed, phase changed to playing.")
+        }
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard currentPhase != .backgroundStory else { return }
         guard gameStateMachine?.currentState is GamePlayingState else { return }
         
         let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
@@ -83,12 +139,11 @@ class GameScene: SKScene {
         else { return }
         
         let location = touch.location(in: cameraNode)
-        let treshold = -(self.size.height / 4)
-        
-        joystick.processTouchBegan(location: location, treshold: treshold)
+        joystick.processTouchBegan(location: location)
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard currentPhase != .backgroundStory else { return }
         guard gameStateMachine?.currentState is GamePlayingState else { return }
         
         let isInteracting = playerEntity.component(ofType: PlayerStateComponent.self)?.stateMachine?.currentState is PlayerInteractingState
@@ -155,6 +210,16 @@ class GameScene: SKScene {
         gameStateMachine?.update(deltaTime: deltaTime)
         
         updateIndicators()
+        
+        if tooFarBubbleTimer > 0 {
+            tooFarBubbleTimer -= deltaTime
+            if tooFarBubbleTimer <= 0 {
+                tooFarBubbleTimer = 0
+                onTooFarBubbleUpdate?(nil)
+            } else {
+                updateTooFarBubblePosition()
+            }
+        }
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
             let viewWidth = self.size.width * cameraNode.xScale
@@ -235,12 +300,11 @@ class GameScene: SKScene {
     }
     
     func setupPlayer() {
-        let texture = SKTexture(imageNamed: "goldie_down_1")
-        let playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerVerticalSize)
+        let texture = SKTexture(imageNamed: "goldie_front_1")
+        let playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerFrontSize)
         playerNode.zPosition = GameConfig.playerZPosition
         playerNode.position = GameConfig.playerInitialPosition
         
-        // Circular physics body matching Goldie's footprint
         playerNode.physicsBody = SKPhysicsBody(circleOfRadius: GameConfig.playerPhysicsRadius)
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
@@ -350,6 +414,9 @@ class GameScene: SKScene {
         print("[GameScene] Successfully registered \(reqSys.houses.count) houses into the system.")
         
         reqSys.fetchData()
+        
+        restoreActiveRequests()
+        
         reqSys.initialBurstSpawn()
     }
     
@@ -365,10 +432,193 @@ class GameScene: SKScene {
     }
     
     func resumeGameplay() {
+        gameStateMachine?.enter(GamePlayingState.self)
         if let stateComponent = playerEntity.component(ofType: PlayerStateComponent.self) {
             stateComponent.stateMachine?.enter(PlayerIdleState.self)
             print("[GameScene] Gameplay resumed, entering PlayerIdleState.")
         }
+    }
+    
+    func resetGame() {
+        UserDefaults.standard.set(false, forKey: "hasSeenJoystickTutorial")
+        UserDefaults.standard.set(false, forKey: "hasSeenYellowArrowTutorial")
+        UserDefaults.standard.set(false, forKey: "hasSeenRedArrowTutorial")
+        UserDefaults.standard.set(false, forKey: "hasSeenBackgroundStory")
+        
+        hasShownYellowArrowTutorialTimer = false
+        hasShownRedArrowTutorialTimer = false
+        currentDialogMessage = nil
+        yellowTutorialStartTime = nil
+        yellowTutorialTargetHouseName = nil
+        redTutorialStartTime = nil
+        
+        if let movement = playerEntity.component(ofType: MovementComponent.self) {
+            movement.velocity = .zero
+        }
+        joystick.processTouchEnded()
+        
+        if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
+            playerNode.position = GameConfig.playerInitialPosition
+        }
+        
+        deliverySystem?.activePackage = nil
+        if let deliveryComp = playerEntity.component(ofType: DeliveryComponent.self) {
+            deliveryComp.activeRequest = nil
+        }
+        deliverySystem?.stateMachine?.enter(NoActiveRequestState.self)
+        
+        if let mapBuilder = mapBuilder {
+            for entity in mapBuilder.environmentEntities {
+                if let house = entity as? HouseEntity,
+                   let reqComp = house.component(ofType: RequestComponent.self) {
+                    requestSystem?.system.removeComponent(reqComp)
+                    house.removeComponent(ofType: RequestComponent.self)
+                }
+            }
+        }
+        
+        tooFarBubbleTimer = 0
+        onTooFarBubbleUpdate?(nil)
+        onJoystickBubbleUpdate?(nil)
+        onYellowBubbleUpdate?(nil)
+        onRedBubbleUpdate?(nil)
+        
+        currentPhase = .backgroundStory
+        
+        gameStateMachine?.enter(GamePlayingState.self)
+        
+        UserDefaults.standard.removeObject(forKey: "activeRequestSenderNames")
+        GameDataManager.shared.savePlayerPosition(
+            x: Double(GameConfig.playerInitialPosition.x),
+            y: Double(GameConfig.playerInitialPosition.y)
+        )
+        GameDataManager.shared.deleteAllPendingRequests()
+        
+        playBGM()
+        
+        print("[GameScene] Game reset to initial state.")
+    }
+    
+    private func playBGM() {
+        bgmPlayer?.stop()
+        bgmPlayer = nil
+        
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("[BGM] Error setting up audio session: \(error)")
+        }
+        
+        guard let url = Bundle.main.url(forResource: "1. Playground", withExtension: "m4a") else {
+            print("[BGM] Error: Could not find BGM file in bundle")
+            return
+        }
+        
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.numberOfLoops = -1
+            player.volume = 0.0
+            player.prepareToPlay()
+            player.play()
+            player.setVolume(1.0, fadeDuration: 2.0)
+            self.bgmPlayer = player
+            print("[BGM] Playing BGM with fade-in.")
+        } catch {
+            print("[BGM] Error initializing AVAudioPlayer: \(error)")
+        }
+    }
+    
+    func saveGameState() {
+        guard let playerNode = playerEntity?.component(ofType: RenderComponent.self)?.node else {
+            print("[GameScene] Cannot save: player node not available.")
+            return
+        }
+        
+        let playerX = Double(playerNode.position.x)
+        let playerY = Double(playerNode.position.y)
+        
+        var activeRequestSenderNames: [String] = []
+        if let mapBuilder = mapBuilder {
+            for entity in mapBuilder.environmentEntities {
+                if let house = entity as? HouseEntity,
+                   let requestComp = house.component(ofType: RequestComponent.self),
+                   let ownerName = house.component(ofType: OwnerComponent.self)?.characterName {
+                    let request = requestComp.request
+                    if !request.isCompleted {
+                        activeRequestSenderNames.append(ownerName)
+                    }
+                }
+            }
+        }
+        
+        GameDataManager.shared.saveGameState(
+            playerX: playerX,
+            playerY: playerY,
+            activeRequestSenderNames: activeRequestSenderNames
+        )
+    }
+    
+    func restoreGameState() {
+        if let profile = GameDataManager.shared.fetchPlayerProfile() {
+            let savedX = CGFloat(profile.positionX)
+            let savedY = CGFloat(profile.positionY)
+            
+            if savedX != 0 || savedY != 0 {
+                if let playerNode = playerEntity?.component(ofType: RenderComponent.self)?.node {
+                    playerNode.position = CGPoint(x: savedX, y: savedY)
+                    print("[GameScene] Player position restored to (\(savedX), \(savedY))")
+                }
+            }
+        }
+    }
+    
+    private func restoreActiveRequests() {
+        let pendingRequests = GameDataManager.shared.fetchPendingRequests()
+        let savedSenderNames = GameDataManager.shared.loadActiveRequestSenderNames()
+        
+        var restoredCount = 0
+        if let mapBuilder = mapBuilder, !pendingRequests.isEmpty {
+            for request in pendingRequests {
+                let senderName = request.sender.name
+                
+                guard savedSenderNames.contains(senderName) else {
+                    GameDataManager.shared.context?.delete(request)
+                    continue
+                }
+                
+                if let house = mapBuilder.environmentEntities.first(where: {
+                    ($0 as? HouseEntity)?.component(ofType: OwnerComponent.self)?.characterName == senderName
+                }) as? HouseEntity {
+                    guard house.component(ofType: RequestComponent.self) == nil else { continue }
+                    
+                    let component = RequestComponent(request: request)
+                    house.addComponent(component)
+                    requestSystem?.system.addComponent(component)
+                    restoredCount += 1
+                }
+            }
+            GameDataManager.shared.save()
+        }
+        
+        if let pickedUpRequest = GameDataManager.shared.fetchPickedUpRequests().first {
+            deliverySystem?.pickUpPackage(request: pickedUpRequest, for: playerEntity)
+            deliverySystem?.stateMachine?.enter(CarryingState.self)
+            print("[GameScene] Restored carried request from \(pickedUpRequest.sender.name) to \(pickedUpRequest.receiver.name).")
+        }
+        
+        print("[GameScene] Restored \(restoredCount) active requests from saved state.")
+    }
+    
+    func startAutoSaveTimer() {
+        let autoSaveAction = SKAction.sequence([
+            SKAction.wait(forDuration: 30.0),
+            SKAction.run { [weak self] in
+                self?.saveGameState()
+            }
+        ])
+        self.run(SKAction.repeatForever(autoSaveAction), withKey: "autoSave")
+        print("[GameScene] Auto-save timer started (every 30 seconds).")
     }
     
     private func updateIndicators() {
@@ -390,34 +640,73 @@ class GameScene: SKScene {
                 let distanceSquared = (dx * dx) + (dy * dy)
                 let isWithinRange = distanceSquared <= GameConfig.interactionRadiusSquared
                 
-                var highlight = houseNode.childNode(withName: "indicator_highlight") as? SKShapeNode
+                var highlight = houseNode.childNode(withName: "indicator_highlight") as? SKSpriteNode
                 if highlight == nil {
-                    let margin: CGFloat = 10
-                    let rect = CGRect(
-                        x: -(houseNode.size.width / 2) - (margin / 2),
-                        y: -(houseNode.size.height / 2) - (margin / 2),
-                        width: houseNode.size.width + margin,
-                        height: houseNode.size.height + margin
-                    )
+                    let houseTexture = houseNode.texture ?? SKTexture(imageNamed: "house_1")
+                    let highlightSize = houseNode.size
                     
-                    highlight = SKShapeNode(rect: rect, cornerRadius: 8)
-                    highlight?.name = "indicator_highlight"
-                    highlight?.strokeColor = .systemYellow
-                    highlight?.lineWidth = 6
-                    highlight?.fillColor = .clear
-                    highlight?.zPosition = -1
+                    let h = SKSpriteNode(texture: houseTexture, size: highlightSize)
+                    h.name = "indicator_highlight"
+                    h.color = .clear
+                    h.colorBlendFactor = 1.0
+                    h.zPosition = -1
                     
-                    if let h = highlight { houseNode.addChild(h) }
+                    h.physicsBody = SKPhysicsBody(texture: houseTexture, size: highlightSize)
+                    h.physicsBody?.isDynamic = false
+                    h.physicsBody?.categoryBitMask = 0
+                    h.physicsBody?.collisionBitMask = 0
+                    h.physicsBody?.contactTestBitMask = 0
+                    
+                    let strokeThickness: CGFloat = 2.5
+                    let offsets = [
+                        CGPoint(x: strokeThickness, y: 0),
+                        CGPoint(x: -strokeThickness, y: 0),
+                        CGPoint(x: 0, y: strokeThickness),
+                        CGPoint(x: 0, y: -strokeThickness),
+                        CGPoint(x: strokeThickness, y: strokeThickness),
+                        CGPoint(x: -strokeThickness, y: -strokeThickness),
+                        CGPoint(x: strokeThickness, y: -strokeThickness),
+                        CGPoint(x: -strokeThickness, y: strokeThickness)
+                    ]
+                    
+                    for (index, offset) in offsets.enumerated() {
+                        let outlineSprite = SKSpriteNode(texture: houseTexture, size: highlightSize)
+                        outlineSprite.name = "outline_\(index)"
+                        outlineSprite.position = offset
+                        outlineSprite.colorBlendFactor = 1.0
+                        outlineSprite.color = .clear
+                        outlineSprite.zPosition = -1
+                        h.addChild(outlineSprite)
+                    }
+                    
+                    houseNode.addChild(h)
+                    highlight = h
                 }
                 
                 if isSender && isWithinRange && !isHoldingPackage {
-                    highlight?.strokeColor = .systemYellow
                     highlight?.isHidden = false
+                    if let subSprites = highlight?.children as? [SKSpriteNode] {
+                        for sprite in subSprites {
+                            sprite.color = .yellow
+                            sprite.alpha = 1.0
+                        }
+                    }
                 } else if isTarget && isWithinRange {
-                    highlight?.strokeColor = .systemRed
                     highlight?.isHidden = false
+                    if let subSprites = highlight?.children as? [SKSpriteNode] {
+                        for sprite in subSprites {
+                            sprite.color = .red
+                            sprite.alpha = 1.0
+                        }
+                    }
                 } else {
                     highlight?.isHidden = true
+                    if let subSprites = highlight?.children as? [SKSpriteNode] {
+                        for sprite in subSprites {
+                            sprite.color = .clear
+                            sprite.alpha = 0.0
+                        }
+                    }
                 }
                 
                 let senderIcon = houseNode.childNode(withName: "indicator_sender")
@@ -449,42 +738,46 @@ class GameScene: SKScene {
     }
     
     private func showTooFarIndicator(on houseNode: SKNode) {
-        houseNode.childNode(withName: "too_far_x")?.removeFromParent()
+        tooFarBubbleTimer = 2.0
+        updateTooFarBubblePosition()
+    }
+    
+    private func updateTooFarBubblePosition() {
+        guard let view = self.view,
+              let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node else { return }
+        let viewWidth = view.bounds.width
+        let viewHeight = view.bounds.height
         
-        let xLabel = SKLabelNode(text: "❌")
-        xLabel.name = "too_far_x"
-        xLabel.fontSize = 55
-        xLabel.zPosition = 200
-        xLabel.position = CGPoint(x: 0, y: 0)
+        let absoluteScenePos = CGPoint(x: playerNode.position.x, y: playerNode.position.y + 140)
+        let relativePos = cameraNode.convert(absoluteScenePos, from: self)
+        let screenX = relativePos.x + (viewWidth / 2)
+        let screenY = -relativePos.y + (viewHeight / 2)
         
-        let shadow = SKLabelNode(text: "❌")
-        shadow.fontSize = 55
-        shadow.fontColor = .black
-        shadow.alpha = 0.5
-        shadow.zPosition = -1
-        shadow.position = CGPoint(x: 3, y: -3)
-        xLabel.addChild(shadow)
-        
-        xLabel.setScale(0.0)
-        houseNode.addChild(xLabel)
-        
-        let popIn = SKAction.scale(to: 1.2, duration: 0.15)
-        let bounce = SKAction.scale(to: 1.0, duration: 0.1)
-        let moveUp = SKAction.moveBy(x: 0, y: 30, duration: 0.25)
-        
-        let spawnGroup = SKAction.group([SKAction.sequence([popIn, bounce]), moveUp])
-        
-        let wait = SKAction.wait(forDuration: 2.75)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
-        let remove = SKAction.removeFromParent()
-        
-        xLabel.run(SKAction.sequence([spawnGroup, wait, fadeOut, remove]))
+        let data = TooFarBubbleData(
+            text: "Too far away.",
+            position: CGPoint(x: screenX, y: screenY)
+        )
+        onTooFarBubbleUpdate?(data)
     }
     
     private func updateScreenEdgeArrows(viewWidth: CGFloat, viewHeight: CGFloat) {
-        cameraNode.enumerateChildNodes(withName: "edge_arrow") {
-            node, _ in
-            node.removeFromParent()
+        cameraNode.enumerateChildNodes(withName: "edge_arrow") { node, _ in node.removeFromParent() }
+        
+        if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            let screenX = joystick.baseNode.position.x + (viewWidth / 2)
+            let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
+            
+            let clampedX = min(max(screenX, 70), viewWidth - 70)
+            let clampedY = screenY - 110
+            
+            let data = TutorialBubbleData(
+                text: "Move Goldie using this joystick.",
+                position: CGPoint(x: clampedX, y: clampedY),
+                isInTopZone: false
+            )
+            onJoystickBubbleUpdate?(data)
+        } else {
+            onJoystickBubbleUpdate?(nil)
         }
         
         guard let mapBuilder = mapBuilder else {
@@ -498,29 +791,150 @@ class GameScene: SKScene {
         let ovalRadiusX = (screenWidth / 2) - padding
         let ovalRadiusY = (screenHeight / 2) - padding
         
+        let hasActivePackage = deliverySystem?.activePackage != nil
+        
+        let now0 = CACurrentMediaTime()
+        let shouldLog = now0 - lastArrowDebugLogTime >= 2.0
+        if shouldLog {
+            lastArrowDebugLogTime = now0
+            let dsStatus = deliverySystem != nil ? "ALIVE" : "NIL"
+            let apStatus = hasActivePackage ? "YES" : "NO"
+            print("[Arrow DEBUG] deliverySystem=\(dsStatus), activePackage=\(apStatus)")
+        }
+        
         if let activePackage = deliverySystem?.activePackage {
+            onYellowBubbleUpdate?(nil)
+            
             let receiverName = activePackage.receiver.name
             if let targetHouse = mapBuilder.environmentEntities.first(where: {
                 ($0 as? HouseEntity)?.component(ofType: OwnerComponent.self)?.characterName == receiverName
             }) as? HouseEntity, let houseNode = targetHouse.component(ofType: RenderComponent.self)?.node {
-                createArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+                
+                let arrowNode = createArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+                
+                if shouldLog {
+                    print("[Arrow DEBUG] RED: receiver=\(receiverName), houseFound=YES, arrowCreated=\(arrowNode != nil)")
+                }
+                
+                if !UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial") {
+                    let now2 = CACurrentMediaTime()
+                    
+                    if !hasShownRedArrowTutorialTimer {
+                        hasShownRedArrowTutorialTimer = true
+                        redTutorialStartTime = now2
+                    }
+                    
+                    if let startTime = redTutorialStartTime {
+                        if now2 - startTime < tutorialDuration {
+                            if let validArrow = arrowNode {
+                                let screenX = validArrow.position.x + (viewWidth / 2)
+                                let screenY = -validArrow.position.y + (viewHeight / 2)
+                                
+                                let isInTopZone = validArrow.position.y > 0
+                                
+                                let clampedX = min(max(screenX, 70), viewWidth - 70)
+                                let clampedY = screenY + (isInTopZone ? 55 : -55)
+                                
+                                let data = TutorialBubbleData(
+                                    text: "Follow the red arrow to deliver the parcel.",
+                                    position: CGPoint(x: clampedX, y: clampedY),
+                                    isInTopZone: isInTopZone
+                                )
+                                onRedBubbleUpdate?(data)
+                            } else {
+                                onRedBubbleUpdate?(nil)
+                            }
+                        } else {
+                            UserDefaults.standard.set(true, forKey: "hasSeenRedArrowTutorial")
+                            onRedBubbleUpdate?(nil)
+                        }
+                    }
+                }
+            } else {
+                print("[Arrow] RED: Target house not found for receiver: \(receiverName)")
+                onRedBubbleUpdate?(nil)
             }
         } else {
-            for entity in mapBuilder.environmentEntities {
-                if let house = entity as? HouseEntity, house.component(ofType: RequestComponent.self) != nil, let houseNode = house.component(ofType: RenderComponent.self)?.node {
-                    createArrowNode(to: houseNode.position, assetName: "arrow_yellow", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+            onRedBubbleUpdate?(nil)
+            
+            let now = CACurrentMediaTime()
+            
+            let allRequestingHouses = mapBuilder.environmentEntities
+                .compactMap { $0 as? HouseEntity }
+                .filter { $0.component(ofType: RequestComponent.self) != nil }
+            
+            if shouldLog {
+                print("[Arrow DEBUG] YELLOW: requestingHouses=\(allRequestingHouses.count)")
+            }
+            
+            if yellowTutorialTargetHouseName == nil, let firstTarget = allRequestingHouses.first?.component(ofType: OwnerComponent.self)?.characterName {
+                yellowTutorialTargetHouseName = firstTarget
+            }
+            
+            var didShowYellowTutorialBubble = false
+            
+            for house in allRequestingHouses {
+                guard let name = house.component(ofType: OwnerComponent.self)?.characterName,
+                      let houseNode = house.component(ofType: RenderComponent.self)?.node else { continue }
+                
+                let arrowNode = createArrowNode(
+                    to: houseNode.position,
+                    assetName: "arrow_yellow",
+                    ovalX: ovalRadiusX,
+                    ovalY: ovalRadiusY,
+                    viewW: viewWidth,
+                    viewH: viewHeight
+                )
+                
+                if name == yellowTutorialTargetHouseName,
+                   !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
+                    
+                    if !hasShownYellowArrowTutorialTimer {
+                        hasShownYellowArrowTutorialTimer = true
+                        yellowTutorialStartTime = now
+                    }
+                    
+                    if let startTime = yellowTutorialStartTime {
+                        if now - startTime < tutorialDuration {
+                            if let validArrow = arrowNode {
+                                let screenX = validArrow.position.x + (viewWidth / 2)
+                                let screenY = -validArrow.position.y + (viewHeight / 2)
+                                
+                                let isInTopZone = validArrow.position.y > 0
+                                
+                                let clampedX = min(max(screenX, 70), viewWidth - 70)
+                                let clampedY = screenY + (isInTopZone ? 55 : -55)
+                                
+                                let data = TutorialBubbleData(
+                                    text: "Follow the yellow arrow to pick up the parcel.",
+                                    position: CGPoint(x: clampedX, y: clampedY),
+                                    isInTopZone: isInTopZone
+                                )
+                                onYellowBubbleUpdate?(data)
+                                didShowYellowTutorialBubble = true
+                            }
+                        } else {
+                            UserDefaults.standard.set(true, forKey: "hasSeenYellowArrowTutorial")
+                            onYellowBubbleUpdate?(nil)
+                            didShowYellowTutorialBubble = true
+                        }
+                    }
                 }
+            }
+            
+            if !didShowYellowTutorialBubble && !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
+                onYellowBubbleUpdate?(nil)
             }
         }
     }
     
-    private func createArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) {
+    private func createArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) -> SKSpriteNode? {
         let dx = targetPosition.x - cameraNode.position.x
         let dy = targetPosition.y - cameraNode.position.y
         
         let safetyMargin: CGFloat = 50.0
         if abs(dx) < (viewW / 2) - safetyMargin && abs(dy) < (viewH / 2) - safetyMargin {
-            return
+            return nil
         }
         
         let angle = atan2(dy, dx)
@@ -537,7 +951,9 @@ class GameScene: SKScene {
         arrowNode.zPosition = 90_000
         
         cameraNode.addChild(arrowNode)
+        return arrowNode
     }
+    
 }
 
 #Preview {

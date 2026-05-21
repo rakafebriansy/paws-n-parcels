@@ -27,14 +27,13 @@ struct PickUpSuccessAlertView: View {
                 
                 Text("\"\(message)\"")
                     .comicRelief(size: 20, isBold: false)
-                    .foregroundColor(.brown)
+                    .foregroundColor(.darkGray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
             }
             .padding(40)
+            .offset(y:-10)
         }
-        .shadow(radius: 10)
-        .transition(.scale.combined(with: .opacity))
     }
     
     init(message: String) {
@@ -45,6 +44,6 @@ struct PickUpSuccessAlertView: View {
 #Preview {
     ZStack {
         Color.black.opacity(0.3).ignoresSafeArea()
-        PickUpSuccessAlertView(message: "Wow, thanks a ton! Please deliver it in a flash!")
+        PickUpSuccessAlertView(message: "Oh, you're here! I’ve been waiting to get this moving. Please deliver it in a flash, okay? Merci—now hop to it!")
     }
 }

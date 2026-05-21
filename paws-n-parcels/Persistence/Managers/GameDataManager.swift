@@ -41,4 +41,55 @@ class GameDataManager {
         let descriptor = FetchDescriptor<Collectible>()
         return (try? context?.fetch(descriptor)) ?? []
     }
+    
+    func fetchPlayerProfile() -> PlayerProfile? {
+        let descriptor = FetchDescriptor<PlayerProfile>()
+        return (try? context?.fetch(descriptor))?.first
+    }
+    
+    func savePlayerPosition(x: Double, y: Double) {
+        if let profile = fetchPlayerProfile() {
+            profile.positionX = x
+            profile.positionY = y
+        } else {
+            let profile = PlayerProfile(positionX: x, positionY: y)
+            context?.insert(profile)
+        }
+        save()
+        print("[GameDataManager] Player position saved: (\(x), \(y))")
+    }
+    
+    func fetchPendingRequests() -> [Request] {
+        let descriptor = FetchDescriptor<Request>(predicate: #Predicate<Request> { !$0.isCompleted && !$0.isPickedUp })
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+    
+    func fetchPickedUpRequests() -> [Request] {
+        let descriptor = FetchDescriptor<Request>(predicate: #Predicate<Request> { $0.isPickedUp && !$0.isCompleted })
+        return (try? context?.fetch(descriptor)) ?? []
+    }
+    
+    func deleteAllPendingRequests() {
+        let allPending = fetchPendingRequests() + fetchPickedUpRequests()
+        for request in allPending {
+            context?.delete(request)
+        }
+        save()
+        print("[GameDataManager] Deleted \(allPending.count) pending requests.")
+    }
+    
+    func saveActiveRequests(senderNames: [String]) {
+        UserDefaults.standard.set(senderNames, forKey: "activeRequestSenderNames")
+        print("[GameDataManager] Saved \(senderNames.count) active request sender names.")
+    }
+    
+    func loadActiveRequestSenderNames() -> [String] {
+        return UserDefaults.standard.stringArray(forKey: "activeRequestSenderNames") ?? []
+    }
+    
+    func saveGameState(playerX: Double, playerY: Double, activeRequestSenderNames: [String]) {
+        savePlayerPosition(x: playerX, y: playerY)
+        saveActiveRequests(senderNames: activeRequestSenderNames)
+        print("[GameDataManager] Full game state saved.")
+    }
 }

@@ -24,12 +24,17 @@ class RequestSystem {
     
     init() { }
     
+    deinit {
+        print("[RequestSystem] DEALLOCATED! This should NOT happen during gameplay.")
+    }
+    
     func triggerNewPackageSpawn(delaySeconds: Int = 0) {
         scheduleNextPackageSpawn(delaySeconds: delaySeconds)
     }
     
     func deliverRequest(_ request: Request) {
         request.isCompleted = true
+        GameDataManager.shared.context?.delete(request)
         GameDataManager.shared.save()
         
         scheduleNextPackageSpawn(delaySeconds: 10)
@@ -40,6 +45,9 @@ class RequestSystem {
         else { return nil }
                 
         let request = component.request
+        request.isPickedUp = true
+        GameDataManager.shared.save()
+        
         house.removeComponent(ofType: RequestComponent.self)
         system.removeComponent(component)
         
@@ -57,15 +65,24 @@ class RequestSystem {
     }
     
     func initialBurstSpawn() {
-        let activeCount = houses.lazy.filter { $0.component(ofType: RequestComponent.self) != nil }.count
-        let needed = max(0, GameConfig.maxRequests - activeCount)
+        let houseRequestCount = houses.lazy.filter { $0.component(ofType: RequestComponent.self) != nil }.count
+        let pickedUpCount = GameDataManager.shared.fetchPickedUpRequests().count
+        let totalActive = houseRequestCount + pickedUpCount
+        let needed = max(0, GameConfig.maxRequests - totalActive)
         
         guard needed > 0 else { return }
         
+        print("[RequestSystem] initialBurstSpawn: spawning \(needed) requests (active: \(totalActive), max: \(GameConfig.maxRequests))")
+        
         Task {
-            for _ in 0..<needed {
+            for i in 0..<needed {
+                if i > 0 {
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
+                }
+                print("[RequestSystem] initialBurstSpawn: generating request \(i+1)/\(needed)")
                 await generateAndSpawnRequestAsync()
             }
+            print("[RequestSystem] initialBurstSpawn: COMPLETED all \(needed) requests")
         }
     }
     
@@ -74,7 +91,10 @@ class RequestSystem {
               let senderName = senderHouse.component(ofType: OwnerComponent.self)?.characterName,
               let chosenRel = getRandomRelationship(for: senderName),
               let recipientName = chosenRel.partner(of: senderName)
-        else { return }
+        else {
+            print("[RequestSystem] generateAndSpawnRequestAsync: FAILED at guard (no eligible house or relationship)")
+            return
+        }
         
         guard let senderAnimal = animalsMap[senderName],
               let receiverAnimal = animalsMap[recipientName]
@@ -86,19 +106,29 @@ class RequestSystem {
         reservedHouseNamesToSpawn.insert(senderName)
         defer { reservedHouseNamesToSpawn.remove(senderName) }
         
+        print("[RequestSystem] Generating letter from \(senderName) to \(recipientName)...")
         if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: chosenRel.friendshipLevel) {
             let newRequest = Request(sender: senderAnimal, receiver: receiverAnimal, letter: letterData)
+            
+            GameDataManager.shared.context?.insert(newRequest)
+            GameDataManager.shared.save()
+            
             let component = RequestComponent(request: newRequest)
             
             senderHouse.addComponent(component)
             system.addComponent(component)
+            print("[RequestSystem] SUCCESS: Request created at \(senderName)'s house -> \(recipientName)")
+        } else {
+            print("[RequestSystem] FAILED: AI letter generation returned nil for \(senderName) -> \(recipientName)")
         }
     }
     
     private func scheduleNextPackageSpawn(delaySeconds: Int) {
-        let activeCount = houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count
+        let houseRequestCount = houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count
+        let pickedUpCount = GameDataManager.shared.fetchPickedUpRequests().count
+        let totalActive = houseRequestCount + pickedUpCount
         
-        guard activeCount < GameConfig.maxRequests
+        guard totalActive < GameConfig.maxRequests
         else { return }
         
         Task {
@@ -117,6 +147,9 @@ class RequestSystem {
             else {
                 return false
             }
+            
+            guard animalsMap[name] != nil else { return false }
+            guard relationships.contains(where: { $0.friendOne.name == name || $0.friendTwo.name == name }) else { return false }
             
             let isHoldingRequest = house.component(ofType: RequestComponent.self) != nil
             

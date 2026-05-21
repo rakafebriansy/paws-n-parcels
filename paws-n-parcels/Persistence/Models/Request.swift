@@ -13,12 +13,14 @@ class Request {
     var sender: Animal
     var receiver: Animal
     var isCompleted: Bool
+    var isPickedUp: Bool
     var letter: PackageLetter
     
-    init(sender: Animal, receiver: Animal, letter: PackageLetter, isCompleted: Bool = false) {
+    init(sender: Animal, receiver: Animal, letter: PackageLetter, isCompleted: Bool = false, isPickedUp: Bool = false) {
         self.sender = sender
         self.receiver = receiver
         self.letter = letter
         self.isCompleted = isCompleted
+        self.isPickedUp = isPickedUp
     }
 }

@@ -23,7 +23,7 @@ class DeliveryBaseState: GKState {
 @MainActor
 class NoActiveRequestState: DeliveryBaseState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
-        return stateClass == WaitingForPickupState.self
+        return stateClass == WaitingForPickupState.self || stateClass == CarryingState.self
     }
     
     override func didEnter(from previousState: GKState?) {
@@ -92,7 +92,7 @@ class DeliveryCompletedState: DeliveryBaseState {
         }
         
         let result = deliverySystem.deliverPackage(for: scene.playerEntity, relationships: requestSystem.relationships)
-        scene.onDeliverySuccess?(result.pointsAdded)
+        scene.onDeliverySuccess?(result.pointsAdded, result.isLevelUp, result.unlockedItem)
         
         requestSystem.triggerNewPackageSpawn(delaySeconds: GameConfig.newRequestSpawnDelay)
         

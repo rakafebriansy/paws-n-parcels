@@ -16,4 +16,5 @@ enum ZPositionStrategy {
 enum PhysicsShape {
     case rectangle(size: CGSize)
     case circle(radius: CGFloat, offset: CGPoint)
+    case texture
 }

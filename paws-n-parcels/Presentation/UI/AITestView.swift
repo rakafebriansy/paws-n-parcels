@@ -60,7 +60,6 @@ struct AITestView: View {
         isLoading = true
         statusMessage = "Generating Letters..."
 
-        // 1. Define your test cases in an array
         let scenarios = [
             (from: "Gab",   to: "Somi",  level: 0),
             (from: "Somi",  to: "Josan", level: 1),
@@ -70,7 +69,6 @@ struct AITestView: View {
         ]
 
         Task { @MainActor in
-            // 2. Loop through the scenarios
             for scene in scenarios {
                 if let letter = await AIService.shared.generateSingleLetter(
                     from: scene.from,
@@ -81,7 +79,6 @@ struct AITestView: View {
                 }
             }
 
-            // 3. This MUST be inside the Task to wait for the loop to finish!
             self.statusMessage = "Finished! Generated \(scenarios.count) unique letters."
             self.isLoading = false
         }

@@ -18,7 +18,7 @@ struct MapBlueprint: Codable {
 }
 
 struct GeneratorConfig: Codable {
-    let type: String // "forest" or "fence"
+    let type: String
     let origin: CGPoint
     let columns: Int?
     let rows: Int?

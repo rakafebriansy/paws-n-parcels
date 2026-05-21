@@ -44,7 +44,7 @@ struct NewCollectibleAlertView: View {
 }
 
 #Preview {
-   
+    
     ZStack {
         Color.black.opacity(0.3).ignoresSafeArea()
         let item = Collectible(name: "sunflower")

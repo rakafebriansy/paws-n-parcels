@@ -229,6 +229,12 @@ class MapBuilder {
                 node.physicsBody = SKPhysicsBody(rectangleOf: rectSize)
             case .circle(let radius, let centerOffset):
                 node.physicsBody = SKPhysicsBody(circleOfRadius: radius, center: centerOffset)
+            case .texture:
+                if let texture = node.texture {
+                    node.physicsBody = SKPhysicsBody(texture: texture, size: size)
+                } else {
+                    node.physicsBody = SKPhysicsBody(rectangleOf: size)
+                }
             }
             node.physicsBody?.isDynamic = false
             node.physicsBody?.restitution = 0.0
@@ -252,34 +258,40 @@ class MapBuilder {
             size: houseSize,
             at: point,
             rotation: rotation,
-            physicsShape: .rectangle(size: houseSize),
-            zPositionStrategy: .flat(1)
+            physicsShape: .texture,
+            zPositionStrategy: .ySorted(offset: 0)
         )
         
-        let senderIndicator = SKSpriteNode(texture: getTexture(named: "conversation_bubble"))
+        let senderAnimalTextureName = ownerName.flatMap { getAnimalAsset(for: $0) }.map { "conversation_\($0)" } ?? "conversation_rabbit"
+        let senderIndicator = SKSpriteNode(texture: getTexture(named: senderAnimalTextureName))
         senderIndicator.name = "indicator_sender"
         senderIndicator.size = GameConfig.requestIndicatorSize
         senderIndicator.position = CGPoint(x: 0, y: (houseSize.height / 2) + 20)
         senderIndicator.zPosition = 100
         senderIndicator.isHidden = true
         
-        if let owner = ownerName, let assetName = getAnimalAsset(for: owner) {
-            let animalFace = SKSpriteNode(texture: getTexture(named: assetName))
-            animalFace.size = GameConfig.requestIndicatorAnimalFaceSize
-            animalFace.position = CGPoint(x: 0, y: 3)
-            animalFace.zPosition = 1
-            
-            senderIndicator.addChild(animalFace)
-        }
+        let senderExclamation = SKSpriteNode(texture: getTexture(named: "exclamation"))
+        senderExclamation.size = GameConfig.requestIndicatorExclamationSize
+        senderExclamation.position = CGPoint(x: senderIndicator.size.width * 0.35, y: senderIndicator.size.height * 0.35)
+        senderExclamation.zPosition = 1
+        senderIndicator.addChild(senderExclamation)
             
         houseNode.addChild(senderIndicator)
         
-        let receiverIndicator = SKLabelNode(text: "📍")
+        let receiverAnimalTextureName = ownerName.flatMap { getAnimalAsset(for: $0) }.map { "conversation_\($0)" } ?? "conversation_rabbit"
+        let receiverIndicator = SKSpriteNode(texture: getTexture(named: receiverAnimalTextureName))
         receiverIndicator.name = "indicator_receiver"
-        receiverIndicator.fontSize = 40
+        receiverIndicator.size = GameConfig.requestIndicatorSize
         receiverIndicator.position = CGPoint(x: 0, y: (houseSize.height / 2) + 20)
         receiverIndicator.zPosition = 100
         receiverIndicator.isHidden = true
+        
+        let receiverExclamation = SKSpriteNode(texture: getTexture(named: "exclamation"))
+        receiverExclamation.size = GameConfig.requestIndicatorExclamationSize
+        receiverExclamation.position = CGPoint(x: receiverIndicator.size.width * 0.35, y: receiverIndicator.size.height * 0.35)
+        receiverExclamation.zPosition = 1
+        receiverIndicator.addChild(receiverExclamation)
+        
         houseNode.addChild(receiverIndicator)
         
         let houseEntity = HouseEntity(name: ownerName, node: houseNode)
@@ -293,15 +305,12 @@ class MapBuilder {
         let actualHeight = dummyNode.size.height * scaleFactor
         let treeSize = CGSize(width: grid, height: actualHeight)
         
-        let trunkYPosition = -(actualHeight / 2) + 15
-        let trunkOffset = CGPoint(x: 0, y: trunkYPosition)
-        
         let node = buildGeneralEntity(
             imageNamed: "tree",
             size: treeSize,
             at: point,
             rotation: nil,
-            physicsShape: .circle(radius: 15, offset: trunkOffset),
+            physicsShape: .rectangle(size: CGSize(width: grid, height: grid)),
             zPositionStrategy: .ySorted(offset: 0)
         )
         

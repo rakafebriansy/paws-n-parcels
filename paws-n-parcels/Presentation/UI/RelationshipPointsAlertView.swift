@@ -9,17 +9,36 @@ import SwiftUI
 
 struct RelationshipPointsAlertView: View {
     var points: Int
+    var onClose: () -> Void
    
     var body: some View {
-        Text("+\(points) Relationship Points")
-            .comicRelief(size: 20, isBold: true)
-            .multilineTextAlignment(.center)
-            .foregroundColor(.brown)
-            .padding()
-            .background(Color.sage)
-            .cornerRadius(25)
-            .shadow(radius: 3)
-            .padding(.top, 20)
-            .transition(.move(edge: .top).combined(with: .opacity))
+        HStack(spacing: 8) {
+            Button(action: {
+                onClose()
+            }) {
+                Image("close_button")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 22, height: 22)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Text("+\(points) Relationship Point")
+                .comicRelief(size: 14, isBold: true)
+                .foregroundColor(.brown)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.sage)
+        .cornerRadius(18)
+        .padding(.top, 12)
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+}
+
+#Preview {
+    ZStack {
+        Color.cream.ignoresSafeArea()
+        RelationshipPointsAlertView(points: 5, onClose: {})
     }
 }

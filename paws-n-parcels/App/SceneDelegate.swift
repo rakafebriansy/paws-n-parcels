@@ -8,6 +8,7 @@
 import UIKit
 import SwiftUI
 import SwiftData
+import SpriteKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
@@ -62,6 +63,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         print("[SceneDelegate] Main ModelContext created.")
         
         GameDataManager.shared.setup(with: context)
+        
+        let migrationKey = "didMigrateAnimalNamesV1"
+        if !UserDefaults.standard.bool(forKey: migrationKey) {
+            print("[SceneDelegate] Running one-time migration: clearing old animal data...")
+            SeederDatabase.clearDatabase(context: context)
+            UserDefaults.standard.set(true, forKey: migrationKey)
+        }
+        
         SeederDatabase.seedDatabaseIfNeeded(context: context)
         
         let mainGameView = GameView()
@@ -73,6 +82,45 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             self.window = window
             window.makeKeyAndVisible()
             print("[SceneDelegate] UIWindow configured and visible.")
+        }
+    }
+    
+    func sceneWillResignActive(_ scene: UIScene) {
+        print("[SceneDelegate] Scene will resign active — saving game state...")
+        saveCurrentGameState()
+    }
+    
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        print("[SceneDelegate] Scene entered background — saving game state...")
+        saveCurrentGameState()
+    }
+    
+    private func saveCurrentGameState() {
+        findAndSaveGameScene()
+    }
+    
+    private func findAndSaveGameScene() {
+        guard let window = window else { return }
+        
+        func findSKView(in view: UIView) -> SKView? {
+            if let skView = view as? SKView {
+                return skView
+            }
+            for subview in view.subviews {
+                if let found = findSKView(in: subview) {
+                    return found
+                }
+            }
+            return nil
+        }
+        
+        if let skView = findSKView(in: window),
+           let gameScene = skView.scene as? GameScene {
+            gameScene.saveGameState()
+            print("[SceneDelegate] Game state saved via SKView scene.")
+        } else {
+            GameDataManager.shared.save()
+            print("[SceneDelegate] Fallback: saved SwiftData context only.")
         }
     }
 }

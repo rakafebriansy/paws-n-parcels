@@ -17,112 +17,132 @@ struct MainMenuModalView: View {
     var onResume: (() -> Void)? = nil
     var onCollectibles: (() -> Void)? = nil
     var onRelationships: (() -> Void)? = nil
+    var onReset: (() -> Void)? = nil
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Image("modal").resizable().scaledToFit().padding(24)
+        ZStack {
+            ZStack(alignment: .topLeading) {
+                Image("modal")
+                    .resizable()
+                    .scaledToFit()
                 
-                VStack(spacing: 23) {
-                    Text("Menu")
-                        .comicRelief(size: 45, isBold: true)
-                        .foregroundColor(.darkGray)
-                        .multilineTextAlignment(.center)
-                    
-                    VStack(spacing: 15) {
-                        NavigationLink(destination: CollectiblesView()) {
-                            HStack {
-                                Image(systemName: "book.fill")
-                                Text("Collectibles")
-                            }
-                            .comicRelief(size: 25, isBold: true)
-                            .tracking(1.5)
-                            .foregroundColor(Color.cream)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 30)
-                            .background(Color.darkGray)
-                            .cornerRadius(35)
+                Button(action: {
+                    onResume?()
+                }) {
+                    Image("close_button")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 44, height: 44)
+                }
+                .padding(.top, 40)
+                .padding(.leading, 35)
+            }
+            .padding(24)
+            
+            VStack(spacing: 23) {
+                Text("Menu")
+                    .comicRelief(size: 45, isBold: true)
+                    .foregroundColor(.darkGray)
+                    .multilineTextAlignment(.center)
+                
+                VStack(spacing: 15) {
+                    Button(action: {
+                        onCollectibles?()
+                    }){
+                        HStack {
+                            Image(systemName: "book.fill")
+                            Text("Collectibles")
                         }
-                        
-                        Button(action: {
-                            onRelationships?()
-                        }){
-                            HStack {
-                                Image(systemName: "person.2.fill")
-                                Text("Relationships")
-                            }
-                            .comicRelief(size: 25, isBold: true)
-                            .tracking(1.5)
-                            .foregroundColor(Color.cream)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 20)
-                            .background(Color.darkGray)
-                            .cornerRadius(35)
-                        }
+                        .comicRelief(size: 25, isBold: true)
+                        .tracking(1.5)
+                        .foregroundColor(Color.cream)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 30)
+                        .background(Color.darkGray)
+                        .cornerRadius(35)
                     }
                     
-                    HStack {
-                        Image(systemName: bgm == 0 ? "music.note.slash" : "music.note")
-                            .foregroundColor(.red)
-                            .font(.system(size:28))
-                        
-                        Text("BGM")
-                            .comicRelief(size: 25, isBold: true)
-                            .foregroundColor(.darkGray)
-                        
-                        Slider(
-                            value: $bgm,
-                            in: 0...100,
-                            onEditingChanged: { editing in
-                                isEditing = editing
-                            }
-                        ).frame(width:130)
-                            .tint(Color.darkGray)
+                    Button(action: {
+                        onRelationships?()
+                    }){
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                            Text("Relationships")
+                        }
+                        .comicRelief(size: 25, isBold: true)
+                        .tracking(1.5)
+                        .foregroundColor(Color.cream)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 20)
+                        .background(Color.darkGray)
+                        .cornerRadius(35)
                     }
                     
-                    HStack {
-                        Image(systemName: sfx == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                            .foregroundColor(.red)
-                            .font(.system(size:28))
-                        
-                        Text("SFX")
-                            .comicRelief(size: 25, isBold: true)
-                            .foregroundColor(.darkGray)
-                        
-                        Slider(
-                            value: $sfx,
-                            in: 0...100,
-                            onEditingChanged: { editing in
-                                isEditing = editing
-                            }
-                        ).frame(width:130)
-                            .tint(Color.darkGray)
+                    Button(action: {
+                        onReset?()
+                    }){
+                        HStack {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("Reset")
+                        }
+                        .comicRelief(size: 25, isBold: true)
+                        .tracking(1.5)
+                        .foregroundColor(Color.cream)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 38)
+                        .background(Color.red)
+                        .cornerRadius(35)
                     }
                 }
-                .offset(y: -25)
                 
-                VStack {
-                    HStack {
-                        Button(action: {
-                            onResume?()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(.red)
-                                .background(Circle().fill(Color.cream))
-                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+                Text("Settings")
+                    .comicRelief(size: 30, isBold: true)
+                    .foregroundColor(.darkGray)
+                    .padding(.top, 15)
+                
+                HStack {
+                    Image(systemName: bgm == 0 ? "music.note.slash" : "music.note")
+                        .foregroundColor(.red)
+                        .font(.system(size:28))
+                    
+                    Text("BGM")
+                        .comicRelief(size: 25, isBold: true)
+                        .foregroundColor(.darkGray)
+                    
+                    Slider(
+                        value: $bgm,
+                        in: 0...100,
+                        onEditingChanged: { editing in
+                            isEditing = editing
                         }
-                        .padding(.top, 40)
-                        .padding(.leading, 45)
-                        Spacer()
-                    }
-                    Spacer()
+                    ).frame(width:130)
+                        .tint(Color.darkGray)
+                }
+                .padding(-10)
+                
+                HStack {
+                    Image(systemName: sfx == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                        .foregroundColor(.red)
+                        .font(.system(size:28))
+                    
+                    Text("SFX")
+                        .comicRelief(size: 25, isBold: true)
+                        .foregroundColor(.darkGray)
+                    
+                    Slider(
+                        value: $sfx,
+                        in: 0...100,
+                        onEditingChanged: { editing in
+                            isEditing = editing
+                        }
+                    ).frame(width:130)
+                        .tint(Color.darkGray)
                 }
             }
-            .transition(.scale.combined(with: .opacity))
-            .background(Color.clear)
+            .offset(y: -25)
+
         }
-        .tint(.red)
+        .transition(.scale.combined(with: .opacity))
     }
 }
 
