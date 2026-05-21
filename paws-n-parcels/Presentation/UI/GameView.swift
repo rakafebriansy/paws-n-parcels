@@ -57,7 +57,7 @@ struct GameView: View {
     @State private var activePauseScreen: PauseMenuScreen = .main
     
     private var isShowingAlert: Bool {
-        showPickUpAlert || showNewCollectibleAlert
+        showPickUpAlert || showNewCollectibleAlert || showDeliveryAlert
     }
     
     @State private var joystickBubbleData: TutorialBubbleData? = nil
@@ -138,6 +138,10 @@ struct GameView: View {
                             )
                     }
                     
+                    if showDeliveryAlert {
+                        DeliverySuccessAlertView()
+                            .transition(.scale.combined(with: .opacity))
+                    }
 
                     if showNewCollectibleAlert {
                         if let itemToShow = unlockedItem {
@@ -188,7 +192,7 @@ struct GameView: View {
             if showRelationshipPointsAlert {
                 VStack {
                     RelationshipPointsAlertView(points: relationshipPointsEarned) {
-                        if !showPostcard {
+                        if !showPostcard && !showDeliveryAlert {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 showRelationshipPointsAlert = false
                             }
@@ -198,7 +202,7 @@ struct GameView: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .allowsHitTesting(showPostcard ? false : true)
+                .allowsHitTesting((showPostcard || showDeliveryAlert) ? false : true)
                 .zIndex(4)
                 .transition(.scale.combined(with: .opacity))
             }
@@ -345,6 +349,23 @@ struct GameView: View {
             return
         }
         
+        if showDeliveryAlert {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showDeliveryAlert = false
+            }
+            if deliveredRequest != nil {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    showPostcard = true
+                }
+            } else {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showRelationshipPointsAlert = false
+                }
+                gameScene.resumeGameplay()
+            }
+            return
+        }
+        
         if showNewCollectibleAlert {
             withAnimation(.easeInOut) {
                 showNewCollectibleAlert = false
@@ -378,14 +399,12 @@ struct GameView: View {
             
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 showRelationshipPointsAlert = true
+                showDeliveryAlert = true
             }
         }
         
         gameScene.onLetterReady = { request in
             deliveredRequest = request
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                showPostcard = true
-            }
         }
         
         gameScene.onJoystickBubbleUpdate = { data in

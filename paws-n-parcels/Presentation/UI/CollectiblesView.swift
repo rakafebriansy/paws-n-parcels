@@ -11,7 +11,7 @@ import SwiftData
 struct CollectiblesView: View {
     @Environment(\.dismiss) private var dismiss
     
-    var collectibles: [Collectible] = Collectible.dummyData
+    @Query private var collectibles: [Collectible]
     var onClose: (() -> Void)?
     
     let columns = [
@@ -24,35 +24,38 @@ struct CollectiblesView: View {
             Color(red: 0.98, green: 0.96, blue: 0.9)
                 .ignoresSafeArea()
 
-                VStack {
+            VStack {
+                ZStack {
                     Text("Collectibles")
                         .comicRelief(size: 45, isBold: true)
                         .foregroundColor(.darkGray)
-                        .multilineTextAlignment(.center)
                     
-                    ScrollView(showsIndicators: false){
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            // enumerated() supaya bisa dapat urutan index
-                            ForEach(Array(collectibles.enumerated()), id: \.element.id) {
-                                index, item in
-                                CollectibleCard(item: item, index: index, bgColor: Color.sage)
-                            }
+                    HStack {
+                        Button(action: { close() }) {
+                            Image("back_button")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 44, height: 44)
                         }
-                        .padding(.horizontal, 25)
-                        .padding(.bottom, 40)
+                        .padding(.leading, 20)
+                        
+                        Spacer()
                     }
                 }
-            
-            HStack {
-                Button(action: { close() }) {
-                    Image("back_button")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 44, height: 44)
+                .padding(.top, 20)
+                .padding(.bottom, 10)
+                
+                ScrollView(showsIndicators: false){
+                    LazyVGrid(columns: columns, spacing: 20) {
+                        // enumerated() supaya bisa dapat urutan index
+                        ForEach(Array(collectibles.enumerated()), id: \.element.id) {
+                            index, item in
+                            CollectibleCard(item: item, index: index, bgColor: Color.sage)
+                        }
+                    }
+                    .padding(.horizontal, 25)
+                    .padding(.bottom, 40)
                 }
-                .padding(.top, 50)
-                .padding(.leading, 20)
-                Spacer()
             }
         }
     }
@@ -74,24 +77,21 @@ struct CollectibleCard: View {
     var body: some View {
         ZStack {
             if !item.isUnlocked && index >= 5 {
-                // background warna light gray untuk item yang masih locked
                 Color(red: 0.85, green: 0.85, blue: 0.85)
             } else {
                 bgColor
             }
             
             if item.isUnlocked || index < 5 {
-//                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
+                let assetName = item.name.lowercased().replacingOccurrences(of: " ", with: "_")
                 
                 VStack{
-                    Image(systemName: "shippingbox.fill")
+                    Image(assetName)
+                        .renderingMode(item.isUnlocked ? .original : .template)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 60, height: 60)
-                        .foregroundColor(.brown)
-                // ubah warna item collectible jadi grayscale kalau belum unlocked
-                    .saturation(item.isUnlocked ? 1.0 : 0.0)
-                    .opacity(item.isUnlocked ? 1.0 : 0.4)
+                        .foregroundColor(item.isUnlocked ? nil : .black.opacity(0.6))
                     if item.isUnlocked{
                         Text(item.name)
                             .comicRelief(size: 20)

@@ -49,29 +49,38 @@ struct MainMenuModalView: View {
     @ViewBuilder
     private var mainMenuContent: some View {
         ZStack {
-            ZStack(alignment: .topLeading) {
+            ZStack(alignment: .top) {
                 Image("modal")
                     .resizable()
                     .scaledToFit()
                 
-                Button(action: {
-                    onResume?()
-                }) {
-                    Image("close_button")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 44, height: 44)
+                ZStack {
+                    Text("Menu")
+                        .comicRelief(size: 40, isBold: true)
+                        .foregroundColor(.darkGray)
+                    
+                    HStack {
+                        Button(action: {
+                            onResume?()
+                        }) {
+                            Image("close_button")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 44, height: 44)
+                        }
+                        .padding(.leading, 35)
+                        
+                        Spacer()
+                    }
                 }
-                .padding(.top, 40)
-                .padding(.leading, 35)
+                .padding(.top, 25)
             }
             .padding(24)
             
             VStack(spacing: 14) {
                 Text("Menu")
                     .comicRelief(size: 40, isBold: true)
-                    .foregroundColor(.darkGray)
-                    .multilineTextAlignment(.center)
+                    .hidden()
                 
                 VStack(spacing: 10) {
                     Button(action: {
