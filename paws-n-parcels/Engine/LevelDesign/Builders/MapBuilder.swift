@@ -426,10 +426,10 @@ class MapBuilder {
                     let dummyNode = SKNode()
                     dummyNode.position = CGPoint(x: (CGFloat(colIndex) * grid) + (grid / 2.0), y: (CGFloat(rowInTileMap) * grid) + (grid / 2.0))
                     
-                    let physics = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: grid))
-                    physics.isDynamic = false
-                    physics.restitution = 0.0
-                    physics.friction = 0.0
+                    let physics = self.physicsBodyForPondTile(name: tileName, grid: grid)
+                    physics?.isDynamic = false
+                    physics?.restitution = 0.0
+                    physics?.friction = 0.0
                     dummyNode.physicsBody = physics
                     
                     physicsNode.addChild(dummyNode)
@@ -442,6 +442,65 @@ class MapBuilder {
         
         let pondEntity = EnvironmentEntity(node: physicsNode)
         environmentEntities.append(pondEntity)
+    }
+    
+    private func physicsBodyForPondTile(name: String, grid: CGFloat) -> SKPhysicsBody? {
+        let half = grid / 2.0
+        let quarter = grid / 4.0
+        
+        // --- VARIABEL PENGATURAN BENTUK PHYSICS POND ---
+        // Anda bisa mengubah nilai parameter di dalam CGSize dan CGPoint secara manual.
+        
+        let zero: CGFloat = 0.0
+        
+        // Fungsi pembantu untuk membuat bentuk seperempat lingkaran (potongan pizza)
+        // Ini memastikan lengkungan tidak menonjol keluar dari kotak!
+        func pieSliceBody(cx: CGFloat, cy: CGFloat, radius: CGFloat, startRad: CGFloat, endRad: CGFloat) -> SKPhysicsBody {
+            let path = CGMutablePath()
+            let center = CGPoint(x: cx, y: cy)
+            path.move(to: center)
+            path.addArc(center: center, radius: radius, startAngle: startRad, endAngle: endRad, clockwise: false)
+            path.closeSubpath()
+            return SKPhysicsBody(polygonFrom: path)
+        }
+        
+        // Format untuk lurus: (width, height), center: (x, y)
+        let bodyHorizontalT = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: half + quarter), center: CGPoint(x: zero, y: zero))
+        let bodyHorizontalB = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: half), center: CGPoint(x: zero, y: zero))
+        let bodyVerticalL   = SKPhysicsBody(rectangleOf: CGSize(width: half, height: grid), center: CGPoint(x: zero, y: zero))
+        let bodyVerticalR   = SKPhysicsBody(rectangleOf: CGSize(width: half, height: grid), center: CGPoint(x: zero, y: zero))
+        
+        let bodyCornerTL = pieSliceBody(cx: half, cy: -half, radius: half + quarter, startRad: .pi / 2, endRad: .pi)
+        let bodyCornerTR = pieSliceBody(cx: -half, cy: -half, radius: half + quarter, startRad: 0, endRad: .pi / 2)
+        let bodyCornerBL = pieSliceBody(cx: half, cy: half, radius: half + quarter, startRad: .pi, endRad: 3 * .pi / 2)
+        let bodyCornerBR = pieSliceBody(cx: -half, cy: half, radius: half + quarter, startRad: 3 * .pi / 2, endRad: 2 * .pi)
+        
+        let bendTopHalf = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: half), center: CGPoint(x: zero, y: quarter))
+        let bendBotRight = SKPhysicsBody(rectangleOf: CGSize(width: half, height: half), center: CGPoint(x: quarter, y: -quarter))
+        
+        // Segitiga penambal untuk memotong sudut dalam menjadi diagonal (melengkung ke dalam / concave)
+        let pathBendBL = CGMutablePath()
+        pathBendBL.move(to: CGPoint(x: zero, y: zero))
+        pathBendBL.addLine(to: CGPoint(x: -half, y: zero))
+        pathBendBL.addLine(to: CGPoint(x: zero, y: -half))
+        pathBendBL.closeSubpath()
+        let bendTriangleBL = SKPhysicsBody(polygonFrom: pathBendBL)
+        
+        let bodyBendBL = SKPhysicsBody(bodies: [bendTopHalf, bendBotRight, bendTriangleBL])
+
+        switch name {
+        case "pond": return SKPhysicsBody(rectangleOf: CGSize(width: grid, height: grid))
+        case "pond_horizontal_t": return bodyHorizontalT
+        case "pond_horizontal_b": return bodyHorizontalB
+        case "pond_vertical_l": return bodyVerticalL
+        case "pond_vertical_r": return bodyVerticalR
+        case "pond_corner_tl": return bodyCornerTL
+        case "pond_corner_tr": return bodyCornerTR
+        case "pond_corner_bl": return bodyCornerBL
+        case "pond_corner_br": return bodyCornerBR
+        case "pond_bend_bl": return bodyBendBL
+        default: return SKPhysicsBody(rectangleOf: CGSize(width: grid, height: grid))
+        }
     }
     
     private func getTexture(named name: String) -> SKTexture {

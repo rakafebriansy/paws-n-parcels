@@ -388,7 +388,6 @@ func parseWorldMap() -> MapBlueprint {
         
         let flowerAssets = ["sunflower", "rose", "lavender"]
                 let rockAssets = ["big_rock_2", "big_rock_3", "big_rock_4", "rock_1", "rock_2", "rock_3"]
-                let allAssets = flowerAssets + rockAssets
                 
         scatterDense(
             minX: 12.5, maxX: 17.5,
