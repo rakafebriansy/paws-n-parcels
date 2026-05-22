@@ -266,7 +266,7 @@ class PlayerStateComponent: GKComponent {
             let row = roadMap.tileRowIndex(fromPosition: position)
             // check if there is a tile here
             if column >= 0, column < roadMap.numberOfColumns, row >= 0, row < roadMap.numberOfRows {
-                if let tile = roadMap.tileDefinition(atColumn: column, row: row) {
+                if let _ = roadMap.tileDefinition(atColumn: column, row: row) {
                     isOnGravel = true
                 }
             }

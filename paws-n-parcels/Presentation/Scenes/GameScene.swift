@@ -50,14 +50,9 @@ class GameScene: SKScene {
     
     private var tooFarBubbleTimer: TimeInterval = 0
     
-    var hasShownYellowArrowTutorialTimer: Bool = false
-    var hasShownRedArrowTutorialTimer: Bool = false
-    
     var currentDialogMessage: String?
-    
-    var yellowTutorialStartTime: TimeInterval? = nil
     var yellowTutorialTargetHouseName: String? = nil
-    var redTutorialStartTime: TimeInterval? = nil
+    
     let tutorialDuration: TimeInterval = 5.0
     
     var lastArrowDebugLogTime: TimeInterval = 0
@@ -121,18 +116,22 @@ class GameScene: SKScene {
         hasStartedFirstMove = false
         
         if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
-            print("[Tutorial] Showing joystick tutorial bubble immediately.")
-            
+            print("[Tutorial] Showing joystick tutorial bubble.")
             updateJoystickTutorialBubblePosition()
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + tutorialDuration) {
-                UserDefaults.standard.set(true, forKey: "hasSeenJoystickTutorial")
-                self.onJoystickBubbleUpdate?(nil)
-                self.currentPhase = .playing
-                print("[GameScene] Joystick tutorial dismissed. Phase changed to playing.")
-            }
         } else {
-            print("[GameScene] Joystick tutorial already seen. Requests will spawn on first move.")
+            print("[GameScene] Joystick tutorial already seen.")
+            
+            let activeCount = requestSystem?.houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count ?? 0
+            let hasHeldPackage = deliverySystem?.activePackage != nil
+            
+            if activeCount == 0 && !hasHeldPackage {
+                print("[GameScene] Spawning tutorial request immediately since none exist.")
+                Task {
+                    await requestSystem?.spawnTutorialRequestAsync()
+                }
+            } else {
+                print("[GameScene] Tutorial request already exists. Waiting for player action.")
+            }
         }
     }
 
@@ -140,13 +139,22 @@ class GameScene: SKScene {
         guard !hasStartedFirstMove else { return }
         hasStartedFirstMove = true
         
-        print("[GameScene] First joystick use detected — spawning requests.")
+        print("[GameScene] First joystick use detected.")
         requestSystem?.fetchData()
-        requestSystem?.initialBurstSpawn()
         
-        if UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
-            currentPhase = .playing
-            print("[GameScene] Phase changed to playing.")
+        if currentPhase == .tutorial && !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+            UserDefaults.standard.set(true, forKey: "hasSeenJoystickTutorial")
+            onJoystickBubbleUpdate?(nil)
+            
+            let activeCount = requestSystem?.houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count ?? 0
+            let hasHeldPackage = deliverySystem?.activePackage != nil
+            
+            if activeCount == 0 && !hasHeldPackage {
+                Task {
+                    await requestSystem?.spawnTutorialRequestAsync()
+                }
+            }
+            print("[GameScene] Joystick tutorial dismissed by movement. Spawned tutorial request.")
         }
     }
 
@@ -487,6 +495,11 @@ class GameScene: SKScene {
                         "[GameScene] Successfully picked up package from \(houseName)'s house."
                     )
 
+                    if currentPhase == .tutorial && !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
+                        UserDefaults.standard.set(true, forKey: "hasSeenYellowArrowTutorial")
+                        onYellowBubbleUpdate?(nil)
+                    }
+
                     onPickUpSuccess?(request.sender.pickupDialog)
                 }
             } else {
@@ -502,6 +515,18 @@ class GameScene: SKScene {
             if receiverName == houseName {
                 print("[GameScene] Delivering package to \(houseName)...")
                 carryingState.deliver()
+                
+                if currentPhase == .tutorial {
+                    if !UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial") {
+                        UserDefaults.standard.set(true, forKey: "hasSeenRedArrowTutorial")
+                        onRedBubbleUpdate?(nil)
+                    }
+                    UserDefaults.standard.set(true, forKey: "hasFinishedTutorialPhase")
+                    
+                    currentPhase = .playing
+                    print("[GameScene] Tutorial complete! Phase changed to playing. Spawning initial burst.")
+                    requestSystem?.initialBurstSpawn()
+                }
             } else {
                 print(
                     "[GameScene] Wrong address! This package is for \(receiverName), not for \(houseName)."
@@ -535,8 +560,10 @@ class GameScene: SKScene {
 
         if currentPhase == .playing {
             reqSys.initialBurstSpawn()
+        } else if currentPhase == .tutorial {
+            startTutorialIfNeeded()
         } else {
-            print("[GameScene] Skipping initialBurstSpawn — waiting for first joystick use.")
+            print("[GameScene] Skipping initialBurstSpawn — waiting for background story to finish.")
         }
     }
 
@@ -564,18 +591,16 @@ class GameScene: SKScene {
     }
     
     func resetGame() {
+        requestSystem?.cancelAllSpawns()
+        
         UserDefaults.standard.set(false, forKey: "hasSeenJoystickTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenYellowArrowTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenRedArrowTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenBackgroundStory")
         
-        hasShownYellowArrowTutorialTimer = false
-        hasShownRedArrowTutorialTimer = false
         hasStartedFirstMove = false
         currentDialogMessage = nil
-        yellowTutorialStartTime = nil
         yellowTutorialTargetHouseName = nil
-        redTutorialStartTime = nil
         
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
             movement.velocity = .zero
@@ -935,37 +960,23 @@ class GameScene: SKScene {
                 }
                 
                 if !UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial") {
-                    let now2 = CACurrentMediaTime()
-                    
-                    if !hasShownRedArrowTutorialTimer {
-                        hasShownRedArrowTutorialTimer = true
-                        redTutorialStartTime = now2
-                    }
-                    
-                    if let startTime = redTutorialStartTime {
-                        if now2 - startTime < tutorialDuration {
-                            if let validArrow = arrowNode {
-                                let screenX = validArrow.position.x + (viewWidth / 2)
-                                let screenY = -validArrow.position.y + (viewHeight / 2)
-                                
-                                let isInTopZone = validArrow.position.y > 0
-                                
-                                let clampedX = min(max(screenX, 70), viewWidth - 70)
-                                let clampedY = screenY + (isInTopZone ? 55 : -55)
-                                
-                                let data = TutorialBubbleData(
-                                    text: "Follow the red arrow to deliver the parcel.",
-                                    position: CGPoint(x: clampedX, y: clampedY),
-                                    isInTopZone: isInTopZone
-                                )
-                                onRedBubbleUpdate?(data)
-                            } else {
-                                onRedBubbleUpdate?(nil)
-                            }
-                        } else {
-                            UserDefaults.standard.set(true, forKey: "hasSeenRedArrowTutorial")
-                            onRedBubbleUpdate?(nil)
-                        }
+                    if let validArrow = arrowNode {
+                        let screenX = validArrow.position.x + (viewWidth / 2)
+                        let screenY = -validArrow.position.y + (viewHeight / 2)
+                        
+                        let isInTopZone = validArrow.position.y > 0
+                        
+                        let clampedX = min(max(screenX, 70), viewWidth - 70)
+                        let clampedY = screenY + (isInTopZone ? 55 : -55)
+                        
+                        let data = TutorialBubbleData(
+                            text: "Follow the red arrow to deliver the parcel.",
+                            position: CGPoint(x: clampedX, y: clampedY),
+                            isInTopZone: isInTopZone
+                        )
+                        onRedBubbleUpdate?(data)
+                    } else {
+                        onRedBubbleUpdate?(nil)
                     }
                 }
             } else {
@@ -974,8 +985,6 @@ class GameScene: SKScene {
             }
         } else {
             onRedBubbleUpdate?(nil)
-            
-            let now = CACurrentMediaTime()
             
             let allRequestingHouses = mapBuilder.environmentEntities
                 .compactMap { $0 as? HouseEntity }
@@ -1007,35 +1016,22 @@ class GameScene: SKScene {
                 if name == yellowTutorialTargetHouseName,
                    !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
                     
-                    if !hasShownYellowArrowTutorialTimer {
-                        hasShownYellowArrowTutorialTimer = true
-                        yellowTutorialStartTime = now
-                    }
-                    
-                    if let startTime = yellowTutorialStartTime {
-                        if now - startTime < tutorialDuration {
-                            if let validArrow = arrowNode {
-                                let screenX = validArrow.position.x + (viewWidth / 2)
-                                let screenY = -validArrow.position.y + (viewHeight / 2)
-                                
-                                let isInTopZone = validArrow.position.y > 0
-                                
-                                let clampedX = min(max(screenX, 70), viewWidth - 70)
-                                let clampedY = screenY + (isInTopZone ? 55 : -55)
-                                
-                                let data = TutorialBubbleData(
-                                    text: "Follow the yellow arrow to pick up the parcel.",
-                                    position: CGPoint(x: clampedX, y: clampedY),
-                                    isInTopZone: isInTopZone
-                                )
-                                onYellowBubbleUpdate?(data)
-                                didShowYellowTutorialBubble = true
-                            }
-                        } else {
-                            UserDefaults.standard.set(true, forKey: "hasSeenYellowArrowTutorial")
-                            onYellowBubbleUpdate?(nil)
-                            didShowYellowTutorialBubble = true
-                        }
+                    if let validArrow = arrowNode {
+                        let screenX = validArrow.position.x + (viewWidth / 2)
+                        let screenY = -validArrow.position.y + (viewHeight / 2)
+                        
+                        let isInTopZone = validArrow.position.y > 0
+                        
+                        let clampedX = min(max(screenX, 70), viewWidth - 70)
+                        let clampedY = screenY + (isInTopZone ? 55 : -55)
+                        
+                        let data = TutorialBubbleData(
+                            text: "Follow the yellow arrow to pick up the parcel.",
+                            position: CGPoint(x: clampedX, y: clampedY),
+                            isInTopZone: isInTopZone
+                        )
+                        onYellowBubbleUpdate?(data)
+                        didShowYellowTutorialBubble = true
                     }
                 }
             }

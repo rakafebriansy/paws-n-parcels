@@ -72,7 +72,11 @@ class RequestSystem {
         }
     }
     
+    private var spawnTask: Task<Void, Never>?
+    
     func initialBurstSpawn() {
+        spawnTask?.cancel()
+        
         let houseRequestCount = houses.lazy.filter { $0.component(ofType: RequestComponent.self) != nil }.count
         let pickedUpCount = GameDataManager.shared.fetchPickedUpRequests().count
         let totalActive = houseRequestCount + pickedUpCount
@@ -82,16 +86,25 @@ class RequestSystem {
         
         print("[RequestSystem] initialBurstSpawn: spawning \(needed) requests (active: \(totalActive), max: \(GameConfig.maxRequests))")
         
-        Task {
+        spawnTask = Task {
             for i in 0..<needed {
+                if Task.isCancelled { break }
                 if i > 0 {
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
                 }
+                if Task.isCancelled { break }
                 print("[RequestSystem] initialBurstSpawn: generating request \(i+1)/\(needed)")
                 await generateAndSpawnRequestAsync()
             }
-            print("[RequestSystem] initialBurstSpawn: COMPLETED all \(needed) requests")
+            if !Task.isCancelled {
+                print("[RequestSystem] initialBurstSpawn: COMPLETED all \(needed) requests")
+            }
         }
+    }
+
+    func cancelAllSpawns() {
+        spawnTask?.cancel()
+        spawnTask = nil
     }
 
     func getActiveRequest() -> Request? {
@@ -135,7 +148,13 @@ class RequestSystem {
         }
     }
     
+    func spawnTutorialRequestAsync() async {
+        await generateAndSpawnRequestAsync()
+    }
+    
     private func scheduleNextPackageSpawn(delaySeconds: Int) {
+        spawnTask?.cancel()
+        
         let houseRequestCount = houses.filter { $0.component(ofType: RequestComponent.self) != nil }.count
         let pickedUpCount = GameDataManager.shared.fetchPickedUpRequests().count
         let totalActive = houseRequestCount + pickedUpCount
@@ -143,11 +162,13 @@ class RequestSystem {
         guard totalActive < GameConfig.maxRequests
         else { return }
         
-        Task {
+        spawnTask = Task {
             if delaySeconds > 0 {
                 try? await Task.sleep(nanoseconds: UInt64(delaySeconds) * 1_000_000_000)
             }
-            await generateAndSpawnRequestAsync()
+            if !Task.isCancelled {
+                await generateAndSpawnRequestAsync()
+            }
         }
     }
     

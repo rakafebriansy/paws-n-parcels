@@ -40,7 +40,7 @@ struct GameView: View {
     @State private var currentPhase: GamePhase = {
         if !UserDefaults.standard.bool(forKey: "hasSeenBackgroundStory") {
             return .backgroundStory
-        } else if !UserDefaults.standard.bool(forKey: "hasSeenJoystickTutorial") {
+        } else if !UserDefaults.standard.bool(forKey: "hasFinishedTutorialPhase") {
             return .tutorial
         } else {
             return .playing
@@ -307,14 +307,6 @@ struct GameView: View {
             
             let initialPhase = currentPhase
             gameScene.currentPhase = initialPhase
-            
-            if initialPhase == .playing || initialPhase == .tutorial {
-                if initialPhase == .tutorial {
-                    gameScene.startTutorialIfNeeded()
-                } else {
-                    gameScene.requestSystem?.initialBurstSpawn()
-                }
-            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .inactive || newPhase == .background {
