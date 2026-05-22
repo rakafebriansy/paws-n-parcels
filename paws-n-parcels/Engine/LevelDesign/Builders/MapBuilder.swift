@@ -251,24 +251,39 @@ class MapBuilder {
         let texture = getTexture(named: assetName)
         let node = SKSpriteNode(texture: texture)
         
+        if assetName == "sunflower" {
+            node.size = CGSize(width: 60, height: 100)
+        }
+        
         node.position = point
         node.setScale(0.4)
         
+        if assetName.contains("rock"){
+            let actualHeight = node.size.height * 1.5
+            node.zPosition = 10000 - (point.y - (actualHeight / 2))
+            let physicsWidth = node.size.width * 0.8
+            let physicsHeight = actualHeight * 0.7
+            
+            node.physicsBody = SKPhysicsBody(
+                rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
+                center: CGPoint(x: 0, y: 0)
+            )
+        } else {
+            let actualHeight = node.size.height * 2
+            node.zPosition = 10000 - (point.y - (actualHeight / 2))
+            let physicsWidth = node.size.width * 0.5
+            let physicsHeight = actualHeight * 0.3
+            
+            node.physicsBody = SKPhysicsBody(
+                rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
+                center: CGPoint(x: 0, y: -actualHeight * 0.15)
+            )
+        }
         
-        let actualHeight = node.size.height * 0.4
-        let baseOfTheItemY = point.y - (actualHeight / 2)
-        node.zPosition = 10000 - baseOfTheItemY
-        
-        let physicsWidth = node.size.width * 0.5
-        let physicsHeight = actualHeight * 0.3
-        
-        node.physicsBody = SKPhysicsBody(
-            rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
-            center: CGPoint(x: 0, y: -actualHeight * 0.35)
-        )
         node.physicsBody?.isDynamic = false
-        node.physicsBody?.restitution = 0.0
-        node.physicsBody?.friction = 0.0
+        node.physicsBody?.categoryBitMask = PhysicsCategory.obstacle
+        node.physicsBody?.collisionBitMask = PhysicsCategory.player
+        node.physicsBody?.contactTestBitMask = PhysicsCategory.none
         
         scene.addChild(node)
         environmentEntities.append(EnvironmentEntity(node: node))
