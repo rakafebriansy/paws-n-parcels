@@ -21,6 +21,9 @@ struct RelationshipPointsAlertView: View {
             .cornerRadius(18)
             .padding(.top, 12)
             .transition(.move(edge: .top).combined(with: .opacity))
+            .onAppear {
+                SoundManager.shared.play(.menu1A)
+            }
     }
 }
 

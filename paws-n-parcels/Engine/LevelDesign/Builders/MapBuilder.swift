@@ -80,6 +80,7 @@ class MapBuilder {
         tileMap.anchorPoint = .zero
         tileMap.position = .zero
         tileMap.zPosition = -10
+        tileMap.name = "terrainMap"
         
         for x in 0..<maxGridX {
             let repeatingIndex = x % 3
@@ -115,6 +116,7 @@ class MapBuilder {
         tileMap.anchorPoint = .zero
         tileMap.position = .zero
         tileMap.zPosition = -5
+        tileMap.name = "roadMap"
         
         for path in roads {
             for (p1, p2) in zip(path, path.dropFirst()) {

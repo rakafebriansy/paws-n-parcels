@@ -1,0 +1,62 @@
+import Foundation
+import AVFoundation
+
+enum SFX: String, CaseIterable {
+    case item1A = "Item1A"
+    case menu1A = "Menu1A"
+    case achievement = "achievement"
+    case click4 = "click4"
+    case grass7 = "grass_7"
+    case grass6 = "grasss_6"
+    case gravel6 = "gravel_6"
+    case gravel8 = "gravel_8"
+    case itemHandling1 = "qubodupItemHandling1"
+    case appearOnline = "appear-online"
+    case paper10 = "Paper 10"
+    
+    var fileExtension: String {
+        switch self {
+        case .item1A, .menu1A, .achievement, .itemHandling1, .paper10:
+            return "wav"
+        case .click4, .grass7, .grass6, .gravel6, .gravel8, .appearOnline:
+            return "m4a"
+        }
+    }
+}
+
+class SoundManager {
+    static let shared = SoundManager()
+    
+    private var players: [URL: AVAudioPlayer] = [:]
+    private var volume: Float = 1.0
+    
+    private init() {
+        if UserDefaults.standard.object(forKey: "sfx") != nil {
+            volume = Float(UserDefaults.standard.double(forKey: "sfx") / 100.0)
+        }
+    }
+    
+    func setVolume(_ volume: Float) {
+        self.volume = volume
+        for player in players.values {
+            player.volume = volume
+        }
+    }
+    
+    func play(_ sfx: SFX) {
+        guard let url = Bundle.main.url(forResource: sfx.rawValue, withExtension: sfx.fileExtension) else {
+            print("[SoundManager] File not found for \(sfx.rawValue).\(sfx.fileExtension)")
+            return
+        }
+        
+        do {
+            let player = try AVAudioPlayer(contentsOf: url)
+            player.volume = volume
+            player.play()
+            // Simpan player agar tidak didealokasi saat sedang bermain
+            players[url] = player
+        } catch {
+            print("[SoundManager] Error playing \(sfx.rawValue): \(error.localizedDescription)")
+        }
+    }
+}

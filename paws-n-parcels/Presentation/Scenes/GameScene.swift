@@ -252,6 +252,7 @@ class GameScene: SKScene {
         for node in tappedNodes {
             let name = node.name
             if name == "indicator_sender" || name == "indicator_receiver" {
+                SoundManager.shared.play(.appearOnline)
                 if let house = findHouseEntity(for: node) {
                     interactWithHouse(house)
                 }
@@ -642,8 +643,10 @@ class GameScene: SKScene {
         do {
             let player = try AVAudioPlayer(contentsOf: url)
             player.numberOfLoops = -1
-            let savedBGM = Float(UserDefaults.standard.double(forKey: "bgm") / 100.0)
-            let targetVolume = savedBGM > 0 ? savedBGM : 1.0
+            var targetVolume: Float = 1.0
+            if UserDefaults.standard.object(forKey: "bgm") != nil {
+                targetVolume = Float(UserDefaults.standard.double(forKey: "bgm") / 100.0)
+            }
             player.volume = 0.0
             player.prepareToPlay()
             player.play()
@@ -660,10 +663,16 @@ class GameScene: SKScene {
         print("[BGM] Volume set to \(volume).")
     }
     
-    private(set) var sfxVolume: Float = 1.0
+    private(set) var sfxVolume: Float = {
+        if UserDefaults.standard.object(forKey: "sfx") != nil {
+            return Float(UserDefaults.standard.double(forKey: "sfx") / 100.0)
+        }
+        return 1.0
+    }()
     
     func setSFXVolume(_ volume: Float) {
         sfxVolume = volume
+        SoundManager.shared.setVolume(volume)
         print("[SFX] Volume set to \(volume).")
     }
     

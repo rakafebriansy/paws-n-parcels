@@ -87,6 +87,9 @@ struct LetterView: View {
             .padding(.bottom, 175)  // Positions the container cleanly over the top section of the asset
         }
         .offset(y: 40)
+        .onAppear {
+            SoundManager.shared.play(.paper10)
+        }
     }
 }
 

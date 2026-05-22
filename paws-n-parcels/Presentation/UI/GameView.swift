@@ -342,6 +342,7 @@ struct GameView: View {
     
     private func handleModalTap() {
         if showPickUpAlert {
+            SoundManager.shared.play(.appearOnline)
             withAnimation(.easeInOut) {
                 showPickUpAlert = false
             }
@@ -350,6 +351,7 @@ struct GameView: View {
         }
         
         if showDeliveryAlert {
+            SoundManager.shared.play(.appearOnline)
             withAnimation(.easeInOut(duration: 0.25)) {
                 showDeliveryAlert = false
             }

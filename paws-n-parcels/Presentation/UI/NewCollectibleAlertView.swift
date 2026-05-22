@@ -57,6 +57,9 @@ struct NewCollectibleAlertView: View {
         }
         .padding(5)
         .transition(.scale.combined(with: .opacity))
+        .onAppear {
+            SoundManager.shared.play(.item1A)
+        }
     }
 }
 

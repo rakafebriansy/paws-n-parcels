@@ -61,6 +61,7 @@ struct MainMenuModalView: View {
                     
                     HStack {
                         Button(action: {
+                            SoundManager.shared.play(.click4)
                             onResume?()
                         }) {
                             Image("close_button")
@@ -84,6 +85,7 @@ struct MainMenuModalView: View {
                 
                 VStack(spacing: 10) {
                     Button(action: {
+                        SoundManager.shared.play(.click4)
                         onCollectibles?()
                     }){
                         HStack {
@@ -99,6 +101,7 @@ struct MainMenuModalView: View {
                     }
                     
                     Button(action: {
+                        SoundManager.shared.play(.click4)
                         onRelationships?()
                     }){
                         HStack {
@@ -114,6 +117,7 @@ struct MainMenuModalView: View {
                     }
                     
                     Button(action: {
+                        SoundManager.shared.play(.click4)
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                             showResetConfirm = true
                         }

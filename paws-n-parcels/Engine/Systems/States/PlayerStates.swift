@@ -226,7 +226,13 @@ class PlayerStateComponent: GKComponent {
             stretch.timingMode = .easeInEaseOut
             let bounce = SKAction.repeatForever(SKAction.sequence([squash, stretch]))
             
-            node.run(SKAction.group([walkAnimLoop, bounce]), withKey: "player_anim")
+            let footstepAction = SKAction.run { [weak self] in
+                self?.playFootstepSound()
+            }
+            let footstepWait = SKAction.wait(forDuration: GameConfig.playerWalkFrameDuration * 2.0)
+            let footstepLoop = SKAction.repeatForever(SKAction.sequence([footstepAction, footstepWait]))
+            
+            node.run(SKAction.group([walkAnimLoop, bounce, footstepLoop]), withKey: "player_anim")
         } else {
             let idleTex = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
             node.texture = idleTex
@@ -243,6 +249,34 @@ class PlayerStateComponent: GKComponent {
             let breathe = SKAction.repeatForever(SKAction.sequence([breatheSquash, breatheStretch]))
             
             node.run(breathe, withKey: "player_anim")
+        }
+    }
+    
+    private var isAlternateFootstep = false
+    
+    private func playFootstepSound() {
+        guard let scene = scene, let node = entity?.component(ofType: RenderComponent.self)?.node as? SKSpriteNode else { return }
+        
+        let roadMap = scene.childNode(withName: "roadMap") as? SKTileMapNode
+        let position = node.position
+        
+        var isOnGravel = false
+        if let roadMap = roadMap {
+            let column = roadMap.tileColumnIndex(fromPosition: position)
+            let row = roadMap.tileRowIndex(fromPosition: position)
+            // check if there is a tile here
+            if column >= 0, column < roadMap.numberOfColumns, row >= 0, row < roadMap.numberOfRows {
+                if let tile = roadMap.tileDefinition(atColumn: column, row: row) {
+                    isOnGravel = true
+                }
+            }
+        }
+        
+        isAlternateFootstep.toggle()
+        if isOnGravel {
+            SoundManager.shared.play(isAlternateFootstep ? .gravel6 : .gravel8)
+        } else {
+            SoundManager.shared.play(isAlternateFootstep ? .grass7 : .grass6)
         }
     }
 }
