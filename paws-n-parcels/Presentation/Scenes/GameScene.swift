@@ -14,10 +14,11 @@ import AVFoundation
 class GameScene: SKScene {
 
     var playerEntity: PlayerEntity!
-
-    var movementSystem = GKComponentSystem<MovementComponent>(
-        componentClass: MovementComponent.self
-    )
+    var playerNode: SKSpriteNode!
+    enum FacingDirection { case front, back, left, right }
+    private var currentFacing: FacingDirection = .front
+    
+    var movementSystem = GKComponentSystem<MovementComponent>(componentClass: MovementComponent.self)
     var gameStateMachine: GKStateMachine?
     weak var deliverySystem: DeliverySystem? {
         didSet {
@@ -280,7 +281,8 @@ class GameScene: SKScene {
         playerEntity.update(deltaTime: deltaTime)
         movementSystem.update(deltaTime: deltaTime)
         gameStateMachine?.update(deltaTime: deltaTime)
-
+        
+        updatePhysicsIfDirectionChanged()
         updateIndicators()
         
         if tooFarBubbleTimer > 0 {
@@ -386,21 +388,76 @@ class GameScene: SKScene {
         addChild(centerNode)
     }
 
-    func setupPlayer() {
-        let texture = SKTexture(imageNamed: "goldie_down_1")
-        let playerNode = SKSpriteNode(
-            texture: texture,
-            size: GameConfig.playerFrontSize
-        )
-        playerNode.zPosition = GameConfig.playerZPosition
-        playerNode.position = GameConfig.playerInitialPosition
+    func setFacing(_ direction: FacingDirection) {
+        guard direction != currentFacing else { return }
+        currentFacing = direction
 
-        playerNode.physicsBody = SKPhysicsBody(
-            circleOfRadius: GameConfig.playerPhysicsRadius
-        )
+        switch direction {
+        case .right:
+            applyPhysics(isFacingRight: true)
+        case .left:
+            applyPhysics(isFacingRight: false)
+        case .front, .back:
+            applyPhysics(isFacingRight: nil)
+        }
+    }
+    
+    /// menerapkan physics body sesuai arah hadap.
+    /// - Parameter isFacingRight: true = kanan, false = kiri, nil = depan/belakang
+    func applyPhysics(isFacingRight: Bool?) {
+        var bodyRadius: CGFloat = 20.0
+        let headRadius: CGFloat = 15.0
+
+        let headOffset: CGPoint
+        let bodyOffset: CGPoint
+        switch isFacingRight {
+        case true:
+            headOffset = CGPoint(x: 20, y: 20)
+            bodyOffset = CGPoint(x:10,y:0)
+            bodyRadius = 30.0
+        case false:
+            headOffset = CGPoint(x: -20, y: 20)
+            bodyOffset = CGPoint(x:-10,y:0)
+            bodyRadius = 30.0
+        case nil:
+            headOffset = CGPoint(x: 0, y: 20)
+            bodyOffset = CGPoint(x: 0, y: 0)
+        }
+
+        let bodyPhysics = SKPhysicsBody(circleOfRadius: bodyRadius, center: bodyOffset)
+        let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: headOffset)
+
+        playerNode.physicsBody = SKPhysicsBody(bodies: [bodyPhysics, headPhysics])
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
         playerNode.physicsBody?.restitution = 0.0
+        playerNode.physicsBody?.categoryBitMask = PhysicsCategory.player
+        playerNode.physicsBody?.collisionBitMask = PhysicsCategory.obstacle
+    }
+
+    /// Panggil ini setiap kali arah karakter berubah.
+    /// Hanya update physics jika arah benar-benar berubah (efisien).
+    func updatePhysicsIfDirectionChanged() {
+        guard let movement = playerEntity.component(ofType: MovementComponent.self) else { return }
+        let velocity = movement.velocity
+        guard velocity != .zero else { return }
+
+            let isMovingHorizontally = abs(velocity.x) > abs(velocity.y)
+
+            if isMovingHorizontally {
+                setFacing(velocity.x > 0 ? .right : .left)
+            } else {
+                setFacing(velocity.y > 0 ? .back : .front)
+            }
+    }
+    
+    func setupPlayer() {
+        let texture = SKTexture(imageNamed: "goldie_front_1")
+        playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerFrontSize)
+        playerNode.zPosition = GameConfig.playerZPosition
+        playerNode.position = GameConfig.playerInitialPosition
+        
+        applyPhysics(isFacingRight: nil)
 
         addChild(playerNode)
 

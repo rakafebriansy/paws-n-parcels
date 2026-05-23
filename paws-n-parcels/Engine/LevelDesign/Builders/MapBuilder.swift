@@ -254,22 +254,44 @@ class MapBuilder {
     
     private func buildDecoration(at point: CGPoint, assetName: String) {
         let texture = getTexture(named: assetName)
-        let grid = GameConfig.gridSize
-        let targetWidth = decorationWidth(for: assetName, grid: grid)
-        let aspectRatio = texture.size().height / max(texture.size().width, 1)
-        let targetSize = CGSize(width: targetWidth, height: targetWidth * aspectRatio)
+        let node = SKSpriteNode(texture: texture)
         
-        let node = buildGeneralEntity(
-            imageNamed: assetName,
-            size: targetSize,
-            at: point,
-            rotation: nil,
-            physicsShape: .texture,
-            zPositionStrategy: .ySorted(offset: 0)
-        )
+        if assetName == "sunflower" {
+            node.size = CGSize(width: 60, height: 100)
+        }
         
-        let entity = EnvironmentEntity(node: node)
-        environmentEntities.append(entity)
+        node.position = point
+        node.setScale(0.4)
+        
+        if assetName.contains("rock"){
+            let actualHeight = node.size.height * 1.5
+            node.zPosition = 10000 - (point.y - (actualHeight / 2))
+            let physicsWidth = node.size.width * 0.8
+            let physicsHeight = actualHeight * 0.7
+            
+            node.physicsBody = SKPhysicsBody(
+                rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
+                center: CGPoint(x: 0, y: 0)
+            )
+        } else {
+            let actualHeight = node.size.height * 2
+            node.zPosition = 10000 - (point.y - (actualHeight / 2))
+            let physicsWidth = node.size.width * 0.5
+            let physicsHeight = actualHeight * 0.3
+            
+            node.physicsBody = SKPhysicsBody(
+                rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
+                center: CGPoint(x: 0, y: -actualHeight * 0.15)
+            )
+        }
+        
+        node.physicsBody?.isDynamic = false
+        node.physicsBody?.categoryBitMask = PhysicsCategory.obstacle
+        node.physicsBody?.collisionBitMask = PhysicsCategory.player
+        node.physicsBody?.contactTestBitMask = PhysicsCategory.none
+        
+        scene.addChild(node)
+        environmentEntities.append(EnvironmentEntity(node: node))
     }
         
 
