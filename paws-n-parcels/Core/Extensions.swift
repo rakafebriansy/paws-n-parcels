@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 extension Color {
-    static let cream = Color(red: 239/255, green: 223/255, blue: 199/255) // #EFDFC7
+    static let cream = Color(red: 239/255, green: 223/255, blue: 199/255)
     static let brown = Color(red: 0.4, green: 0.25, blue: 0.15)
     static let sage = Color(red: 197/255, green: 218/255, blue: 179/255)
     static let darkGray = Color(red: 63/255, green: 55/255, blue: 49/255)

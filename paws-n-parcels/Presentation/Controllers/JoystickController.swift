@@ -23,7 +23,7 @@ class JoystickController {
     }()
     
     init() {
-        print("[JoystickController] Initializing joystick nodes.")
+        debugLog("[JoystickController] Initializing joystick nodes.")
         
         baseNode = SKShapeNode(circleOfRadius: maxRadius)
         baseNode.fillColor = UIColor.black.withAlphaComponent(0.2)
@@ -45,15 +45,13 @@ class JoystickController {
         baseNode.position = CGPoint(x: 0, y: defaultYPosition)
         camera.addChild(baseNode)
         
-        print("[JoystickController] Attached to camera at default position Y: \(defaultYPosition).")
+        debugLog("[JoystickController] Attached to camera at default position Y: \(defaultYPosition).")
     }
     
     func processTouchBegan(location: CGPoint) {
         isActive = true
         baseNode.position = location
         knobNode.position = .zero
-        
-        print("[JoystickController] Touch began. Joystick activated at \(location).")
     }
     
     func processTouchMoved(locationInBase: CGPoint) {
@@ -77,9 +75,6 @@ class JoystickController {
         if isActive {
             isActive = false
             currentVelocity = .zero
-            
-            print("[JoystickController] Touch ended. Joystick deactivated, resetting to center.")
-            
             knobNode.run(resetAction)
         }
     }

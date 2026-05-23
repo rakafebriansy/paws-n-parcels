@@ -1,7 +1,7 @@
 //
 //  GameView.swift
 //  paws-n-parcels
-//
+
 //  Created by Raka Febrian Syahputra on 07/05/26.
 //
 
@@ -22,7 +22,7 @@ struct GameView: View {
         let scene = GameScene()
         scene.size = CGSize(width: 375, height: 812)
         scene.scaleMode = .aspectFit
-        print("[GameView] GameScene instance initialized.")
+        debugLog("[GameView] GameScene instance initialized.")
         return scene
     }()
     
@@ -320,7 +320,7 @@ struct GameView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .inactive || newPhase == .background {
                 gameScene.saveGameState()
-                print("[GameView] App went to background/inactive. Game state saved.")
+                debugLog("[GameView] App went to background/inactive. Game state saved.")
             }
         }
         .onChange(of: showNewCollectibleAlert) { _, isPresented in
@@ -332,13 +332,13 @@ struct GameView: View {
     }
     
     private func setupGameDependencies() {
-        print("[GameView] View appeared. Injecting dependencies into GameScene...")
+        debugLog("[GameView] View appeared. Injecting dependencies into GameScene...")
         
         deliverySystem.modelContext = modelContext
     
         gameScene.deliverySystem = deliverySystem
         gameScene.requestSystem = requestSystem
-        print("[GameView] Dependencies injected successfully.")
+        debugLog("[GameView] Dependencies injected successfully.")
     }
     
     private func handleModalTap() {
@@ -379,18 +379,18 @@ struct GameView: View {
 
     
     private func setupGameSceneCallbacks() {
-        gameScene.onPickUpSuccess = { dialogMessage in
+        gameScene.onPickUpSuccess = { [weak gameScene] dialogMessage in
             currentDialogMessage = dialogMessage
-            gameScene.gameStateMachine?.enter(GamePausedState.self)
+            gameScene?.gameStateMachine?.enter(GamePausedState.self)
             
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 showPickUpAlert = true
             }
         }
         
-        gameScene.onDeliverySuccess = { points, isLevelUp, newItem in
+        gameScene.onDeliverySuccess = { [weak gameScene] points, isLevelUp, newItem in
             relationshipPointsEarned = points
-            gameScene.gameStateMachine?.enter(GamePausedState.self)
+            gameScene?.gameStateMachine?.enter(GamePausedState.self)
             
             if isLevelUp, let collectible = newItem {
                 unlockedItem = collectible

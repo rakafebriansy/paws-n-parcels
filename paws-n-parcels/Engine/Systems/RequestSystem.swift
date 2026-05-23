@@ -27,7 +27,7 @@ class RequestSystem {
     init() { }
     
     deinit {
-        print("[RequestSystem] DEALLOCATED! This should NOT happen during gameplay.")
+        debugLog("[RequestSystem] DEALLOCATED! This should NOT happen during gameplay.")
     }
     
     func triggerNewPackageSpawn(delaySeconds: Int = 0) {
@@ -84,7 +84,7 @@ class RequestSystem {
         
         guard needed > 0 else { return }
         
-        print("[RequestSystem] initialBurstSpawn: spawning \(needed) requests (active: \(totalActive), max: \(GameConfig.maxRequests))")
+        debugLog("[RequestSystem] initialBurstSpawn: spawning \(needed) requests (active: \(totalActive), max: \(GameConfig.maxRequests))")
         
         spawnTask = Task {
             for i in 0..<needed {
@@ -93,11 +93,11 @@ class RequestSystem {
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
                 }
                 if Task.isCancelled { break }
-                print("[RequestSystem] initialBurstSpawn: generating request \(i+1)/\(needed)")
+                debugLog("[RequestSystem] initialBurstSpawn: generating request \(i+1)/\(needed)")
                 await generateAndSpawnRequestAsync()
             }
             if !Task.isCancelled {
-                print("[RequestSystem] initialBurstSpawn: COMPLETED all \(needed) requests")
+                debugLog("[RequestSystem] initialBurstSpawn: COMPLETED all \(needed) requests")
             }
         }
     }
@@ -117,21 +117,21 @@ class RequestSystem {
               let chosenRel = getRandomRelationship(for: senderName),
               let recipientName = chosenRel.partner(of: senderName)
         else {
-            print("[RequestSystem] generateAndSpawnRequestAsync: FAILED at guard (no eligible house or relationship)")
+            debugLog("[RequestSystem] generateAndSpawnRequestAsync: FAILED at guard (no eligible house or relationship)")
             return
         }
         
         guard let senderAnimal = animalsMap[senderName],
               let receiverAnimal = animalsMap[recipientName]
         else {
-            print("[RequestSystem] Failed to find Animal objects for \(senderName) or \(recipientName)")
+            debugLog("[RequestSystem] Failed to find Animal objects for \(senderName) or \(recipientName)")
             return
         }
         
         reservedHouseNamesToSpawn.insert(senderName)
         defer { reservedHouseNamesToSpawn.remove(senderName) }
         
-        print("[RequestSystem] Generating letter from \(senderName) to \(recipientName)...")
+        debugLog("[RequestSystem] Generating letter from \(senderName) to \(recipientName)...")
         if let letterData = await AIService.shared.generateSingleLetter(from: senderName, to: recipientName, level: chosenRel.friendshipLevel) {
             let newRequest = Request(sender: senderAnimal, receiver: receiverAnimal, letter: letterData)
             
@@ -142,9 +142,9 @@ class RequestSystem {
             
             senderHouse.addComponent(component)
             system.addComponent(component)
-            print("[RequestSystem] SUCCESS: Request created at \(senderName)'s house -> \(recipientName)")
+            debugLog("[RequestSystem] SUCCESS: Request created at \(senderName)'s house -> \(recipientName)")
         } else {
-            print("[RequestSystem] FAILED: AI letter generation returned nil for \(senderName) -> \(recipientName)")
+            debugLog("[RequestSystem] FAILED: AI letter generation returned nil for \(senderName) -> \(recipientName)")
         }
     }
     

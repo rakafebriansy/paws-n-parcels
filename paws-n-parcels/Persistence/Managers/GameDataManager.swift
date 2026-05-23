@@ -15,15 +15,15 @@ class GameDataManager {
     
     func setup(with context: ModelContext) {
         self.context = context
-        print("[GameDataManager] Context initialized.")
+        debugLog("[GameDataManager] Context initialized.")
     }
     
     func save() {
         do {
             try context?.save()
-            print("[GameDataManager] Database saved successfully.")
+            debugLog("[GameDataManager] Database saved successfully.")
         } catch {
-            print("[GameDataManager] Failed to save database: \(error.localizedDescription)")
+            debugLog("[GameDataManager] Failed to save database: \(error.localizedDescription)")
         }
     }
     
@@ -56,7 +56,7 @@ class GameDataManager {
             context?.insert(profile)
         }
         save()
-        print("[GameDataManager] Player position saved: (\(x), \(y))")
+        debugLog("[GameDataManager] Player position saved: (\(x), \(y))")
     }
     
     func fetchPendingRequests() -> [Request] {
@@ -75,12 +75,12 @@ class GameDataManager {
             context?.delete(request)
         }
         save()
-        print("[GameDataManager] Deleted \(allPending.count) pending requests.")
+        debugLog("[GameDataManager] Deleted \(allPending.count) pending requests.")
     }
     
     func saveActiveRequests(senderNames: [String]) {
         UserDefaults.standard.set(senderNames, forKey: "activeRequestSenderNames")
-        print("[GameDataManager] Saved \(senderNames.count) active request sender names.")
+        debugLog("[GameDataManager] Saved \(senderNames.count) active request sender names.")
     }
     
     func loadActiveRequestSenderNames() -> [String] {
@@ -90,6 +90,6 @@ class GameDataManager {
     func saveGameState(playerX: Double, playerY: Double, activeRequestSenderNames: [String]) {
         savePlayerPosition(x: playerX, y: playerY)
         saveActiveRequests(senderNames: activeRequestSenderNames)
-        print("[GameDataManager] Full game state saved.")
+        debugLog("[GameDataManager] Full game state saved.")
     }
 }

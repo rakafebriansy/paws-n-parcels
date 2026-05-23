@@ -12,8 +12,4 @@ class DeliveryComponent: GKComponent {
     var activeRequest: Request?
     
     var isHoldingPackage: Bool { activeRequest != nil }
-        
-    override func update(deltaTime seconds: TimeInterval) {
-        super.update(deltaTime: seconds)
-    }
 }

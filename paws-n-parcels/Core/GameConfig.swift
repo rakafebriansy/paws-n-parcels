@@ -15,7 +15,8 @@ struct PhysicsCategory {
 }
 
 struct GameConfig {
-    // MARK: - Font
+    static var showDebug: Bool = true
+    
     static let fontRegular: String = "ComicRelief-Regular"
     static let fontBold: String = "ComicRelief-Bold"
     

@@ -55,7 +55,7 @@ class AIService {
 
             return response.content
         } catch {
-            print("Generation Error: \(error)")
+            debugLog("Generation Error: \(error)")
             return PackageLetter(
                 sender: from,
                 recipient: to,

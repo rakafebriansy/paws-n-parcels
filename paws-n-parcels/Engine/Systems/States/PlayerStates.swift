@@ -36,7 +36,7 @@ class PlayerIdleState: PlayerBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[PlayerFSM] Entered PlayerIdleState.")
+        debugLog("[PlayerFSM] Entered PlayerIdleState.")
         movementComponent?.velocity = .zero
         
         if let component = player?.component(ofType: PlayerStateComponent.self) {
@@ -61,7 +61,7 @@ class PlayerWalkingState: PlayerBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[PlayerFSM] Entered PlayerWalkingState.")
+        debugLog("[PlayerFSM] Entered PlayerWalkingState.")
         if let component = player?.component(ofType: PlayerStateComponent.self) {
             component.updateVisuals(isWalking: true)
         }
@@ -84,7 +84,7 @@ class PlayerInteractingState: PlayerBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[PlayerFSM] Entered PlayerInteractingState. Player movement locked.")
+        debugLog("[PlayerFSM] Entered PlayerInteractingState. Player movement locked.")
         movementComponent?.velocity = .zero
         
         if let component = player?.component(ofType: PlayerStateComponent.self) {

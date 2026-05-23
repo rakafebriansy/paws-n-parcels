@@ -26,7 +26,7 @@ class GamePlayingState: GameBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[GameFlowFSM] Entered GamePlayingState. Unpausing scene.")
+        debugLog("[GameFlowFSM] Entered GamePlayingState. Unpausing scene.")
         scene?.isPaused = false
     }
 }
@@ -38,7 +38,7 @@ class GamePausedState: GameBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[GameFlowFSM] Entered GamePausedState. Pausing scene physics.")
+        debugLog("[GameFlowFSM] Entered GamePausedState. Pausing scene physics.")
         scene?.isPaused = true
         
         if let player = scene?.playerEntity, let movement = player.component(ofType: MovementComponent.self) {
@@ -48,7 +48,7 @@ class GamePausedState: GameBaseState {
     }
     
     override func willExit(to nextState: GKState) {
-        print("[GameFlowFSM] Leaving GamePausedState. Resuming scene physics.")
+        debugLog("[GameFlowFSM] Leaving GamePausedState. Resuming scene physics.")
         scene?.isPaused = false
     }
 }

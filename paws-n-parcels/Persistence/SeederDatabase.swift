@@ -17,9 +17,9 @@ class SeederDatabase {
             try context.delete(model: Collectible.self)
             try context.delete(model: Animal.self)
             try context.save()
-            print("[SeederDatabase] Successfully reset and cleared the database.")
+            debugLog("[SeederDatabase] Successfully reset and cleared the database.")
         } catch {
-            print("[SeederDatabase] Failed to reset the database. Error: \(error.localizedDescription)")
+            debugLog("[SeederDatabase] Failed to reset the database. Error: \(error.localizedDescription)")
         }
     }
     
@@ -64,7 +64,7 @@ class SeederDatabase {
         let relationshipCount = (try? context.fetchCount(FetchDescriptor<AnimalRelationship>())) ?? 0
         
         if animalCount == 0 || relationshipCount == 0 {
-            print("Database kosong. Memulai proses Seeding...")
+            debugLog("Database kosong. Memulai proses Seeding...")
             
             for animal in predefinedAnimals {
                 context.insert(animal)
@@ -88,12 +88,12 @@ class SeederDatabase {
             
             do {
                 try context.save()
-                print("[SeederDatabase] Seeding successful! Inserted \(predefinedAnimals.count) animals, \(relationCount) relationships, and \(collectibles.count) collectibles.")
+                debugLog("[SeederDatabase] Seeding successful! Inserted \(predefinedAnimals.count) animals, \(relationCount) relationships, and \(collectibles.count) collectibles.")
             } catch {
-                print("[SeederDatabase] Failed to save seed data. Error: \(error.localizedDescription)")
+                debugLog("[SeederDatabase] Failed to save seed data. Error: \(error.localizedDescription)")
             }
         } else {
-            print("[SeederDatabase] Database is already populated. Auto-syncing existing properties.")
+            debugLog("[SeederDatabase] Database is already populated. Auto-syncing existing properties.")
             do {
                 let existingAnimals = try context.fetch(FetchDescriptor<Animal>())
                 var synced = 0
@@ -108,10 +108,10 @@ class SeederDatabase {
                 }
                 if synced > 0 {
                     try context.save()
-                    print("[SeederDatabase] Synced \(synced) animal properties to match latest code.")
+                    debugLog("[SeederDatabase] Synced \(synced) animal properties to match latest code.")
                 }
             } catch {
-                print("[SeederDatabase] Failed to sync existing data: \(error.localizedDescription)")
+                debugLog("[SeederDatabase] Failed to sync existing data: \(error.localizedDescription)")
             }
         }
     }

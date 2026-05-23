@@ -27,7 +27,7 @@ class NoActiveRequestState: DeliveryBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[DeliveryFSM] Entered NoActiveRequestState. Checking for available package requests.")
+        debugLog("[DeliveryFSM] Entered NoActiveRequestState. Checking for available package requests.")
     }
     
     override func update(deltaTime seconds: TimeInterval) {
@@ -45,7 +45,7 @@ class WaitingForPickupState: DeliveryBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[DeliveryFSM] Entered WaitingForPickupState. Active package is waiting to be picked up.")
+        debugLog("[DeliveryFSM] Entered WaitingForPickupState. Active package is waiting to be picked up.")
     }
     
     override func update(deltaTime seconds: TimeInterval) {
@@ -68,7 +68,7 @@ class CarryingState: DeliveryBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[DeliveryFSM] Entered CarryingState. Player is carrying package to \(deliverySystem.activePackage?.receiver.name ?? "Target").")
+        debugLog("[DeliveryFSM] Entered CarryingState. Player is carrying package to \(deliverySystem.activePackage?.receiver.name ?? "Target").")
     }
     
     func deliver() {
@@ -83,10 +83,10 @@ class DeliveryCompletedState: DeliveryBaseState {
     }
     
     override func didEnter(from previousState: GKState?) {
-        print("[DeliveryFSM] Entered DeliveryCompletedState. Processing rewards and alerts...")
+        debugLog("[DeliveryFSM] Entered DeliveryCompletedState. Processing rewards and alerts...")
         
         guard let scene = deliverySystem.scene else {
-            print("[DeliveryFSM] Error: GameScene reference is nil in DeliverySystem!")
+            debugLog("[DeliveryFSM] Error: GameScene reference is nil in DeliverySystem!")
             stateMachine?.enter(NoActiveRequestState.self)
             return
         }

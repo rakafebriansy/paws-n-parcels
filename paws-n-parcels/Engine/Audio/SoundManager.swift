@@ -24,13 +24,14 @@ enum SFX: String, CaseIterable {
     }
 }
 
-class SoundManager {
+class SoundManager: NSObject, AVAudioPlayerDelegate {
     static let shared = SoundManager()
     
-    private var players: [URL: AVAudioPlayer] = [:]
+    private var activePlayers: [ObjectIdentifier: AVAudioPlayer] = [:]
     private var volume: Float = 1.0
     
-    private init() {
+    private override init() {
+        super.init()
         if UserDefaults.standard.object(forKey: "sfx") != nil {
             volume = Float(UserDefaults.standard.double(forKey: "sfx") / 100.0)
         }
@@ -38,25 +39,29 @@ class SoundManager {
     
     func setVolume(_ volume: Float) {
         self.volume = volume
-        for player in players.values {
+        for player in activePlayers.values {
             player.volume = volume
         }
     }
     
     func play(_ sfx: SFX) {
         guard let url = Bundle.main.url(forResource: sfx.rawValue, withExtension: sfx.fileExtension) else {
-            print("[SoundManager] File not found for \(sfx.rawValue).\(sfx.fileExtension)")
+            debugLog("[SoundManager] File not found for \(sfx.rawValue).\(sfx.fileExtension)")
             return
         }
         
         do {
             let player = try AVAudioPlayer(contentsOf: url)
             player.volume = volume
+            player.delegate = self
             player.play()
-            // Simpan player agar tidak didealokasi saat sedang bermain
-            players[url] = player
+            activePlayers[ObjectIdentifier(player)] = player
         } catch {
-            print("[SoundManager] Error playing \(sfx.rawValue): \(error.localizedDescription)")
+            debugLog("[SoundManager] Error playing \(sfx.rawValue): \(error.localizedDescription)")
         }
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        activePlayers.removeValue(forKey: ObjectIdentifier(player))
     }
 }

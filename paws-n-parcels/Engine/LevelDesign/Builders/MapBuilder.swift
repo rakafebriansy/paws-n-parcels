@@ -9,6 +9,7 @@ import Foundation
 import SpriteKit
 import GameplayKit
 import SwiftUI
+
 class MapBuilder {
     let scene: SKScene
     var environmentEntities: [GKEntity] = []
@@ -21,11 +22,11 @@ class MapBuilder {
     
     init(scene: SKScene) {
         self.scene = scene
-        print("[MapBuilder] Initializing MapBuilder.")
+        debugLog("[MapBuilder] Initializing MapBuilder.")
     }
     
     func build(_ blueprint: MapBlueprint) {
-        print("[MapBuilder] Starting map generation...")
+        debugLog("[MapBuilder] Starting map generation...")
         
         buildTerrain(mapSize: blueprint.groundSize, oceanGrids: blueprint.oceanGridHeight, beachGrids: blueprint.beachGridHeight)
         buildRoads(blueprint.roads, mapSize: blueprint.groundSize)
@@ -47,11 +48,11 @@ class MapBuilder {
             }
         }
         
-        print("[MapBuilder] Map generation completed. Total entities created: \(environmentEntities.count).")
+        debugLog("[MapBuilder] Map generation completed. Total entities created: \(environmentEntities.count).")
     }
     
     private func buildTerrain(mapSize: CGSize, oceanGrids: CGFloat, beachGrids: CGFloat) {
-        print("[MapBuilder] Generating terrain grid...")
+        debugLog("[MapBuilder] Generating terrain grid...")
         
         let grid = GameConfig.gridSize
         
@@ -104,7 +105,7 @@ class MapBuilder {
     }
     
     private func buildRoads(_ roads: [[CGPoint]], mapSize: CGSize) {
-        print("[MapBuilder] Generating roads network...")
+        debugLog("[MapBuilder] Generating roads network...")
         var roadCells = Set<GridPoint>()
         let grid = GameConfig.gridSize
         let maxGridX = Int(mapSize.width / grid)
@@ -201,7 +202,7 @@ class MapBuilder {
         }
         return SKTileSet(tileGroups: groups)
     }
-    
+
     private func buildGeneralEntity(
         imageNamed: String,
         size: CGSize,
@@ -293,42 +294,10 @@ class MapBuilder {
         scene.addChild(node)
         environmentEntities.append(EnvironmentEntity(node: node))
     }
-        
-
-    private func decorationWidth(for assetName: String, grid: CGFloat) -> CGFloat {
-        if assetName.contains("big_rock") {
-            return grid * 0.75
-        }
-        if assetName.contains("rock") {
-            return grid * 0.35
-        }
-        return grid * 0.3
-    }
-    
-    private func decorationPhysicsBody(for assetName: String, size: CGSize) -> SKPhysicsBody {
-        if assetName.contains("rock") {
-            let radius = min(size.width, size.height)
-            return SKPhysicsBody(circleOfRadius: radius, center: CGPoint(x: 0, y: -size.height * 0.2))
-        }
-        
-        let collisionSize = CGSize(width: size.width * 2, height: size.height * 2)
-        return SKPhysicsBody(rectangleOf: collisionSize, center: .zero)
-    }
-    
-    private func configureStaticWall(_ physicsBody: SKPhysicsBody?) {
-        physicsBody?.isDynamic = false
-        physicsBody?.affectedByGravity = false
-        physicsBody?.allowsRotation = false
-        physicsBody?.restitution = 0.0
-        physicsBody?.friction = 0.0
-        physicsBody?.categoryBitMask = UInt32.max
-        physicsBody?.collisionBitMask = UInt32.max
-        physicsBody?.contactTestBitMask = 0
-    }
     
     private func buildHouse(at point: CGPoint, rotation: CGFloat?, ownerName: String? = nil, assetName: String? = nil) {
         let houseId = ownerName ?? "Unknown"
-        print("[MapBuilder] Spawning house for \(houseId) at \(point).")
+        debugLog("[MapBuilder] Spawning house for \(houseId) at \(point).")
         
         let grid = GameConfig.gridSize
         let houseSize = CGSize(width: grid * 2, height: grid * 2)
@@ -538,14 +507,6 @@ class MapBuilder {
     
     private func getAnimalAsset(for ownerName: String) -> String? {
         return CharacterRegistry.getAsset(for: ownerName)
-    }
-    
-    private func gridCenter(forBottomLeft point: CGPoint, widthInGrids: CGFloat, heightInGrids: CGFloat) -> CGPoint {
-        let grid = GameConfig.gridSize
-        
-        let exactX = (point.x * grid) + ((widthInGrids * grid) / 2)
-        let exactY = (point.y * grid) + ((heightInGrids * grid) / 2)
-        return CGPoint(x: exactX, y: exactY)
     }
 }
 

@@ -15,7 +15,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        print("[SceneDelegate] Initializing application scene...")
+        debugLog("[SceneDelegate] Initializing application scene...")
         let schema = Schema([
             Request.self,
             Animal.self,
@@ -30,10 +30,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         do {
             container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-            print("[SceneDelegate] ModelContainer successfully initialized.")
+            debugLog("[SceneDelegate] ModelContainer successfully initialized.")
         } catch {
-            print("[SceneDelegate] Error: Failed to create ModelContainer. Reason: \(error.localizedDescription)")
-            print("[SceneDelegate] Attempting to delete old database files to recover...")
+            debugLog("[SceneDelegate] Error: Failed to create ModelContainer. Reason: \(error.localizedDescription)")
+            debugLog("[SceneDelegate] Attempting to delete old database files to recover...")
             
             let fileManager = FileManager.default
             if let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
@@ -43,30 +43,30 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     let targetPath = storePath + suffix
                     do {
                         try fileManager.removeItem(atPath: targetPath)
-                        print("[SceneDelegate] Deleted incompatible database file: default.store\(suffix)")
+                        debugLog("[SceneDelegate] Deleted incompatible database file: default.store\(suffix)")
                     } catch {
-                        print("[SceneDelegate] File not found or could not be deleted: default.store\(suffix)")
+                        debugLog("[SceneDelegate] File not found or could not be deleted: default.store\(suffix)")
                     }
                 }
             }
             
             do {
                 container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-                print("[SceneDelegate] ModelContainer successfully created after database reset.")
+                debugLog("[SceneDelegate] ModelContainer successfully created after database reset.")
             } catch {
-                print("[SceneDelegate] Fatal Error: Could not create ModelContainer even after reset. Details: \(error.localizedDescription)")
+                debugLog("[SceneDelegate] Fatal Error: Could not create ModelContainer even after reset. Details: \(error.localizedDescription)")
                 fatalError("[SceneDelegate] Database initialization failed completely.")
             }
         }
         
         let context = ModelContext(container)
-        print("[SceneDelegate] Main ModelContext created.")
+        debugLog("[SceneDelegate] Main ModelContext created.")
         
         GameDataManager.shared.setup(with: context)
         
         let migrationKey = "didMigrateAnimalNamesV1"
         if !UserDefaults.standard.bool(forKey: migrationKey) {
-            print("[SceneDelegate] Running one-time migration: clearing old animal data...")
+            debugLog("[SceneDelegate] Running one-time migration: clearing old animal data...")
             SeederDatabase.clearDatabase(context: context)
             UserDefaults.standard.set(true, forKey: migrationKey)
         }
@@ -81,17 +81,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = UIHostingController(rootView: mainGameView)
             self.window = window
             window.makeKeyAndVisible()
-            print("[SceneDelegate] UIWindow configured and visible.")
+            debugLog("[SceneDelegate] UIWindow configured and visible.")
         }
     }
     
     func sceneWillResignActive(_ scene: UIScene) {
-        print("[SceneDelegate] Scene will resign active — saving game state...")
+        debugLog("[SceneDelegate] Scene will resign active — saving game state...")
         saveCurrentGameState()
     }
     
     func sceneDidEnterBackground(_ scene: UIScene) {
-        print("[SceneDelegate] Scene entered background — saving game state...")
+        debugLog("[SceneDelegate] Scene entered background — saving game state...")
         saveCurrentGameState()
     }
     
@@ -117,10 +117,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if let skView = findSKView(in: window),
            let gameScene = skView.scene as? GameScene {
             gameScene.saveGameState()
-            print("[SceneDelegate] Game state saved via SKView scene.")
+            debugLog("[SceneDelegate] Game state saved via SKView scene.")
         } else {
             GameDataManager.shared.save()
-            print("[SceneDelegate] Fallback: saved SwiftData context only.")
+            debugLog("[SceneDelegate] Fallback: saved SwiftData context only.")
         }
     }
 }
