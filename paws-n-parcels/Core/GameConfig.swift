@@ -51,7 +51,7 @@ struct GameConfig {
     static let playerUpSize = CGSize(width: 46, height: 95)
     static let playerHorizontalSize = CGSize(width: 80, height: 64)
     
-    static let playerWalkFrameDuration: TimeInterval = 0.12
+    static let playerWalkFrameDuration: TimeInterval = 0.16
     
     static let playerCarryingTransitionDuration: TimeInterval = 0.1
     static let playerCarryingTransitionScale: CGFloat = 0.8
@@ -61,7 +61,7 @@ struct GameConfig {
     static let playerWalkVerticalStretch = (x: CGFloat(0.95), y: CGFloat(1.05))
     static let playerWalkHorizontalSquash = (x: CGFloat(1.08), y: CGFloat(0.92))
     static let playerWalkHorizontalStretch = (x: CGFloat(0.92), y: CGFloat(1.08))
-    static let playerWalkBounceDuration: TimeInterval = 0.12
+    static let playerWalkBounceDuration: TimeInterval = 0.16
     
     static let playerIdleVerticalSquash = (x: CGFloat(1.02), y: CGFloat(0.98))
     static let playerIdleVerticalStretch = (x: CGFloat(0.98), y: CGFloat(1.02))

@@ -292,7 +292,11 @@ class GameScene: SKScene {
                 updateTooFarBubblePosition()
             }
         }
+    }
 
+    override func didSimulatePhysics() {
+        super.didSimulatePhysics()
+        
         if let playerNode = playerEntity.component(
             ofType: RenderComponent.self
         )?.node {
