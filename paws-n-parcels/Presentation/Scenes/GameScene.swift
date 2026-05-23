@@ -13,9 +13,9 @@ import AVFoundation
 
 class GameScene: SKScene {
 
+    enum FacingDirection { case front, back, left, right }
     var playerEntity: PlayerEntity!
     var playerNode: SKSpriteNode!
-    enum FacingDirection { case front, back, left, right }
     var currentFacing: FacingDirection = .front
     
     var movementSystem = GKComponentSystem<MovementComponent>(componentClass: MovementComponent.self)
@@ -207,29 +207,30 @@ class GameScene: SKScene {
     /// menerapkan physics body sesuai arah hadap.
     /// - Parameter isFacingRight: true = kanan, false = kiri, nil = depan/belakang
     func applyPhysics(isFacingRight: Bool?) {
-        var bodyRadius: CGFloat = 20.0
         let headRadius: CGFloat = 15.0
+        let bodyRadiusSmall: CGFloat = 15.0
+        var physicsBodies: [SKPhysicsBody] = []
 
-        let headOffset: CGPoint
-        let bodyOffset: CGPoint
         switch isFacingRight {
         case true:
-            headOffset = CGPoint(x: 20, y: 20)
-            bodyOffset = CGPoint(x:10,y:0)
-            bodyRadius = 30.0
+            let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: 20, y: 20))
+            let bodyBackPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: -10, y: -6))
+            let bodyFrontPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: 15, y: -6))
+            physicsBodies = [headPhysics, bodyBackPhysics, bodyFrontPhysics]
+            
         case false:
-            headOffset = CGPoint(x: -20, y: 20)
-            bodyOffset = CGPoint(x:-10,y:0)
-            bodyRadius = 30.0
+            let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: -20, y: 20))
+            let bodyBackPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: 10, y: -6))
+            let bodyFrontPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: -15, y: -6))
+            physicsBodies = [headPhysics, bodyBackPhysics, bodyFrontPhysics]
+            
         case nil:
-            headOffset = CGPoint(x: 0, y: 20)
-            bodyOffset = CGPoint(x: 0, y: 0)
+            let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: 0, y: 20))
+            let bodyPhysics = SKPhysicsBody(circleOfRadius: 20.0, center: CGPoint(x: 0, y: 0))
+            physicsBodies = [headPhysics, bodyPhysics]
         }
 
-        let bodyPhysics = SKPhysicsBody(circleOfRadius: bodyRadius, center: bodyOffset)
-        let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: headOffset)
-
-        playerNode.physicsBody = SKPhysicsBody(bodies: [bodyPhysics, headPhysics])
+        playerNode.physicsBody = SKPhysicsBody(bodies: physicsBodies)
         playerNode.physicsBody?.affectedByGravity = false
         playerNode.physicsBody?.allowsRotation = false
         playerNode.physicsBody?.restitution = 0.0

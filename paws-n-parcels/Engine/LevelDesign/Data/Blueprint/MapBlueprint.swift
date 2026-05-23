@@ -55,7 +55,7 @@ let rawLevelDataJSON = """
         [[31, 9], [31, 34]]
   ],
   "items": [
-  {"type": {"type": "house"}, "pos": [1, 6], "assetName": "house_1"},
+    {"type": {"type": "house"}, "pos": [1, 6], "assetName": "house_1"},
       {"type": {"type": "house"}, "pos": [25, 7], "assetName": "house_2"},
       {"type": {"type": "house"}, "pos": [35, 11], "assetName": "house_2"},
       {"type": {"type": "house"}, "pos": [35, 7], "assetName": "house_2"},
@@ -130,6 +130,7 @@ let rawLevelDataJSON = """
   ]
 }
 """
+
 
 ///rect dalam grid-space yang tidak boleh diisi asset decorations
 private struct ExclusionRect {
