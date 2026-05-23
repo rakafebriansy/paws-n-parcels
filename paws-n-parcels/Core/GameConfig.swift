@@ -15,7 +15,14 @@ struct PhysicsCategory {
 }
 
 struct GameConfig {
-    static var showDebug: Bool = true
+    static var showDebug: Bool = false
+    
+    static let loadingMessages: [String] = [
+        "Packing parcels with love 📦🐾",
+        "Tying ribbons on boxes 🎀🐕",
+        "Filling up the delivery bag 🎒🦴",
+        "Stamping letters 💌🐾"
+    ]
     
     static let fontRegular: String = "ComicRelief-Regular"
     static let fontBold: String = "ComicRelief-Bold"

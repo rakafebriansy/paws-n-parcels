@@ -37,6 +37,9 @@ struct GameView: View {
     @State private var showPostcard: Bool = false
     
     @State private var isPaused: Bool = false
+    @State private var isLoading: Bool = true
+    @State private var loadingMessage: String = GameConfig.loadingMessages.randomElement() ?? "Memuat Dunia..."
+    @State private var loadingDots: String = "."
     @State private var currentPhase: GamePhase = {
         let hasSeenBg = UserDefaults.standard.bool(forKey: "hasSeenBackgroundStory")
         let hasSeenRed = UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial")
@@ -78,6 +81,37 @@ struct GameView: View {
         ZStack {
             SpriteView(scene: gameScene, debugOptions: [.showsPhysics])
                 .ignoresSafeArea()
+            
+            if isLoading {
+                ZStack {
+                    Color.black.opacity(0.85)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 24) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.8)
+                        
+                        VStack(spacing: 8) {
+                            HStack(spacing: 0) {
+                                Text("Loading")
+                                Text(loadingDots)
+                                    .frame(width: 20, alignment: .leading)
+                            }
+                            .foregroundColor(.white)
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            
+                            Text(loadingMessage)
+                                .foregroundColor(.white.opacity(0.8))
+                                .font(.system(size: 15, weight: .medium, design: .rounded))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1000)
+            }
             
             if currentPhase != .backgroundStory {
                 if let data = joystickBubbleData {
@@ -316,6 +350,31 @@ struct GameView: View {
             
             let initialPhase = currentPhase
             gameScene.currentPhase = initialPhase
+            
+            Task {
+                var count = 1
+                while isLoading {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    count = (count % 3) + 1
+                    let dots = String(repeating: ".", count: count)
+                    await MainActor.run {
+                        loadingDots = dots
+                    }
+                }
+            }
+            
+            Task {
+                // Initialize AI model in the background to avoid later stuttering
+                _ = AIService.shared
+                
+                // Allow SpriteKit time to render the initial frame
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                await MainActor.run {
+                    withAnimation(.easeOut(duration: 0.8)) {
+                        isLoading = false
+                    }
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .inactive || newPhase == .background {

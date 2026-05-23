@@ -560,7 +560,7 @@ class GameScene: SKScene {
             scene.scaleMode = .aspectFill
             return scene
         }(),
-        debugOptions: [.showsPhysics]
+        // debugOptions: [.showsPhysics]
     )
     .ignoresSafeArea()
 }
