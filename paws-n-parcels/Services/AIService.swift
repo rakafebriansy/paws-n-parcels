@@ -43,6 +43,7 @@ class AIService {
             Pick one unique, cozy gift item (like a 'warm scarf', 'special pebble', or 'bag of chips', add more, be creative). 
             Write a short, heartfelt letter from \(from) to \(to) about sending this item. 
             Tone: \(tone).
+            Keep the letter brief, strictly under 310 characters, and ideally shorter.
             Ensure the 'itemSent' field matches the item mentioned in the letter.
             """
 

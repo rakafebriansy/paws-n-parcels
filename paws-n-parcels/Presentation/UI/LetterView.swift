@@ -44,9 +44,8 @@ struct LetterView: View {
                         .font(.system(size: 9.5, weight: .medium, design: .serif))
                         .italic()
                         .foregroundColor(Color(red: 0.25, green: 0.2, blue: 0.15))
-                        .lineLimit(10)
+                        .minimumScaleFactor(0.6)
                         .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
                     
                     Spacer(minLength: 0)
                 }
