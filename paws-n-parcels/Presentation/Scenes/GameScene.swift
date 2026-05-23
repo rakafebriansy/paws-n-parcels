@@ -166,7 +166,7 @@ class GameScene: SKScene {
         let screenY = -joystick.baseNode.position.y + (viewHeight / 2)
         
         let clampedX = min(max(screenX, 70), viewWidth - 70)
-        let clampedY = screenY - 150
+        let clampedY = screenY - 190
         
         let data = TutorialBubbleData(
             text: "Move Goldie using this joystick.",
@@ -934,6 +934,10 @@ class GameScene: SKScene {
         let padding: CGFloat = 45.0
         let ovalRadiusX = (screenWidth / 2) - padding
         let ovalRadiusY = (screenHeight / 2) - padding
+
+        let topZoneThreshold: CGFloat = 0
+        let horizontalThreshold: CGFloat = 60
+        let horizontalYOffset: CGFloat = 60
         
         let hasActivePackage = deliverySystem?.activePackage != nil
         
@@ -962,25 +966,14 @@ class GameScene: SKScene {
                 
                 if !UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial") {
                     if let validArrow = arrowNode {
-                        let screenX = validArrow.position.x + (viewWidth / 2)
-                        let screenY = -validArrow.position.y + (viewHeight / 2)
-                        
-                        let isInTopZone = validArrow.position.y > 100
-                        let isHorizontallyAligned = abs(validArrow.position.y) < 200
-                        
-                        let clampedX = min(max(screenX, 70), viewWidth - 70)
-                        
-                        let clampedY: CGFloat
-                        if isHorizontallyAligned {
-                            clampedY = screenY - 100
-                        } else {
-                            clampedY = screenY + (isInTopZone ? 55 : -55)
-                        }
-                        
-                        let data = TutorialBubbleData(
+                        let data = calculateTutorialBubbleData(
+                            arrowNode: validArrow,
                             text: "Follow the red arrow to deliver the parcel.",
-                            position: CGPoint(x: clampedX, y: clampedY),
-                            isInTopZone: isInTopZone
+                            viewWidth: viewWidth,
+                            viewHeight: viewHeight,
+                            topZoneThreshold: topZoneThreshold,
+                            horizontalThreshold: horizontalThreshold,
+                            horizontalYOffset: horizontalYOffset
                         )
                         onRedBubbleUpdate?(data)
                     } else {
@@ -1025,25 +1018,14 @@ class GameScene: SKScene {
                    !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
                     
                     if let validArrow = arrowNode {
-                        let screenX = validArrow.position.x + (viewWidth / 2)
-                        let screenY = -validArrow.position.y + (viewHeight / 2)
-                        
-                        let isInTopZone = validArrow.position.y > 0
-                        let isHorizontallyAligned = abs(validArrow.position.y) < 60
-                        
-                        let clampedX = min(max(screenX, 70), viewWidth - 70)
-                        
-                        let clampedY: CGFloat
-                        if isHorizontallyAligned {
-                            clampedY = screenY - 80
-                        } else {
-                            clampedY = screenY + (isInTopZone ? 55 : -55)
-                        }
-                        
-                        let data = TutorialBubbleData(
+                        let data = calculateTutorialBubbleData(
+                            arrowNode: validArrow,
                             text: "Follow the yellow arrow to pick up the parcel.",
-                            position: CGPoint(x: clampedX, y: clampedY),
-                            isInTopZone: isInTopZone
+                            viewWidth: viewWidth,
+                            viewHeight: viewHeight,
+                            topZoneThreshold: topZoneThreshold,
+                            horizontalThreshold: horizontalThreshold,
+                            horizontalYOffset: horizontalYOffset
                         )
                         onYellowBubbleUpdate?(data)
                         didShowYellowTutorialBubble = true
@@ -1055,6 +1037,40 @@ class GameScene: SKScene {
                 onYellowBubbleUpdate?(nil)
             }
         }
+    }
+    
+    private func calculateTutorialBubbleData(
+        arrowNode: SKNode,
+        text: String,
+        viewWidth: CGFloat,
+        viewHeight: CGFloat,
+        topZoneThreshold: CGFloat,
+        horizontalThreshold: CGFloat,
+        horizontalYOffset: CGFloat
+    ) -> TutorialBubbleData {
+        let screenX = arrowNode.position.x + (viewWidth / 2)
+        let screenY = -arrowNode.position.y + (viewHeight / 2)
+        
+        let isInTopZone = arrowNode.position.y > topZoneThreshold
+        let isHorizontallyAligned = abs(arrowNode.position.y) < horizontalThreshold
+        
+        let clampedX = min(max(screenX, 70), viewWidth - 70)
+        
+        let clampedY: CGFloat
+        let finalIsInTopZone: Bool
+        if isHorizontallyAligned {
+            clampedY = screenY - (horizontalYOffset * 2)
+            finalIsInTopZone = false 
+        } else {
+            clampedY = screenY + (isInTopZone ? horizontalYOffset : -(horizontalYOffset * 2))
+            finalIsInTopZone = isInTopZone
+        }
+        
+        return TutorialBubbleData(
+            text: text,
+            position: CGPoint(x: clampedX, y: clampedY),
+            isInTopZone: finalIsInTopZone
+        )
     }
     
     private func createArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) -> SKSpriteNode? {
