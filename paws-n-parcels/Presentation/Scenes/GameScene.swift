@@ -597,6 +597,7 @@ class GameScene: SKScene {
         UserDefaults.standard.set(false, forKey: "hasSeenYellowArrowTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenRedArrowTutorial")
         UserDefaults.standard.set(false, forKey: "hasSeenBackgroundStory")
+        UserDefaults.standard.set(false, forKey: "hasFinishedTutorialPhase")
         
         hasStartedFirstMove = false
         currentDialogMessage = nil
@@ -964,10 +965,17 @@ class GameScene: SKScene {
                         let screenX = validArrow.position.x + (viewWidth / 2)
                         let screenY = -validArrow.position.y + (viewHeight / 2)
                         
-                        let isInTopZone = validArrow.position.y > 0
+                        let isInTopZone = validArrow.position.y > 100
+                        let isHorizontallyAligned = abs(validArrow.position.y) < 200
                         
                         let clampedX = min(max(screenX, 70), viewWidth - 70)
-                        let clampedY = screenY + (isInTopZone ? 55 : -55)
+                        
+                        let clampedY: CGFloat
+                        if isHorizontallyAligned {
+                            clampedY = screenY - 100
+                        } else {
+                            clampedY = screenY + (isInTopZone ? 55 : -55)
+                        }
                         
                         let data = TutorialBubbleData(
                             text: "Follow the red arrow to deliver the parcel.",
@@ -1021,9 +1029,16 @@ class GameScene: SKScene {
                         let screenY = -validArrow.position.y + (viewHeight / 2)
                         
                         let isInTopZone = validArrow.position.y > 0
+                        let isHorizontallyAligned = abs(validArrow.position.y) < 60
                         
                         let clampedX = min(max(screenX, 70), viewWidth - 70)
-                        let clampedY = screenY + (isInTopZone ? 55 : -55)
+                        
+                        let clampedY: CGFloat
+                        if isHorizontallyAligned {
+                            clampedY = screenY - 80
+                        } else {
+                            clampedY = screenY + (isInTopZone ? 55 : -55)
+                        }
                         
                         let data = TutorialBubbleData(
                             text: "Follow the yellow arrow to pick up the parcel.",

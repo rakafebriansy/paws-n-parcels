@@ -38,9 +38,18 @@ struct GameView: View {
     
     @State private var isPaused: Bool = false
     @State private var currentPhase: GamePhase = {
-        if !UserDefaults.standard.bool(forKey: "hasSeenBackgroundStory") {
+        let hasSeenBg = UserDefaults.standard.bool(forKey: "hasSeenBackgroundStory")
+        let hasSeenRed = UserDefaults.standard.bool(forKey: "hasSeenRedArrowTutorial")
+        var hasFinished = UserDefaults.standard.bool(forKey: "hasFinishedTutorialPhase")
+        
+        if hasFinished && !hasSeenRed {
+            UserDefaults.standard.set(false, forKey: "hasFinishedTutorialPhase")
+            hasFinished = false
+        }
+        
+        if !hasSeenBg {
             return .backgroundStory
-        } else if !UserDefaults.standard.bool(forKey: "hasFinishedTutorialPhase") {
+        } else if !hasFinished {
             return .tutorial
         } else {
             return .playing
