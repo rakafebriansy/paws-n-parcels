@@ -141,6 +141,7 @@ struct GameView: View {
                 VStack {
                     HStack(spacing: 12) {
                         Button(action: {
+                            SoundManager.shared.play(.click4)
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                                 activePauseScreen = .main
                                 gameScene.gameStateMachine?.enter(GamePausedState.self)

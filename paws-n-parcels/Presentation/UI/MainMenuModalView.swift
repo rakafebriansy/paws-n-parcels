@@ -61,7 +61,7 @@ struct MainMenuModalView: View {
                     
                     HStack {
                         Button(action: {
-                            SoundManager.shared.play(.click4)
+                            SoundManager.shared.play(.click5)
                             onResume?()
                         }) {
                             Image("close_button")

@@ -68,6 +68,7 @@ struct CollectiblesView: View {
     }
     
     private func close() {
+        SoundManager.shared.play(.click5)
         if let onClose {
             onClose()
         } else {

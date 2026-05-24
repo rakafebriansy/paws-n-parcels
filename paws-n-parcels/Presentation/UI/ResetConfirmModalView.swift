@@ -17,6 +17,7 @@ struct ResetConfirmModalView: View {
                     .scaledToFit()
 
                 Button(action: {
+                    SoundManager.shared.play(.click5)
                     onCancel()
                 }) {
                     Image("back_button")
@@ -44,6 +45,7 @@ struct ResetConfirmModalView: View {
 
                 VStack(spacing: 12) {
                     Button(action: {
+                        SoundManager.shared.play(.click4)
                         onConfirm()
                     }) {
                         HStack(spacing: 8) {
@@ -59,6 +61,7 @@ struct ResetConfirmModalView: View {
                     }
 
                     Button(action: {
+                        SoundManager.shared.play(.click5)
                         onCancel()
                     }) {
                         Text("Cancel")

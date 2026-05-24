@@ -139,8 +139,6 @@ extension GameScene {
         }
     }
     
-    // MARK: - Arrow Node Creation
-    
     func calculateTutorialBubbleData(
         arrowNode: SKNode,
         text: String,

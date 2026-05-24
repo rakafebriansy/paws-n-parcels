@@ -27,6 +27,7 @@ struct RelationshipView: View {
                 
                 if onClose != nil {
                     Button(action: {
+                        SoundManager.shared.play(.click5)
                         onClose?()
                     }) {
                         Image("back_button")

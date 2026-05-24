@@ -6,6 +6,7 @@ enum SFX: String, CaseIterable {
     case menu1A = "Menu1A"
     case achievement = "achievement"
     case click4 = "click4"
+    case click5 = "click5"
     case grass7 = "grass_7"
     case grass6 = "grasss_6"
     case gravel6 = "gravel_6"
@@ -18,7 +19,7 @@ enum SFX: String, CaseIterable {
         switch self {
         case .item1A, .menu1A, .achievement, .itemHandling1, .paper10:
             return "wav"
-        case .click4, .grass7, .grass6, .gravel6, .gravel8, .appearOnline:
+        case .click4, .click5, .grass7, .grass6, .gravel6, .gravel8, .appearOnline:
             return "m4a"
         }
     }
@@ -52,7 +53,12 @@ class SoundManager: NSObject, AVAudioPlayerDelegate {
         
         do {
             let player = try AVAudioPlayer(contentsOf: url)
-            player.volume = volume
+            var finalVolume = volume
+            if sfx == .grass6 || sfx == .grass7 || sfx == .gravel6 || sfx == .gravel8 {
+                finalVolume = volume * 0.3
+            }
+            player.volume = finalVolume
+            
             player.delegate = self
             player.play()
             activePlayers[ObjectIdentifier(player)] = player
