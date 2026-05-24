@@ -22,6 +22,16 @@ extension GameScene {
         guard let touch = touches.first
         else { return }
 
+        let locationInMap = touch.location(in: self)
+        let tappedNodes = nodes(at: locationInMap)
+
+        for node in tappedNodes {
+            let name = node.name
+            if name == "indicator_sender" || name == "indicator_receiver" {
+                return
+            }
+        }
+
         let location = touch.location(in: cameraNode)
         joystick.processTouchBegan(location: location)
         
