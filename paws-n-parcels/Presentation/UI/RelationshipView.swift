@@ -102,9 +102,10 @@ struct RelationshipView: View {
                                         )
                                         .shadow(color: Color.black.opacity(0.12), radius: 3, x: 2, y: 1)
 
-                                    Text(String(characters[index].name.prefix(1)))
-                                        .comicRelief(size: 13, isBold: true)
-                                        .foregroundColor(selectedIndex == index ? .cream : .darkGray)
+                                    Image(characters[index].assetName)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 32, height: 32)
                                 }
                                 .frame(width: 32, height: 60)
                                 .offset(x: selectedIndex == index ? 4 : 0)
@@ -268,3 +269,4 @@ struct FractionalHeartView: View {
     return RelationshipView()
         .modelContainer(container)
 }
+
