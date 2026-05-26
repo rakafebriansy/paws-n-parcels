@@ -104,7 +104,7 @@ class PlayerStateComponent: GKComponent {
     var stateMachine: GKStateMachine?
     weak var scene: GameScene?
     
-    private var lastDirection: String = "front"
+    private var lastDirection: String = "up"
     private var lastHolding: Bool = false
     private var lastWalking: Bool = false
     private var isFirstUpdate: Bool = true
@@ -153,6 +153,12 @@ class PlayerStateComponent: GKComponent {
         
         let isWalking = stateMachine?.currentState is PlayerWalkingState
         updateVisuals(isWalking: isWalking)
+    }
+    
+    func forceDirection(_ direction: String) {
+        lastDirection = direction
+        isFirstUpdate = true
+        updateVisuals(isWalking: false)
     }
     
     func updateVisuals(isWalking: Bool) {

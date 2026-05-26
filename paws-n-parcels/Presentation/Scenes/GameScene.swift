@@ -284,8 +284,8 @@ class GameScene: SKScene {
     }
     
     func setupPlayer() {
-        let texture = SKTexture(imageNamed: "goldie_front_1")
-        playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerFrontSize)
+        let texture = SKTexture(imageNamed: "goldie_up_1")
+        playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerUpSize)
         playerNode.zPosition = GameConfig.playerZPosition
         playerNode.position = GameConfig.playerInitialPosition
         
@@ -504,10 +504,14 @@ class GameScene: SKScene {
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
             movement.velocity = .zero
         }
-        joystick.processTouchEnded()
+        joystick.reset()
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
             playerNode.position = GameConfig.playerInitialPosition
+        }
+        
+        if let stateComp = playerEntity.component(ofType: PlayerStateComponent.self) {
+            stateComp.forceDirection("up")
         }
         
         deliverySystem?.activePackage = nil
