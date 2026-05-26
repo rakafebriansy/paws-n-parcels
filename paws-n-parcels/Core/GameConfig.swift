@@ -30,9 +30,9 @@ struct GameConfig {
     static let deliveryRewardPoints: Int = 1
     
     static let pointsForAcquaintance: Int = 1
-    static let pointsForFriend: Int = 10
-    static let pointsForCloseFriend: Int = 20
-    static let pointsForBestFriend: Int = 40
+    static let pointsForFriend: Int = 1
+    static let pointsForCloseFriend: Int = 1
+    static let pointsForBestFriend: Int = 1
     
     static let maxRequests = 5
     static let playerSpeedMultiplier: CGFloat = 1
