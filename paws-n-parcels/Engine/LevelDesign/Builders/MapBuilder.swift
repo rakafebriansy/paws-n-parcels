@@ -15,6 +15,8 @@ class MapBuilder {
     var environmentEntities: [GKEntity] = []
     
     private var textureCache: [String: SKTexture] = [:]
+    private var treeSizeCache: CGSize?
+    
     private struct GridPoint: Hashable {
         let x: Int
         let y: Int
@@ -236,15 +238,6 @@ class MapBuilder {
                 node.physicsBody = SKPhysicsBody(rectangleOf: rectSize, center: center)
             case .circle(let radius, let centerOffset):
                 node.physicsBody = SKPhysicsBody(circleOfRadius: radius, center: centerOffset)
-            case .texture:
-                if let texture = node.texture {
-                    node.physicsBody = SKPhysicsBody(texture: texture, alphaThreshold: 0.1, size: size)
-                    if node.physicsBody == nil {
-                        node.physicsBody = SKPhysicsBody(rectangleOf: size)
-                    }
-                } else {
-                    node.physicsBody = SKPhysicsBody(rectangleOf: size)
-                }
             case .houseSimplified(let size):
                 let w = size.width
                 let h = size.height
@@ -350,7 +343,7 @@ class MapBuilder {
         senderIndicator.zPosition = 100
         senderIndicator.isHidden = true
         
-        let senderExclamation = SKSpriteNode(texture: getTexture(named: "exclamation"))
+        let senderExclamation = SKSpriteNode(texture: getTexture(named: "exclamation_yellow"))
         senderExclamation.size = GameConfig.requestIndicatorExclamationSize
         senderExclamation.position = CGPoint(x: senderIndicator.size.width * 0.35, y: senderIndicator.size.height * 0.35)
         senderExclamation.zPosition = 1
@@ -366,7 +359,7 @@ class MapBuilder {
         receiverIndicator.zPosition = 100
         receiverIndicator.isHidden = true
         
-        let receiverExclamation = SKSpriteNode(texture: getTexture(named: "exclamation"))
+        let receiverExclamation = SKSpriteNode(texture: getTexture(named: "exclamation_red"))
         receiverExclamation.size = GameConfig.requestIndicatorExclamationSize
         receiverExclamation.position = CGPoint(x: receiverIndicator.size.width * 0.35, y: receiverIndicator.size.height * 0.35)
         receiverExclamation.zPosition = 1
@@ -380,9 +373,18 @@ class MapBuilder {
     
     private func buildTree(at point: CGPoint) {
         let grid = GameConfig.gridSize
-        let dummyNode = SKSpriteNode(imageNamed: "tree")
-        let scaleFactor = grid / dummyNode.size.width
-        let actualHeight = dummyNode.size.height * scaleFactor
+        
+        let treeTextureSize: CGSize
+        if let size = treeSizeCache {
+            treeTextureSize = size
+        } else {
+            let size = getTexture(named: "tree").size()
+            treeSizeCache = size
+            treeTextureSize = size
+        }
+        
+        let scaleFactor = grid / treeTextureSize.width
+        let actualHeight = treeTextureSize.height * scaleFactor
         let treeSize = CGSize(width: grid, height: actualHeight)
         
         let node = buildGeneralEntity(

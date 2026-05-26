@@ -85,7 +85,7 @@ extension GameScene {
                     if senderIcon?.action(forKey: "highlight") == nil {
                         senderIcon?.run(Self.senderPulseAction, withKey: "highlight")
                         senderIcon?.color = .yellow
-                        senderIcon?.colorBlendFactor = 0.12
+                        senderIcon?.colorBlendFactor = 0.13
                     }
                 } else {
                     senderIcon?.removeAction(forKey: "highlight")

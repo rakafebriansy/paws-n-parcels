@@ -79,7 +79,10 @@ struct GameView: View {
     
     var body: some View {
         ZStack {
-            SpriteView(scene: gameScene, debugOptions: [.showsPhysics, .showsFPS])
+            SpriteView(
+                scene: gameScene,
+//                debugOptions: [.showsPhysics, .showsFPS]
+            )
                 .ignoresSafeArea()
             
             if isLoading {

@@ -109,6 +109,9 @@ class PlayerStateComponent: GKComponent {
     private var lastWalking: Bool = false
     private var isFirstUpdate: Bool = true
     
+    private var animationCache: [String: SKAction] = [:]
+    private var textureCache: [String: SKTexture] = [:]
+    
     init(scene: GameScene) {
         self.scene = scene
         super.init()
@@ -118,6 +121,23 @@ class PlayerStateComponent: GKComponent {
     
     override func didAddToEntity() {
         guard let entity = entity, let scene = scene else { return }
+        
+        let directions = ["front", "up", "left", "right"]
+        let prefixes = ["goldie_", "goldie_package_"]
+        for prefix in prefixes {
+            for dir in directions {
+                let tex1 = SKTexture(imageNamed: "\(prefix)\(dir)_1")
+                let tex2 = SKTexture(imageNamed: "\(prefix)\(dir)_2")
+                let tex3 = SKTexture(imageNamed: "\(prefix)\(dir)_3")
+                
+                textureCache["\(prefix)\(dir)_idle"] = tex1
+                
+                let walkFrames = [tex1, tex2, tex3, tex2]
+                let walkAnim = SKAction.animate(with: walkFrames, timePerFrame: GameConfig.playerWalkFrameDuration)
+                let walkAnimLoop = SKAction.repeatForever(walkAnim)
+                animationCache["\(prefix)\(dir)_walk"] = walkAnimLoop
+            }
+        }
         
         let states = [
             PlayerIdleState(player: entity, scene: scene),
@@ -207,14 +227,6 @@ class PlayerStateComponent: GKComponent {
         }
         
         if isWalking {
-            let tex1 = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
-            let tex2 = SKTexture(imageNamed: "\(prefix)\(dirStr)_2")
-            let tex3 = SKTexture(imageNamed: "\(prefix)\(dirStr)_3")
-            
-            let textures = [tex1, tex2, tex3, tex2]
-            let walkAnim = SKAction.animate(with: textures, timePerFrame: GameConfig.playerWalkFrameDuration)
-            let walkAnimLoop = SKAction.repeatForever(walkAnim)
-            
             let squashX = isVertical ? GameConfig.playerWalkVerticalSquash.x : GameConfig.playerWalkHorizontalSquash.x
             let squashY = isVertical ? GameConfig.playerWalkVerticalSquash.y : GameConfig.playerWalkHorizontalSquash.y
             let stretchX = isVertical ? GameConfig.playerWalkVerticalStretch.x : GameConfig.playerWalkHorizontalStretch.x
@@ -232,10 +244,13 @@ class PlayerStateComponent: GKComponent {
             let footstepWait = SKAction.wait(forDuration: GameConfig.playerWalkFrameDuration * 2.0)
             let footstepLoop = SKAction.repeatForever(SKAction.sequence([footstepAction, footstepWait]))
             
-            node.run(SKAction.group([walkAnimLoop, bounce, footstepLoop]), withKey: "player_anim")
+            if let walkAnimLoop = animationCache["\(prefix)\(dirStr)_walk"] {
+                node.run(SKAction.group([walkAnimLoop, bounce, footstepLoop]), withKey: "player_anim")
+            }
         } else {
-            let idleTex = SKTexture(imageNamed: "\(prefix)\(dirStr)_1")
-            node.texture = idleTex
+            if let idleTex = textureCache["\(prefix)\(dirStr)_idle"] {
+                node.texture = idleTex
+            }
             
             let breatheSquashX = isVertical ? GameConfig.playerIdleVerticalSquash.x : GameConfig.playerIdleHorizontalSquash.x
             let breatheSquashY = isVertical ? GameConfig.playerIdleVerticalSquash.y : GameConfig.playerIdleHorizontalSquash.y

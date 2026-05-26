@@ -7,10 +7,11 @@
 
 import Foundation
 import SpriteKit
+import UIKit
 
 class JoystickController {
-    let baseNode: SKShapeNode
-    let knobNode: SKShapeNode
+    let baseNode: SKSpriteNode
+    let knobNode: SKSpriteNode
     var isActive: Bool = false
     var currentVelocity: CGPoint = .zero
     
@@ -25,14 +26,25 @@ class JoystickController {
     init() {
         debugLog("[JoystickController] Initializing joystick nodes.")
         
-        baseNode = SKShapeNode(circleOfRadius: maxRadius)
-        baseNode.fillColor = UIColor.black.withAlphaComponent(0.2)
-        baseNode.strokeColor = .clear
+        let baseDiameter = maxRadius * 2
+        let rendererBase = UIGraphicsImageRenderer(size: CGSize(width: baseDiameter, height: baseDiameter))
+        let baseImage = rendererBase.image { ctx in
+            UIColor.black.withAlphaComponent(0.2).setFill()
+            ctx.cgContext.fillEllipse(in: CGRect(x: 0, y: 0, width: baseDiameter, height: baseDiameter))
+        }
+        
+        let knobRadius: CGFloat = 25.0
+        let knobDiameter = knobRadius * 2
+        let rendererKnob = UIGraphicsImageRenderer(size: CGSize(width: knobDiameter, height: knobDiameter))
+        let knobImage = rendererKnob.image { ctx in
+            UIColor.white.setFill()
+            ctx.cgContext.fillEllipse(in: CGRect(x: 0, y: 0, width: knobDiameter, height: knobDiameter))
+        }
+        
+        baseNode = SKSpriteNode(texture: SKTexture(image: baseImage))
         baseNode.zPosition = 100
         
-        knobNode = SKShapeNode(circleOfRadius: 25)
-        knobNode.fillColor = .white
-        knobNode.strokeColor = .clear
+        knobNode = SKSpriteNode(texture: SKTexture(image: knobImage))
         knobNode.zPosition = 101
         
         baseNode.addChild(knobNode)

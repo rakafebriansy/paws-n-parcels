@@ -29,6 +29,7 @@ class SoundManager: NSObject, AVAudioPlayerDelegate {
     static let shared = SoundManager()
     
     private var activePlayers: [ObjectIdentifier: AVAudioPlayer] = [:]
+    private var playerPools: [SFX: [AVAudioPlayer]] = [:]
     private var volume: Float = 1.0
     
     private override init() {
@@ -46,6 +47,18 @@ class SoundManager: NSObject, AVAudioPlayerDelegate {
     }
     
     func play(_ sfx: SFX) {
+        var finalVolume = volume
+        if sfx == .grass6 || sfx == .grass7 || sfx == .gravel6 || sfx == .gravel8 {
+            finalVolume = volume * 0.3
+        }
+        
+        if let availablePlayer = playerPools[sfx]?.first(where: { !$0.isPlaying }) {
+            availablePlayer.volume = finalVolume
+            availablePlayer.play()
+            activePlayers[ObjectIdentifier(availablePlayer)] = availablePlayer
+            return
+        }
+        
         guard let url = Bundle.main.url(forResource: sfx.rawValue, withExtension: sfx.fileExtension) else {
             debugLog("[SoundManager] File not found for \(sfx.rawValue).\(sfx.fileExtension)")
             return
@@ -53,15 +66,14 @@ class SoundManager: NSObject, AVAudioPlayerDelegate {
         
         do {
             let player = try AVAudioPlayer(contentsOf: url)
-            var finalVolume = volume
-            if sfx == .grass6 || sfx == .grass7 || sfx == .gravel6 || sfx == .gravel8 {
-                finalVolume = volume * 0.3
-            }
             player.volume = finalVolume
-            
             player.delegate = self
             player.play()
             activePlayers[ObjectIdentifier(player)] = player
+            
+            if playerPools[sfx, default: []].count < 5 {
+                playerPools[sfx, default: []].append(player)
+            }
         } catch {
             debugLog("[SoundManager] Error playing \(sfx.rawValue): \(error.localizedDescription)")
         }

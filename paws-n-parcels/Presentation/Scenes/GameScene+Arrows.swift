@@ -11,7 +11,8 @@ import GameplayKit
 extension GameScene {
     
     func updateScreenEdgeArrows(viewWidth: CGFloat, viewHeight: CGFloat) {
-        cameraNode.enumerateChildNodes(withName: "edge_arrow") { node, _ in node.removeFromParent() }
+        yellowArrowPool.forEach { $0.isHidden = true }
+        redArrowNode?.isHidden = true
         
         guard currentPhase != .backgroundStory else {
             onJoystickBubbleUpdate?(nil)
@@ -58,7 +59,7 @@ extension GameScene {
                 ($0 as? HouseEntity)?.component(ofType: OwnerComponent.self)?.characterName == receiverName
             }) as? HouseEntity, let houseNode = targetHouse.component(ofType: RenderComponent.self)?.node {
                 
-                let arrowNode = createArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
+                let arrowNode = getOrCreateRedArrowNode(to: houseNode.position, assetName: "arrow_red", ovalX: ovalRadiusX, ovalY: ovalRadiusY, viewW: viewWidth, viewH: viewHeight)
                 
                 if shouldLog {
                     debugLog("[Arrow DEBUG] RED: receiver=\(receiverName), houseFound=YES, arrowCreated=\(arrowNode != nil)")
@@ -101,11 +102,13 @@ extension GameScene {
             
             var didShowYellowTutorialBubble = false
             
+            var yellowIndex = 0
             for house in allRequestingHouses {
                 guard let name = house.component(ofType: OwnerComponent.self)?.characterName,
                       let houseNode = house.component(ofType: RenderComponent.self)?.node else { continue }
                 
-                let arrowNode = createArrowNode(
+                let arrowNode = getOrCreateYellowArrowNode(
+                    at: yellowIndex,
                     to: houseNode.position,
                     assetName: "arrow_yellow",
                     ovalX: ovalRadiusX,
@@ -113,6 +116,7 @@ extension GameScene {
                     viewW: viewWidth,
                     viewH: viewHeight
                 )
+                yellowIndex += 1
                 
                 if name == yellowTutorialTargetHouseName,
                    !UserDefaults.standard.bool(forKey: "hasSeenYellowArrowTutorial") {
@@ -173,7 +177,7 @@ extension GameScene {
         )
     }
     
-    func createArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) -> SKSpriteNode? {
+    func getOrCreateRedArrowNode(to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) -> SKSpriteNode? {
         let dx = targetPosition.x - cameraNode.position.x
         let dy = targetPosition.y - cameraNode.position.y
 
@@ -185,19 +189,57 @@ extension GameScene {
         }
 
         let angle = atan2(dy, dx)
-
         let arrowX = ovalX * cos(angle)
         let arrowY = ovalY * sin(angle)
 
-        let arrowNode = SKSpriteNode(imageNamed: assetName)
-        arrowNode.name = "edge_arrow"
-        arrowNode.size = CGSize(width: 45, height: 45)
+        let arrowNode: SKSpriteNode
+        if let existing = redArrowNode {
+            arrowNode = existing
+        } else {
+            arrowNode = SKSpriteNode(imageNamed: assetName)
+            arrowNode.name = "edge_arrow_red"
+            arrowNode.size = CGSize(width: 45, height: 45)
+            arrowNode.zPosition = 90_000
+            cameraNode.addChild(arrowNode)
+            redArrowNode = arrowNode
+        }
+
+        arrowNode.isHidden = false
         arrowNode.position = CGPoint(x: arrowX, y: arrowY)
-
         arrowNode.zRotation = angle - GameConfig.arrowAssetDirection
-        arrowNode.zPosition = 90_000
+        return arrowNode
+    }
+    
+    func getOrCreateYellowArrowNode(at index: Int, to targetPosition: CGPoint, assetName: String, ovalX: CGFloat, ovalY: CGFloat, viewW: CGFloat, viewH: CGFloat) -> SKSpriteNode? {
+        let dx = targetPosition.x - cameraNode.position.x
+        let dy = targetPosition.y - cameraNode.position.y
 
-        cameraNode.addChild(arrowNode)
+        let safetyMargin: CGFloat = 50.0
+        if abs(dx) < (viewW / 2) - safetyMargin
+            && abs(dy) < (viewH / 2) - safetyMargin
+        {
+            return nil
+        }
+
+        let angle = atan2(dy, dx)
+        let arrowX = ovalX * cos(angle)
+        let arrowY = ovalY * sin(angle)
+
+        let arrowNode: SKSpriteNode
+        if index < yellowArrowPool.count {
+            arrowNode = yellowArrowPool[index]
+        } else {
+            arrowNode = SKSpriteNode(imageNamed: assetName)
+            arrowNode.name = "edge_arrow_yellow_\(index)"
+            arrowNode.size = CGSize(width: 45, height: 45)
+            arrowNode.zPosition = 90_000
+            cameraNode.addChild(arrowNode)
+            yellowArrowPool.append(arrowNode)
+        }
+
+        arrowNode.isHidden = false
+        arrowNode.position = CGPoint(x: arrowX, y: arrowY)
+        arrowNode.zRotation = angle - GameConfig.arrowAssetDirection
         return arrowNode
     }
 }

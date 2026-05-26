@@ -14,9 +14,3 @@
         let recipient: String
         let messageBody: String
     }
-
-    @Generable
-    struct LetterBatch {
-        @Guide(description: "A list of 5 unique letters", .count(5))
-        let letters: [PackageLetter]
-    }

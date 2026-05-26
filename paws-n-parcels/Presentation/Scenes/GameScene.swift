@@ -23,6 +23,10 @@ class GameScene: SKScene {
     var physicsBodyLeft: SKPhysicsBody!
     var physicsBodyFrontBack: SKPhysicsBody!
     
+    // Arrow node pools
+    var yellowArrowPool: [SKSpriteNode] = []
+    var redArrowNode: SKSpriteNode?
+    
     var movementSystem = GKComponentSystem<MovementComponent>(componentClass: MovementComponent.self)
     var gameStateMachine: GKStateMachine?
     weak var deliverySystem: DeliverySystem? {

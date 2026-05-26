@@ -17,6 +17,5 @@ enum PhysicsShape {
     case rectangle(size: CGSize)
     case rectangleWithCenter(size: CGSize, center: CGPoint)
     case circle(radius: CGFloat, offset: CGPoint)
-    case texture
     case houseSimplified(size: CGSize)
 }
