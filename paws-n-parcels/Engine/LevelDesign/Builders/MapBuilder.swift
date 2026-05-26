@@ -283,26 +283,37 @@ class MapBuilder {
         node.position = point
         node.setScale(0.4)
         
-        if assetName.contains("rock"){
-            let actualHeight = node.size.height * 1.5
-            node.zPosition = 10000 - (point.y - (actualHeight / 2))
-            let physicsWidth = node.size.width * 0.8
-            let physicsHeight = actualHeight * 0.7
+        let visualSize = node.size
+        let scaledHeight = visualSize.height * 0.4
+        node.zPosition = 10000 - (point.y - (scaledHeight / 2))
+        
+        if assetName.contains("rock") {
+            let w = visualSize.width
+            let h = visualSize.height
             
-            node.physicsBody = SKPhysicsBody(
-                rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
-                center: CGPoint(x: 0, y: 0)
-            )
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: -w * 0.35, y: h * 0.35))
+            path.addLine(to: CGPoint(x: w * 0.35, y: h * 0.35))
+            path.addLine(to: CGPoint(x: w * 0.45, y: h * 0.1))
+            path.addLine(to: CGPoint(x: w * 0.4, y: -h * 0.35))
+            path.addLine(to: CGPoint(x: w * 0.15, y: -h * 0.45))
+            path.addLine(to: CGPoint(x: -w * 0.25, y: -h * 0.45))
+            path.addLine(to: CGPoint(x: -w * 0.45, y: -h * 0.15))
+            path.addLine(to: CGPoint(x: -w * 0.45, y: h * 0.15))
+            path.closeSubpath()
+            
+            node.physicsBody = SKPhysicsBody(polygonFrom: path)
+            
+        } else if assetName == "sunflower" {
+            let w = visualSize.width
+            let h = visualSize.height
+            
+            let stem = SKPhysicsBody(rectangleOf: CGSize(width: w * 0.2, height: h * 0.6), center: CGPoint(x: 0, y: -h * 0.2))
+            let flower = SKPhysicsBody(circleOfRadius: w * 0.45, center: CGPoint(x: 0, y: h * 0.25))
+            
+            node.physicsBody = SKPhysicsBody(bodies: [stem, flower])
         } else {
-            let actualHeight = node.size.height * 2
-            node.zPosition = 10000 - (point.y - (actualHeight / 2))
-            let physicsWidth = node.size.width * 0.5
-            let physicsHeight = actualHeight * 0.3
-            
-            node.physicsBody = SKPhysicsBody(
-                rectangleOf: CGSize(width: physicsWidth, height: physicsHeight),
-                center: CGPoint(x: 0, y: -actualHeight * 0.15)
-            )
+            node.physicsBody = SKPhysicsBody(rectangleOf: visualSize)
         }
         
         node.physicsBody?.isDynamic = false
@@ -379,7 +390,7 @@ class MapBuilder {
             size: treeSize,
             at: point,
             rotation: nil,
-            physicsShape: .rectangle(size: CGSize(width: grid, height: grid)),
+            physicsShape: .rectangle(size: treeSize),
             zPositionStrategy: .ySorted(offset: 0)
         )
         
