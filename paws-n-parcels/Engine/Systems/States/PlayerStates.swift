@@ -104,7 +104,7 @@ class PlayerStateComponent: GKComponent {
     var stateMachine: GKStateMachine?
     weak var scene: GameScene?
     
-    private var lastDirection: String = "up"
+    private var lastDirection: String = "front"
     private var lastHolding: Bool = false
     private var lastWalking: Bool = false
     private var isFirstUpdate: Bool = true

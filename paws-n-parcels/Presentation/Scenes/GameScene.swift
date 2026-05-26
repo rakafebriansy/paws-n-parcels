@@ -284,12 +284,11 @@ class GameScene: SKScene {
     }
     
     func setupPlayer() {
-        let texture = SKTexture(imageNamed: "goldie_up_1")
-        playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerUpSize)
+        let texture = SKTexture(imageNamed: "goldie_front_1")
+        playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerFrontSize)
         playerNode.zPosition = GameConfig.playerZPosition
         playerNode.position = GameConfig.playerInitialPosition
         
-        // Pre-build 3 physics bodies sekali saat init (tidak ada alokasi ulang)
         physicsBodyRight = buildPhysicsBody(isFacingRight: true)
         physicsBodyLeft = buildPhysicsBody(isFacingRight: false)
         physicsBodyFrontBack = buildPhysicsBody(isFacingRight: nil)
@@ -511,7 +510,7 @@ class GameScene: SKScene {
         }
         
         if let stateComp = playerEntity.component(ofType: PlayerStateComponent.self) {
-            stateComp.forceDirection("up")
+            stateComp.forceDirection("front")
         }
         
         deliverySystem?.activePackage = nil
