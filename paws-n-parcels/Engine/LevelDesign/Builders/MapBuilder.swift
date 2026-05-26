@@ -83,9 +83,9 @@ class MapBuilder {
         tileMap.zPosition = -10
         tileMap.name = "terrainMap"
         
-        for x in 0..<maxGridX {
-            let repeatingIndex = x % 3
-            for y in 0..<maxGridY {
+        for y in 0..<maxGridY {
+            for x in 0..<maxGridX {
+                let repeatingIndex = x % 3
                 var tileName = ""
                 
                 switch y {
@@ -232,6 +232,8 @@ class MapBuilder {
             switch shape {
             case .rectangle(let rectSize):
                 node.physicsBody = SKPhysicsBody(rectangleOf: rectSize)
+            case .rectangleWithCenter(let rectSize, let center):
+                node.physicsBody = SKPhysicsBody(rectangleOf: rectSize, center: center)
             case .circle(let radius, let centerOffset):
                 node.physicsBody = SKPhysicsBody(circleOfRadius: radius, center: centerOffset)
             case .texture:
@@ -243,6 +245,23 @@ class MapBuilder {
                 } else {
                     node.physicsBody = SKPhysicsBody(rectangleOf: size)
                 }
+            case .houseSimplified(let size):
+                let w = size.width
+                let h = size.height
+                
+                let bodyBase = SKPhysicsBody(rectangleOf: CGSize(width: w * 1, height: h * 0.6), center: CGPoint(x: 0, y: -h * 0.15))
+                
+                let roofPath = CGMutablePath()
+                roofPath.move(to: CGPoint(x: -w * 0.48, y: h * 0.05))
+                roofPath.addLine(to: CGPoint(x: w * 0.48, y: h * 0.05))
+                roofPath.addLine(to: CGPoint(x: w * 0.25, y: h * 0.45))
+                roofPath.addLine(to: CGPoint(x: -w * 0.25, y: h * 0.4))
+                roofPath.closeSubpath()
+                let bodyRoof = SKPhysicsBody(polygonFrom: roofPath)
+                
+                let bodyChimney = SKPhysicsBody(rectangleOf: CGSize(width: w * 0.18, height: h * 0.3), center: CGPoint(x: -w * 0.28, y: h * 0.15))
+                
+                node.physicsBody = SKPhysicsBody(bodies: [bodyBase, bodyRoof, bodyChimney])
             }
             node.physicsBody?.isDynamic = false
             node.physicsBody?.restitution = 0.0
@@ -308,7 +327,7 @@ class MapBuilder {
             size: houseSize,
             at: point,
             rotation: rotation,
-            physicsShape: .texture,
+            physicsShape: .houseSimplified(size: houseSize),
             zPositionStrategy: .ySorted(offset: 0)
         )
         
@@ -441,13 +460,8 @@ class MapBuilder {
         let half = grid / 2.0
         let quarter = grid / 4.0
         
-        // --- VARIABEL PENGATURAN BENTUK PHYSICS POND ---
-        // Anda bisa mengubah nilai parameter di dalam CGSize dan CGPoint secara manual.
-        
         let zero: CGFloat = 0.0
         
-        // Fungsi pembantu untuk membuat bentuk seperempat lingkaran (potongan pizza)
-        // Ini memastikan lengkungan tidak menonjol keluar dari kotak!
         func pieSliceBody(cx: CGFloat, cy: CGFloat, radius: CGFloat, startRad: CGFloat, endRad: CGFloat) -> SKPhysicsBody {
             let path = CGMutablePath()
             let center = CGPoint(x: cx, y: cy)
@@ -457,7 +471,6 @@ class MapBuilder {
             return SKPhysicsBody(polygonFrom: path)
         }
         
-        // Format untuk lurus: (width, height), center: (x, y)
         let bodyHorizontalT = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: half + quarter), center: CGPoint(x: zero, y: zero))
         let bodyHorizontalB = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: half), center: CGPoint(x: zero, y: zero))
         let bodyVerticalL   = SKPhysicsBody(rectangleOf: CGSize(width: half, height: grid), center: CGPoint(x: zero, y: zero))
@@ -471,7 +484,6 @@ class MapBuilder {
         let bendTopHalf = SKPhysicsBody(rectangleOf: CGSize(width: grid, height: half), center: CGPoint(x: zero, y: quarter))
         let bendBotRight = SKPhysicsBody(rectangleOf: CGSize(width: half, height: half), center: CGPoint(x: quarter, y: -quarter))
         
-        // Segitiga penambal untuk memotong sudut dalam menjadi diagonal (melengkung ke dalam / concave)
         let pathBendBL = CGMutablePath()
         pathBendBL.move(to: CGPoint(x: zero, y: zero))
         pathBendBL.addLine(to: CGPoint(x: -half, y: zero))

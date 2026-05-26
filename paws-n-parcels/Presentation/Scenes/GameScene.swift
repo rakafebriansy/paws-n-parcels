@@ -18,6 +18,11 @@ class GameScene: SKScene {
     var playerNode: SKSpriteNode!
     var currentFacing: FacingDirection = .front
     
+    // Pre-built physics bodies (allocated once, swapped on direction change)
+    var physicsBodyRight: SKPhysicsBody!
+    var physicsBodyLeft: SKPhysicsBody!
+    var physicsBodyFrontBack: SKPhysicsBody!
+    
     var movementSystem = GKComponentSystem<MovementComponent>(componentClass: MovementComponent.self)
     var gameStateMachine: GKStateMachine?
     weak var deliverySystem: DeliverySystem? {
@@ -204,38 +209,58 @@ class GameScene: SKScene {
         }
     }
     
-    /// menerapkan physics body sesuai arah hadap.
+    /// Membuat compound physics body untuk arah tertentu (dipanggil sekali saat init).
     /// - Parameter isFacingRight: true = kanan, false = kiri, nil = depan/belakang
-    func applyPhysics(isFacingRight: Bool?) {
+    private func buildPhysicsBody(isFacingRight: Bool?) -> SKPhysicsBody {
         let headRadius: CGFloat = 15.0
         let bodyRadiusSmall: CGFloat = 15.0
         var physicsBodies: [SKPhysicsBody] = []
 
         switch isFacingRight {
         case true:
-            let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: 20, y: 20))
-            let bodyBackPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: -10, y: -6))
-            let bodyFrontPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: 15, y: -6))
-            physicsBodies = [headPhysics, bodyBackPhysics, bodyFrontPhysics]
-            
+            physicsBodies = [
+                SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: 20, y: 20)),
+                SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: -10, y: -6)),
+                SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: 15, y: -6))
+            ]
         case false:
-            let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: -20, y: 20))
-            let bodyBackPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: 10, y: -6))
-            let bodyFrontPhysics = SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: -15, y: -6))
-            physicsBodies = [headPhysics, bodyBackPhysics, bodyFrontPhysics]
-            
+            physicsBodies = [
+                SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: -20, y: 20)),
+                SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: 10, y: -6)),
+                SKPhysicsBody(circleOfRadius: bodyRadiusSmall, center: CGPoint(x: -15, y: -6))
+            ]
         case nil:
-            let headPhysics = SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: 0, y: 20))
-            let bodyPhysics = SKPhysicsBody(circleOfRadius: 20.0, center: CGPoint(x: 0, y: 0))
-            physicsBodies = [headPhysics, bodyPhysics]
+            physicsBodies = [
+                SKPhysicsBody(circleOfRadius: headRadius, center: CGPoint(x: 0, y: 20)),
+                SKPhysicsBody(circleOfRadius: 20.0, center: CGPoint(x: 0, y: 0))
+            ]
         }
 
-        playerNode.physicsBody = SKPhysicsBody(bodies: physicsBodies)
-        playerNode.physicsBody?.affectedByGravity = false
-        playerNode.physicsBody?.allowsRotation = false
-        playerNode.physicsBody?.restitution = 0.0
-        playerNode.physicsBody?.categoryBitMask = PhysicsCategory.player
-        playerNode.physicsBody?.collisionBitMask = PhysicsCategory.obstacle
+        let body = SKPhysicsBody(bodies: physicsBodies)
+        body.affectedByGravity = false
+        body.allowsRotation = false
+        body.restitution = 0.0
+        body.categoryBitMask = PhysicsCategory.player
+        body.collisionBitMask = PhysicsCategory.obstacle
+        return body
+    }
+    
+    /// Swap physics body dari pre-built pool (tanpa alokasi baru).
+    /// - Parameter isFacingRight: true = kanan, false = kiri, nil = depan/belakang
+    func applyPhysics(isFacingRight: Bool?) {
+        let targetBody: SKPhysicsBody
+        switch isFacingRight {
+        case true:  targetBody = physicsBodyRight
+        case false: targetBody = physicsBodyLeft
+        case nil:   targetBody = physicsBodyFrontBack
+        }
+        
+        // Hanya swap jika physics body berbeda
+        guard playerNode.physicsBody !== targetBody else { return }
+        
+        let currentVelocity = playerNode.physicsBody?.velocity ?? .zero
+        playerNode.physicsBody = targetBody
+        playerNode.physicsBody?.velocity = currentVelocity
     }
 
     /// Panggil ini setiap kali arah karakter berubah.
@@ -259,6 +284,11 @@ class GameScene: SKScene {
         playerNode = SKSpriteNode(texture: texture, size: GameConfig.playerFrontSize)
         playerNode.zPosition = GameConfig.playerZPosition
         playerNode.position = GameConfig.playerInitialPosition
+        
+        // Pre-build 3 physics bodies sekali saat init (tidak ada alokasi ulang)
+        physicsBodyRight = buildPhysicsBody(isFacingRight: true)
+        physicsBodyLeft = buildPhysicsBody(isFacingRight: false)
+        physicsBodyFrontBack = buildPhysicsBody(isFacingRight: nil)
         
         applyPhysics(isFacingRight: nil)
 
