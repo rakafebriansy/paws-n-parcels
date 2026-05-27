@@ -155,6 +155,12 @@ class PlayerStateComponent: GKComponent {
         updateVisuals(isWalking: isWalking)
     }
     
+    func forceDirection(_ direction: String) {
+        lastDirection = direction
+        isFirstUpdate = true
+        updateVisuals(isWalking: false)
+    }
+    
     func updateVisuals(isWalking: Bool) {
         guard let entity = entity,
               let node = entity.component(ofType: RenderComponent.self)?.node as? SKSpriteNode,

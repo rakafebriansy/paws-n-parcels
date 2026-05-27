@@ -289,7 +289,6 @@ class GameScene: SKScene {
         playerNode.zPosition = GameConfig.playerZPosition
         playerNode.position = GameConfig.playerInitialPosition
         
-        // Pre-build 3 physics bodies sekali saat init (tidak ada alokasi ulang)
         physicsBodyRight = buildPhysicsBody(isFacingRight: true)
         physicsBodyLeft = buildPhysicsBody(isFacingRight: false)
         physicsBodyFrontBack = buildPhysicsBody(isFacingRight: nil)
@@ -504,10 +503,14 @@ class GameScene: SKScene {
         if let movement = playerEntity.component(ofType: MovementComponent.self) {
             movement.velocity = .zero
         }
-        joystick.processTouchEnded()
+        joystick.reset()
         
         if let playerNode = playerEntity.component(ofType: RenderComponent.self)?.node {
             playerNode.position = GameConfig.playerInitialPosition
+        }
+        
+        if let stateComp = playerEntity.component(ofType: PlayerStateComponent.self) {
+            stateComp.forceDirection("front")
         }
         
         deliverySystem?.activePackage = nil

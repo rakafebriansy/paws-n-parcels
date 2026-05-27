@@ -14,6 +14,7 @@ class JoystickController {
     let knobNode: SKSpriteNode
     var isActive: Bool = false
     var currentVelocity: CGPoint = .zero
+    var defaultPosition: CGPoint = .zero
     
     private let maxRadius: CGFloat = 50.0
     
@@ -54,7 +55,8 @@ class JoystickController {
         let screenBottom = -(screenHeight / 2)
         let defaultYPosition = screenBottom + 150
         
-        baseNode.position = CGPoint(x: 0, y: defaultYPosition)
+        defaultPosition = CGPoint(x: 0, y: defaultYPosition)
+        baseNode.position = defaultPosition
         camera.addChild(baseNode)
         
         debugLog("[JoystickController] Attached to camera at default position Y: \(defaultYPosition).")
@@ -89,5 +91,13 @@ class JoystickController {
             currentVelocity = .zero
             knobNode.run(resetAction)
         }
+    }
+    
+    func reset() {
+        isActive = false
+        currentVelocity = .zero
+        knobNode.removeAllActions()
+        knobNode.position = .zero
+        baseNode.position = defaultPosition
     }
 }
